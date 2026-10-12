@@ -3,12 +3,16 @@ import Link from "next/link";
 import { getUnusedStartupInvites } from "@/lib/invites";
 import { requireStartupOwner } from "@/lib/members";
 import { getStartupMembers } from "@/lib/startups";
-import { removeMemberAction, revokeInviteAction, updateStartupAction } from "./actions";
+import { getSlackConnection, isSlackConfigured } from "@/lib/slack";
+import { disconnectSlackAction, removeMemberAction, revokeInviteAction, updateStartupAction } from "./actions";
 import { InviteByEmail, InviteLink } from "./invite-link";
 
 const inputClass = "mt-2 w-full rounded-xl border-2 border-ink bg-white px-4 py-3 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ink";
 const buttonClass = "rounded-xl border-[3px] border-ink bg-white px-4 py-2 font-bold shadow-sticker disabled:opacity-50";
 const messages = new Map([
+  ["slack-connected", "Slack connected."],
+  ["slack-disconnected", "Slack disconnected."],
+  ["slack-connect-failed", "We couldn't connect Slack. Check that this workspace isn't connected to another startup, then try again."],
   ["invalid-name", "Choose a name between 2 and 60 characters."],
   ["text-too-long", "Use up to 120 characters for the tagline and 2,000 for the description."],
   ["url-too-long", "Use up to 500 characters for your logo and website addresses."],
@@ -33,8 +37,10 @@ async function SettingsPage({ params, searchParams }: {
 }) {
   const { slug } = await params;
   const { startup } = await requireStartupOwner(slug);
-  const [members, invites, query] = await Promise.all([
+  const slackConfigured = isSlackConfigured();
+  const [members, invites, query, slackConnection] = await Promise.all([
     getStartupMembers(startup.id), getUnusedStartupInvites(startup.id), searchParams,
+    slackConfigured ? getSlackConnection(startup.id) : Promise.resolve(null),
   ]);
   const ownerCount = members.filter((member) => member.role === "owner").length;
   const message = typeof query.message === "string" ? messages.get(query.message) : undefined;
@@ -44,6 +50,24 @@ async function SettingsPage({ params, searchParams }: {
       <Link href={`/s/${slug}`} className="font-bold underline underline-offset-4">← Back to {startup.name}</Link>
       <h1 className="mt-8 font-display text-4xl font-extrabold">Your page settings.</h1>
       {message && <p role="status" className="mt-5 rounded-xl border-2 border-ink bg-sun p-4">{message}</p>}
+      <section className="mt-8 rounded-3xl border-[3px] border-ink bg-lime p-6 shadow-sticker-lg sm:p-8" aria-labelledby="slack-heading">
+        <h2 id="slack-heading" className="font-display text-2xl font-extrabold">Slack</h2>
+        {!slackConfigured ? <p className="mt-4">Slack isn&apos;t configured</p> : slackConnection ? (
+          <>
+            <p className="mt-4 break-words">Connected to {slackConnection.workspaceName}.</p>
+            <p className="mt-2">React with 📣 to post. Messages become public on your startup page.</p>
+            <p className="mt-2 text-sm text-ink/70">Invite startupfans to the channels you want to publish from.</p>
+            <form action={disconnectSlackAction.bind(null, slug)} className="mt-5">
+              <button type="submit" className={buttonClass}>Disconnect</button>
+            </form>
+          </>
+        ) : (
+          <>
+            <p className="mt-4">Connect your workspace and react with 📣 to publish a message on your public startup page.</p>
+            <a href={`/api/slack/install?${new URLSearchParams({ slug })}`} className={`${buttonClass} mt-5 inline-block`}>Connect Slack</a>
+          </>
+        )}
+      </section>
       <section className="mt-8 rounded-3xl border-[3px] border-ink bg-cream p-6 shadow-sticker-lg sm:p-8" aria-labelledby="page-details">
         <h2 id="page-details" className="font-display text-2xl font-extrabold">Page details</h2>
         <p className="mt-2 break-words text-ink/70">Page address: /s/{slug}</p>

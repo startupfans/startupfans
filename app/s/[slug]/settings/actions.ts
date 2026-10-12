@@ -3,7 +3,7 @@
 import { eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { startups } from "@/db/schema";
+import { slackConnections, startups } from "@/db/schema";
 import { isValidSessionId } from "@/lib/auth";
 import { sendEmail } from "@/lib/email";
 import { inviteEmail } from "@/lib/emails/invite";
@@ -18,6 +18,15 @@ function refreshStartup(slug: string) {
 
 function settingsMessage(slug: string, message: string): never {
   redirect(`/s/${slug}/settings?${new URLSearchParams({ message })}`);
+}
+
+export async function disconnectSlackAction(slug: string) {
+  const { user } = await requireStartupOwner(slug);
+  await withOwnedStartup(slug, user.id, async (tx, startup) => {
+    await tx.delete(slackConnections).where(eq(slackConnections.startupId, startup.id));
+  });
+  revalidatePath(`/s/${slug}/settings`);
+  settingsMessage(slug, "slack-disconnected");
 }
 
 export async function updateStartupAction(slug: string, formData: FormData) {

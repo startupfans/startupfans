@@ -21,6 +21,30 @@ const publicPostFields = {
   startupLogoUrl: startups.logoUrl,
 };
 
+type PostTransaction = Parameters<Parameters<typeof db.transaction>[0]>[0];
+
+export async function createPostForStartup({ startupId, authorId, body, media, source }: {
+  startupId: string;
+  authorId: string;
+  body: string;
+  media: { url: string; type: "image" | "video" } | null;
+  source: "web" | "slack";
+}, transaction?: PostTransaction) {
+  if (!body.trim() || body.length > 5000) throw new Error("Post body must have 1 to 5,000 characters.");
+  const create = async (tx: PostTransaction) => {
+    const [member] = await tx.select().from(startupMembers)
+      .where(and(eq(startupMembers.startupId, startupId), eq(startupMembers.userId, authorId)))
+      .for("share");
+    if (!member) throw new Error("Only team members can post.");
+    const [post] = await tx.insert(posts).values({
+      startupId, authorId, bodyMd: body.trim(), source, visibility: "public",
+      mediaUrl: media?.url ?? null, mediaType: media?.type ?? null,
+    }).returning({ id: posts.id });
+    return post;
+  };
+  return transaction ? create(transaction) : db.transaction(create);
+}
+
 export async function getPublicStartupPosts(startupId: string) {
   return db.select(publicPostFields).from(posts)
     .innerJoin(users, eq(users.id, posts.authorId))

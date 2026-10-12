@@ -280,6 +280,7 @@ Picked from a shortlist of about 50 ideas from Ian's notes, scored on launch spe
 ## What's built vs the brief
 
 Built:
+- Slack publishing: owners connect a workspace in settings; a 📣 reaction publishes a human message and its first supported image, with email-matched team attribution, encrypted tokens, deduplication and a thread confirmation.
 - Landing page (`app/page.tsx`): hero "Get the inside track on startups." with waitlist form, a "For fans" section and a "For startups" section (three value props each), and a second waitlist form at the bottom.
 - Waitlist: email only, via GetWaitlist (`app/waitlist-form.tsx`).
 - Manual seed and waitlist import: `pnpm seed` upserts startupfans with owners from `SEED_OWNER_EMAILS` and its first post; `pnpm import:waitlist <path.csv>` imports GetWaitlist emails as fans in signup order, preserving existing member numbers on reruns.
@@ -317,6 +318,8 @@ Site copy only promises what exists. No pricing on the site (for fans or startup
 
 ## Layout
 
+- `lib/slack.ts` and `lib/crypto.ts`: Slack Web API, signed OAuth state, event signature verification, markdown conversion, image copying and encrypted bot tokens. `slack_connections` binds one workspace to one startup; `slack_posts` records published messages atomically with post creation.
+- `app/api/slack/`: owner-only install and OAuth callbacks, plus signed events acknowledged with `after()` before publishing. `slack-app-manifest.json` configures the app and its scopes.
 - `scripts/seed.ts` and `scripts/import-waitlist.ts`: manual, idempotent startupfans seed and GetWaitlist CSV import using the shared database and follow allocator. The importer skips team members and reports that reason in its summary. Commands load `.env` with Node 24 and run through `tsx` with the `react-server` condition for server-only imports.
 - `db/`: Drizzle schema, migrations, and the lazy Postgres client exported as `db`. Without `DATABASE_URL` it falls back to the local Docker database on port 5433.
 - `lib/`: server-only auth and session helpers (`lib/auth.ts`) and Resend email delivery with a console fallback (`lib/email.ts`).

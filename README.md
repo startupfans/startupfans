@@ -65,3 +65,47 @@ Set `APP_URL` to the site's public origin, `RESEND_API_KEY` for delivery, and
 sign-in link with a `[startupfans email: dev fallback]` prefix; open it locally
 to sign in. Auth requests require a running database; locally, the Docker default
 works without setting `DATABASE_URL`.
+
+## Slack
+
+1. Create a Slack app at [Your apps](https://api.slack.com/apps) using
+   `slack-app-manifest.json`. It contains the bot scopes, OAuth callback and
+   `reaction_added` event subscription.
+2. Set `SLACK_CLIENT_ID`, `SLACK_CLIENT_SECRET` and `SLACK_SIGNING_SECRET` from
+   Basic Information. Generate `SLACK_TOKEN_KEY` with `openssl rand -base64 32`.
+   Tokens are encrypted with AES-256-GCM before storage. Keep the key secret and
+   stable; changing it requires reconnecting every workspace.
+3. Set `APP_URL=https://www.startupfans.co`, configure `BLOB_READ_WRITE_TOKEN`
+   for image attachments, apply `pnpm db:migrate`, and deploy. Enable event
+   subscriptions after the request URL passes Slack's challenge verification.
+4. Sign in as a startup owner, open the startup's settings and choose Connect
+   Slack. Approve the app and invite `startupfans` into each channel you want to
+   publish from, including private channels.
+5. React to a human message with 📣 (`:mega:`). The message becomes a public
+   post, with its first supported image (JPEG, PNG, WebP or GIF, up to 10 MB).
+   The reacting user's email selects their account only if they are a startup
+   team member; otherwise the connecting account is used, provided it is still
+   a team member. A confirmation links to the post in the Slack thread.
+
+One workspace connects to one startup, and each startup connects to one
+workspace. Repeated reactions and concurrent deliveries create one post per
+workspace/channel/message. Disconnect stops future publishing; existing posts
+remain. It removes the local connection; uninstall the app in Slack to revoke
+its permissions. Empty messages without supported images, bot messages and
+messages longer than 5,000 characters are skipped. Messages are fetched using
+[`conversations.history`](https://docs.slack.dev/reference/methods/conversations.history/);
+only messages accessible to the bot can be published. Thread replies use
+[`reactions.get`](https://docs.slack.dev/reference/methods/reactions.get/)
+when history doesn't return the exact message.
+
+Without all four Slack values, settings shows "Slack isn't configured" and the
+routes return 503. Signed events are acknowledged immediately and processed
+using Next's `after()` within the route's 60-second duration. Failures are logged
+without credentials. There is no durable retry queue; a failed event may need
+another reaction. If the post succeeds but the thread reply fails, repeated
+reactions do not create another post or retry the reply.
+
+For local verification, use an HTTPS tunnel for Slack callbacks and update both
+manifest URLs and `APP_URL` to that origin. `SLACK_API_BASE` can point at a local
+stub (default `https://slack.com/api`); it is a server-only testing override and
+must not be set in production.

@@ -98,6 +98,23 @@ export const posts = pgTable(
   (table) => [index("posts_startup_id_published_at_idx").on(table.startupId, table.publishedAt)],
 );
 
+export const slackConnections = pgTable("slack_connections", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  startupId: uuid("startup_id").notNull().unique().references(() => startups.id, { onDelete: "cascade" }),
+  slackTeamId: text("slack_team_id").notNull().unique(),
+  slackTeamName: text("slack_team_name").notNull(),
+  botToken: text("bot_token").notNull(),
+  installedBy: uuid("installed_by").notNull().references(() => users.id),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const slackPosts = pgTable("slack_posts", {
+  slackTeamId: text("slack_team_id").notNull(),
+  channelId: text("channel_id").notNull(),
+  messageTs: text("message_ts").notNull(),
+  postId: uuid("post_id").notNull().references(() => posts.id, { onDelete: "cascade" }),
+}, (table) => [primaryKey({ columns: [table.slackTeamId, table.channelId, table.messageTs] })]);
+
 export const follows = pgTable(
   "follows",
   {
