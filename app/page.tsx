@@ -1,3 +1,5 @@
+import { WaitlistForm } from "./waitlist-form";
+
 interface ValueProp {
   emoji: string;
   title: string;
@@ -259,17 +261,11 @@ function JoinSection() {
           </h2>
           <p className="mt-5 text-lg text-ink/80">
             Fans hear about new startups first, get founding-fan pricing, and get a direct line to the people building
-            them. Sign-ups open very soon.
+            them.
           </p>
         </div>
 
-        {/* Sign-up form goes here. */}
-        <div className="relative mt-10 flex max-w-xl flex-col gap-3 rounded-2xl border-[3px] border-dashed border-ink bg-white/70 p-5 sm:flex-row sm:items-center sm:justify-between">
-          <span className="font-bold">The fan list opens soon.</span>
-          <span className="w-fit rounded-full border-2 border-ink bg-sun px-3 py-1 font-mono text-xs font-bold tracking-wide uppercase">
-            Coming soon
-          </span>
-        </div>
+        <WaitlistForm />
       </div>
     </section>
   );
