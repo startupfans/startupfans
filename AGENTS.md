@@ -282,6 +282,7 @@ Picked from a shortlist of about 50 ideas from Ian's notes, scored on launch spe
 Built:
 - Landing page (`app/page.tsx`): hero "Get the inside track on startups." with waitlist form, a "For fans" section and a "For startups" section (three value props each), and a second waitlist form at the bottom.
 - Waitlist: email only, via GetWaitlist (`app/waitlist-form.tsx`).
+- Manual seed and waitlist import: `pnpm seed` upserts startupfans with owners from `SEED_OWNER_EMAILS` and its first post; `pnpm import:waitlist <path.csv>` imports GetWaitlist emails as fans in signup order, preserving existing member numbers on reruns.
 - Startup creation (`app/start/`): signed-in users create a public page and become its owner, with optional stage and team size.
 - Public startup pages (`app/s/[slug]/`): profile, team members, current fan count and a markdown feed, plus member settings links.
 - Posting: team members publish markdown updates with one optional image or video uploaded directly to Vercel Blob. Public post pages have share metadata; authors and owners can delete posts.
@@ -313,6 +314,7 @@ Site copy only promises what exists. No pricing on the site (for fans or startup
 
 ## Layout
 
+- `scripts/seed.ts` and `scripts/import-waitlist.ts`: manual, idempotent startupfans seed and GetWaitlist CSV import using the shared database and follow allocator. Commands load `.env` with Node 24 and run through `tsx` with the `react-server` condition for server-only imports.
 - `db/`: Drizzle schema, migrations, and the lazy Postgres client exported as `db`. Without `DATABASE_URL` it falls back to the local Docker database on port 5433.
 - `lib/`: server-only auth and session helpers (`lib/auth.ts`) and Resend email delivery with a console fallback (`lib/email.ts`).
 - `lib/startups.ts`: startup creation with owner membership, profile lookup, team members, public posts and current fan counts. `lib/follows.ts` serializes follow changes with a startup row lock and keeps the member-number counter increasing. `lib/slug.ts` holds shared slug suggestions and validation.
