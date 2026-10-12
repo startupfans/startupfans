@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import { Markdown } from "@/app/components/markdown";
 import { PostMedia } from "@/app/components/post-media";
@@ -27,7 +28,19 @@ export function PostCard({ post, showStartup = false, canDelete = false, onPostP
       <header className="flex flex-wrap items-center justify-between gap-3 text-sm text-ink/70">
         <div className="min-w-0 break-words">
           <span className="font-bold text-ink">{post.authorName?.trim() || post.authorEmail.split("@")[0]}</span>
-          {showStartup && <Link href={`/s/${post.startupSlug}`} className="ml-2 underline underline-offset-4">{post.startupName}</Link>}
+          {showStartup && (
+            <Link href={`/s/${post.startupSlug}`} className="mt-2 flex items-center gap-2 font-bold text-ink underline underline-offset-4">
+              {post.startupLogoUrl ? (
+                <Image src={post.startupLogoUrl} alt="" width={32} height={32} unoptimized
+                  className="h-8 w-8 shrink-0 -rotate-3 rounded-lg border-2 border-ink bg-cream object-contain p-1" />
+              ) : (
+                <span aria-hidden="true" className="flex h-8 w-8 shrink-0 -rotate-3 items-center justify-center rounded-lg border-2 border-ink bg-sky font-display font-extrabold">
+                  {post.startupName.charAt(0).toUpperCase()}
+                </span>
+              )}
+              {post.startupName}
+            </Link>
+          )}
         </div>
         <Link href={postPath} className="underline underline-offset-4">
           <time dateTime={post.publishedAt.toISOString()} title={post.publishedAt.toLocaleString("en-GB", { timeZone: "UTC" })}>
