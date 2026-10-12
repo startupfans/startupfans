@@ -12,4 +12,5 @@ export const config = defineConfig({
   dbCredentials: { url: process.env.DATABASE_URL ?? "" },
 });
 
+// drizzle-kit reads the default export; the named export satisfies the named-exports convention.
 export { config as default };

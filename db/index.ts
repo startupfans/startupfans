@@ -4,20 +4,25 @@ import { drizzle, type PostgresJsDatabase } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 import * as schema from "./schema";
 
-let database: PostgresJsDatabase<typeof schema> | undefined;
+const globalForDatabase: typeof globalThis & {
+  startupfansPostgres?: ReturnType<typeof postgres>;
+  startupfansDatabase?: PostgresJsDatabase<typeof schema>;
+} = globalThis;
 
 function getDatabase() {
-  if (!database) {
+  if (!globalForDatabase.startupfansDatabase) {
     const url = process.env.DATABASE_URL;
     if (!url) {
       throw new Error("DATABASE_URL is required to query the database. Set it in your server environment.");
     }
-    database = drizzle(postgres(url), { schema });
+    globalForDatabase.startupfansPostgres ??= postgres(url, { prepare: false });
+    globalForDatabase.startupfansDatabase = drizzle(globalForDatabase.startupfansPostgres, { schema });
   }
-  return database;
+  return globalForDatabase.startupfansDatabase;
 }
 
 // The mock supplies the typed proxy target without creating a connection at import time.
+// Any property access calls getDatabase(); do not inspect db without DATABASE_URL set.
 export const db: PostgresJsDatabase<typeof schema> = new Proxy(drizzle.mock({ schema }), {
   get(_target, property) {
     const database = getDatabase();
