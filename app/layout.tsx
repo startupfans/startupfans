@@ -18,12 +18,12 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "startupfans: be a fan before they're famous",
+  title: "startupfans: the inside track on startups",
   description:
     "The inside track on new startups: insider updates on what founders are building, early access, and founding-fan pricing.",
   openGraph: {
     title: "startupfans",
-    description: "Be a fan before they're famous.",
+    description: "Get the inside track on startups.",
     type: "website",
   },
 };

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useId, useState } from "react";
 
 const WAITLIST_ID = 33121;
 const SIGNUP_ENDPOINT = "https://api.getwaitlist.com/api/v1/signup";
@@ -38,6 +38,7 @@ async function createSignup(email: string): Promise<Signup> {
 
 export function WaitlistForm() {
   const [state, setState] = useState<FormState>({ status: "idle" });
+  const emailInputId = useId();
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -61,11 +62,11 @@ export function WaitlistForm() {
   return (
     <form onSubmit={handleSubmit} className="relative mt-10 max-w-xl">
       <div className="flex flex-col gap-3 sm:flex-row">
-        <label htmlFor="waitlist-email" className="sr-only">
+        <label htmlFor={emailInputId} className="sr-only">
           Email address
         </label>
         <input
-          id="waitlist-email"
+          id={emailInputId}
           name="email"
           type="email"
           required

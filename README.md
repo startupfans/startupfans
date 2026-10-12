@@ -1,6 +1,6 @@
 # startupfans
 
-Be a fan before they're famous. Website for startupfans.
+Get the inside track on startups. Website for startupfans.
 
 ```bash
 pnpm install

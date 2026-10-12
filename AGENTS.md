@@ -12,7 +12,7 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 ## What we're building
 
-startupfans is a startup, and this repo is its public website. The pitch on the site: **"Be a fan before they're famous."** Fans find new startups early, get insider info on what founders are building (behind-the-scenes updates, what's shipping next), get in first (early access, founding-fan pricing), and give feedback that shapes what gets built. The product definition is still being nailed down; check with Ian before adding claims about features that don't exist yet.
+startupfans is a startup, and this repo is its public website. The pitch on the site: **"Get the inside track on startups."** Fans find new startups early, get insider info on what founders are building (behind-the-scenes updates, what's shipping next), get in first (early access, founding-fan pricing), and give feedback that shapes what gets built. The product definition is still being nailed down; check with Ian before adding claims about features that don't exist yet.
 
 Current state: a single landing page with value props and a fan sign-up form that feeds a GetWaitlist waitlist (email only, no payment yet).
 
@@ -41,7 +41,7 @@ Current state: a single landing page with value props and a fan sign-up form tha
 - `app/page.tsx`: the landing page (server components; the only client component is the waitlist form). Copy and data are typed arrays at the top (`VALUE_PROPS`, `STEPS`, `TICKER_WORDS`); edit those to change content.
 - `app/globals.css`: design tokens in `@theme` (colors `cream/ink/pink/sun/lime/sky/tangerine`, `shadow-sticker`, marquee/wobble animations). Reduced motion disables animations.
 - `app/layout.tsx`: fonts (Bricolage Grotesque display, Geist sans/mono via `next/font`) and metadata.
-- `app/waitlist-form.tsx`: client component rendered in `JoinSection`. Posts emails straight to the GetWaitlist API (unauthenticated, waitlist ID in `WAITLIST_ID`) and shows queue position plus referral link on success. Signups are managed in the GetWaitlist dashboard.
+- `app/waitlist-form.tsx`: client component rendered twice: in the hero (primary CTA, top of page) and again in `JoinSection`. Posts emails straight to the GetWaitlist API (unauthenticated, waitlist ID in `WAITLIST_ID`) and shows queue position plus referral link on success. Signups are managed in the GetWaitlist dashboard.
 - `Untitled/`: stray empty git repo, unrelated; excluded from TS and ESLint.
 
 ## Style
