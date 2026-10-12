@@ -125,15 +125,12 @@ function HeroCopy() {
       </div>
 
       <h1 className="mt-8 max-w-4xl font-display text-5xl leading-[0.95] font-extrabold tracking-tight text-balance sm:text-7xl lg:text-[5.25rem]">
-        Get the{" "}
-        <span className="relative inline-block whitespace-nowrap">
-          <span className="relative z-10">inside track</span>
-          <span aria-hidden className="absolute inset-x-0 bottom-1 -z-0 h-4 -rotate-1 rounded-sm bg-pink sm:h-6" />
-        </span>{" "}
-        on startups.
+        Get the inside track on startups.
       </h1>
 
-      <p className="mt-6 max-w-2xl text-lg text-pretty text-ink/80 sm:text-xl">
+      <div aria-hidden className="mt-8 h-3 w-28 -rotate-2 rounded-full border-2 border-ink bg-pink sm:h-4 sm:w-40" />
+
+      <p className="mt-8 max-w-2xl text-lg text-pretty text-ink/80 sm:text-xl">
         Insider updates straight from founders on what they&apos;re building and what&apos;s shipping next, plus first
         access before anyone else.
       </p>
