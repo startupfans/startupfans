@@ -1,4 +1,5 @@
 import {
+  boolean,
   index,
   integer,
   pgEnum,
@@ -45,6 +46,9 @@ export const startups = pgTable("startups", {
   description: text("description"),
   logoUrl: text("logo_url"),
   website: text("website"),
+  stage: text("stage"),
+  teamSize: integer("team_size"),
+  isFounding: boolean("is_founding").notNull().default(false),
   plan: plan("plan").notNull().default("free"),
   createdBy: uuid("created_by").notNull().references(() => users.id),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),

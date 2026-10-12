@@ -282,12 +282,15 @@ Picked from a shortlist of about 50 ideas from Ian's notes, scored on launch spe
 Built:
 - Landing page (`app/page.tsx`): hero "Get the inside track on startups." with waitlist form, a "For fans" section and a "For startups" section (three value props each), and a second waitlist form at the bottom.
 - Waitlist: email only, via GetWaitlist (`app/waitlist-form.tsx`).
+- Startup creation (`app/start/`): signed-in users create a public page and become its owner, with optional stage and team size.
+- Public startup pages (`app/s/[slug]/`): profile, team members, current fan count and a plain-text feed, plus member settings links.
+- Follow and unfollow: signed-in fans receive unique member numbers; unfollowing never reuses a number.
 
 Also built: Postgres + Drizzle data layer (`db/`, local Docker database) and email magic-link sign-in with sessions (`app/login`, `app/auth`, `app/me`, `lib/auth.ts`).
 
 Not built yet (from MVP must-haves):
 - Richer startup waitlist fields above
-- Company pages, team membership, posts, feeds, follows (no backend yet)
+- Team invitations, post creation with media, and the global feed
 
 Parked for now: founding spot payment (£99/year Stripe link). It's free for everyone at the moment.
 
@@ -308,6 +311,10 @@ Site copy only promises what exists. No pricing on the site (for fans or startup
 
 - `db/`: Drizzle schema, migrations, and the lazy Postgres client exported as `db`. Without `DATABASE_URL` it falls back to the local Docker database on port 5433.
 - `lib/`: server-only auth and session helpers (`lib/auth.ts`) and Resend email delivery with a console fallback (`lib/email.ts`).
+- `lib/startups.ts`: startup creation with owner membership, profile lookup, team members, public posts and current fan counts. `lib/follows.ts` serializes follow changes with a startup row lock and keeps the member-number counter increasing. `lib/slug.ts` holds shared slug suggestions and validation.
+- `app/components/sticker.tsx`: shared `Star`, `Sticker` and `SectionHeading` components, copied from the landing page.
+- `app/start/`: protected startup creation page and validated server action. Its client form wrapper lives alongside `FollowButton` in `app/s/[slug]/follow-button.tsx`; fields render on the server.
+- `app/s/[slug]/`: public startup profile, team list and plain-text post feed, startup metadata, and follow actions with pending and error states.
 - `app/login/`: magic-link request form and its server action.
 - `app/auth/`: magic-link verification route that creates a session and sets the `sf_session` cookie.
 - `app/me/`: signed-in email and sign-out form, protected by `requireUser`.
