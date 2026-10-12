@@ -285,6 +285,7 @@ Built:
 - Startup creation (`app/start/`): signed-in users create a public page and become its owner, with optional stage and team size.
 - Public startup pages (`app/s/[slug]/`): profile, team members, current fan count and a plain-text feed, plus member settings links.
 - Follow and unfollow: signed-in fans receive unique member numbers; unfollowing never reuses a number.
+- Share previews: a default site image and dynamic startup images with the tagline and current fan count; unknown slugs use the default image.
 
 Also built: Postgres + Drizzle data layer (`db/`, local Docker database) and email magic-link sign-in with sessions (`app/login`, `app/auth`, `app/me`, `lib/auth.ts`).
 
@@ -313,6 +314,8 @@ Site copy only promises what exists. No pricing on the site (for fans or startup
 - `lib/`: server-only auth and session helpers (`lib/auth.ts`) and Resend email delivery with a console fallback (`lib/email.ts`).
 - `lib/startups.ts`: startup creation with owner membership, profile lookup, team members, public posts and current fan counts. `lib/follows.ts` serializes follow changes with a startup row lock and keeps the member-number counter increasing. `lib/slug.ts` holds shared slug suggestions and validation.
 - `app/components/sticker.tsx`: shared `Star`, `Sticker` and `SectionHeading` components, copied from the landing page.
+- `app/opengraph-image.tsx`: default 1200 by 630 share preview and shared image renderer, with a cached Bricolage Grotesque font and a default font fallback.
+- `app/s/[slug]/opengraph-image.tsx`: dynamic startup share preview using the current follower count, with the default site image for unknown slugs.
 - `app/start/`: protected startup creation page and validated server action. Its client form wrapper lives alongside `FollowButton` in `app/s/[slug]/follow-button.tsx`; fields render on the server.
 - `app/s/[slug]/`: public startup profile, team list and plain-text post feed, startup metadata, and follow actions with pending and error states.
 - `app/login/`: magic-link request form and its server action.
