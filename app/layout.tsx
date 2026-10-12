@@ -18,12 +18,12 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "startupfans: real startups, launched in 72 hours",
+  title: "startupfans: be a fan before they're famous",
   description:
-    "A small team, one offsite, three days. We ship real products and try to get paid for them by Sunday. Follow along, pick what we build, and be customer #1.",
+    "Find new startups early, get in first with founding-fan pricing, and help shape what gets built next.",
   openGraph: {
     title: "startupfans",
-    description: "Real startups, launched in 72 hours. Be our first fan.",
+    description: "Be a fan before they're famous.",
     type: "website",
   },
 };

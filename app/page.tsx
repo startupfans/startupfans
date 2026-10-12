@@ -6,72 +6,61 @@ interface ValueProp {
   tiltClass: string;
 }
 
-interface DayPlan {
-  day: string;
+interface Step {
+  label: string;
   title: string;
   body: string;
   colorClass: string;
 }
 
-interface ScoreStat {
-  label: string;
-  value: string;
-}
-
 const VALUE_PROPS: ValueProp[] = [
   {
-    emoji: "📺",
-    title: "Watch it get built, live",
-    body: "Every idea, pivot and 2am bug, posted as it happens. No polish, no launch-video spin. Just a team trying to make real money in three days.",
+    emoji: "🔭",
+    title: "Find them early",
+    body: "Hand-picked new startups, before they hit your feed. The good stuff, minus the launch-day noise.",
     colorClass: "bg-sun",
     tiltClass: "md:-rotate-2",
   },
   {
     emoji: "🎟️",
-    title: "Be customer #1",
-    body: "Fans get first access, and the founders' price, on everything we ship. Real products, real receipts, and bragging rights forever.",
+    title: "Get in first",
+    body: "Early access and founding-fan pricing on products you actually want. First in line, every time.",
     colorClass: "bg-pink",
     tiltClass: "md:rotate-1",
   },
   {
     emoji: "📣",
-    title: "Help pick what we build",
-    body: "The idea board is stacked. Tell us what you'd actually pay for, roast what we launch, and watch your feedback ship by the next morning.",
+    title: "Shape what gets built",
+    body: "Your feedback goes straight to the founders. Tell them what you'd pay for, then watch it ship.",
     colorClass: "bg-lime",
     tiltClass: "md:-rotate-1",
   },
 ];
 
-const DAY_PLANS: DayPlan[] = [
+const STEPS: Step[] = [
   {
-    day: "Day 1",
-    title: "Pick & build",
-    body: "Narrow the idea board to the few that can charge money this week. Then build like the clock's on fire.",
+    label: "Step 1",
+    title: "Join the fan club",
+    body: "Tell us what you're into. It takes about thirty seconds.",
     colorClass: "bg-sky",
   },
   {
-    day: "Day 2",
-    title: "Launch",
-    body: "Live URLs, real checkouts, and posts everywhere. If it isn't public, it doesn't count.",
+    label: "Step 2",
+    title: "Get the drops",
+    body: "New startups land in your inbox before anyone else hears about them.",
     colorClass: "bg-tangerine",
   },
   {
-    day: "Day 3",
-    title: "Get paid",
-    body: "Sell, iterate, sell again. Paying customers are the gold standard. Everything else is vibes.",
+    label: "Step 3",
+    title: "Back what you love",
+    body: "Grab early access, lock in founding-fan pricing, and tell founders what to build next.",
     colorClass: "bg-lime",
   },
 ];
 
-const SCOREBOARD: ScoreStat[] = [
-  { label: "Startups launched", value: "0" },
-  { label: "Paying fans", value: "0" },
-  { label: "Revenue", value: "£0" },
-];
-
 const BARCODE_BARS = [2, 4, 1, 3, 2, 5, 1, 2, 4, 1, 3, 1, 5, 2, 1, 3, 4, 1, 2, 3];
 
-const TICKER_WORDS = ["Ship it", "Get paid", "Be a fan", "72 hours", "No sleep", "Revenue or bust"];
+const TICKER_WORDS = ["Find them early", "Get in first", "Be a fan", "Shape what ships", "Brag forever"];
 
 export default function Home() {
   return (
@@ -123,20 +112,20 @@ function HeroCopy() {
           <span className="absolute inline-flex size-full animate-ping rounded-full bg-pink opacity-75" />
           <span className="relative inline-flex size-2.5 rounded-full bg-pink" />
         </span>
-        Launchathon · 3 days · 1 offsite
+        Now accepting early fans
       </div>
 
       <h1 className="mt-8 max-w-4xl font-display text-5xl leading-[0.95] font-extrabold tracking-tight text-balance sm:text-7xl lg:text-[5.25rem]">
-        Real startups, launched in{" "}
+        Be a fan before they&apos;re{" "}
         <span className="relative inline-block whitespace-nowrap">
-          <span className="relative z-10">72 hours.</span>
+          <span className="relative z-10">famous.</span>
           <span aria-hidden className="absolute inset-x-0 bottom-1 -z-0 h-4 -rotate-1 rounded-sm bg-pink sm:h-6" />
         </span>
       </h1>
 
       <p className="mt-6 max-w-2xl text-lg text-pretty text-ink/80 sm:text-xl">
-        A small team, one offsite, and a single rule: ship something real and get paid for it by the end of day three.
-        Follow along, pick what we build, and be the first fan through the door.
+        startupfans is where people who love new things find startups early, get in first, and help shape what gets
+        built next.
       </p>
 
       <div className="mt-10 flex flex-wrap items-center gap-4">
@@ -157,8 +146,8 @@ function HeroCopy() {
 function FanCard() {
   return (
     <div className="relative mx-auto w-full max-w-sm lg:mx-0 lg:justify-self-end">
-      <Sticker className="absolute -top-6 -left-4 animate-wobble bg-lime [--tilt:-10deg]">made on zero sleep</Sticker>
-      <Sticker className="absolute -right-3 -bottom-5 animate-wobble bg-sky [--tilt:8deg]">revenue or bust</Sticker>
+      <Sticker className="absolute -top-6 -left-4 animate-wobble bg-lime [--tilt:-10deg]">fan since day one</Sticker>
+      <Sticker className="absolute -right-3 -bottom-5 animate-wobble bg-sky [--tilt:8deg]">early &gt; everyone</Sticker>
 
       <div className="rotate-3 rounded-3xl border-[3px] border-ink bg-sun p-6 shadow-sticker-lg transition hover:rotate-0">
         <div className="flex items-center justify-between">
@@ -170,9 +159,9 @@ function FanCard() {
         <p className="mt-2 font-display text-lg font-bold">Could be you.</p>
 
         <ul className="mt-6 space-y-2 rounded-2xl border-2 border-ink bg-white p-4 text-sm font-semibold">
-          <li>⚡ First dibs on every launch</li>
-          <li>💸 Founders&apos; pricing</li>
-          <li>🗳️ A say in what we build</li>
+          <li>⚡ First dibs on new startups</li>
+          <li>💸 Founding-fan pricing</li>
+          <li>🗣️ A direct line to founders</li>
         </ul>
 
         <div className="mt-6 flex items-end justify-between gap-4">
@@ -181,7 +170,7 @@ function FanCard() {
               <span key={index} className="h-full bg-ink" style={{ width }} />
             ))}
           </div>
-          <span className="font-mono text-[10px] font-bold tracking-wide uppercase">Valid 72h</span>
+          <span className="font-mono text-[10px] font-bold tracking-wide uppercase">Early access</span>
         </div>
       </div>
     </div>
@@ -215,7 +204,7 @@ function Ticker() {
 function ValueProps() {
   return (
     <section className="mx-auto max-w-6xl px-5 py-24 sm:px-8">
-      <SectionHeading eyebrow="Why be a fan" title="Front-row seats to a very fast, very public experiment." />
+      <SectionHeading eyebrow="Why be a fan" title="The best seat in the house for what's next." />
       <div className="mt-14 grid gap-8 md:grid-cols-3">
         {VALUE_PROPS.map((prop) => (
           <article
@@ -238,39 +227,21 @@ function HowItWorks() {
   return (
     <section id="how" className="scroll-mt-8 border-y-[3px] border-ink bg-ink py-24 text-cream">
       <div className="mx-auto max-w-6xl px-5 sm:px-8">
-        <SectionHeading eyebrow="The plan" title="Three days. No excuses." isDark />
+        <SectionHeading eyebrow="How it works" title="Three steps to front row." isDark />
 
         <ol className="mt-14 grid gap-6 md:grid-cols-3">
-          {DAY_PLANS.map((plan) => (
-            <li key={plan.day} className="rounded-3xl border-[3px] border-cream/90 bg-ink p-7">
+          {STEPS.map((step) => (
+            <li key={step.label} className="rounded-3xl border-[3px] border-cream/90 bg-ink p-7">
               <span
-                className={`inline-block rounded-full border-2 border-ink px-3 py-1 font-mono text-xs font-bold tracking-wide text-ink uppercase ${plan.colorClass}`}
+                className={`inline-block rounded-full border-2 border-ink px-3 py-1 font-mono text-xs font-bold tracking-wide text-ink uppercase ${step.colorClass}`}
               >
-                {plan.day}
+                {step.label}
               </span>
-              <h3 className="mt-5 font-display text-3xl font-extrabold tracking-tight">{plan.title}</h3>
-              <p className="mt-3 text-cream/75">{plan.body}</p>
+              <h3 className="mt-5 font-display text-3xl font-extrabold tracking-tight">{step.title}</h3>
+              <p className="mt-3 text-cream/75">{step.body}</p>
             </li>
           ))}
         </ol>
-
-        <div className="mt-16 rounded-3xl border-[3px] border-ink bg-cream p-6 text-ink shadow-[8px_8px_0_0_var(--color-pink)] sm:p-8">
-          <div className="flex flex-wrap items-baseline justify-between gap-2">
-            <h3 className="font-display text-2xl font-extrabold tracking-tight">Live scoreboard</h3>
-            <span className="font-mono text-xs font-semibold tracking-wide text-ink/60 uppercase">
-              Updated live-ish
-            </span>
-          </div>
-          <dl className="mt-6 grid gap-4 sm:grid-cols-3">
-            {SCOREBOARD.map((stat) => (
-              <div key={stat.label} className="rounded-2xl border-2 border-ink bg-white p-5">
-                <dt className="font-mono text-xs font-semibold tracking-wide text-ink/60 uppercase">{stat.label}</dt>
-                <dd className="mt-2 font-display text-5xl font-extrabold tabular-nums">{stat.value}</dd>
-              </div>
-            ))}
-          </dl>
-          <p className="mt-5 text-sm text-ink/70">Zero for now. Help us change that.</p>
-        </div>
       </div>
     </section>
   );
@@ -284,11 +255,11 @@ function JoinSection() {
         <div className="relative max-w-2xl">
           <p className="font-mono text-xs font-bold tracking-widest uppercase">The fan list</p>
           <h2 className="mt-3 font-display text-4xl leading-none font-extrabold tracking-tight text-balance sm:text-6xl">
-            Get in before the doors open.
+            Get in before everyone else.
           </h2>
           <p className="mt-5 text-lg text-ink/80">
-            Fans hear about every launch first, get early-bird pricing, and help decide what we build next. Sign-ups
-            open very soon.
+            Fans hear about new startups first, get founding-fan pricing, and get a direct line to the people building
+            them. Sign-ups open very soon.
           </p>
         </div>
 
@@ -311,7 +282,7 @@ function Footer() {
         <Star className="size-5 text-sun" />
         startupfans
       </span>
-      <span>Built in public, at an offsite, on too much coffee. © {new Date().getFullYear()}</span>
+      <span>For people who like things early. © {new Date().getFullYear()}</span>
     </footer>
   );
 }

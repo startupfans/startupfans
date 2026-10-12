@@ -1,6 +1,6 @@
 # startupfans
 
-Real startups, launched in 72 hours. Landing page for the launchathon.
+Be a fan before they're famous. Website for startupfans.
 
 ```bash
 pnpm install
@@ -8,4 +8,4 @@ pnpm dev      # http://localhost:3000
 pnpm build && pnpm lint && pnpm typecheck
 ```
 
-See `AGENTS.md` for structure and conventions.
+See `AGENTS.md` for what we're building, structure, and conventions.
