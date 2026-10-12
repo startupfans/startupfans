@@ -6,7 +6,7 @@ import { createStartupAction, type CreateStartupState } from "@/app/start/action
 import { slugify } from "@/lib/slug";
 import { updateFollow, type FollowState } from "./actions";
 
-const buttonClass = "rounded-xl border-[3px] border-ink bg-pink px-5 py-3 font-display font-extrabold shadow-sticker transition hover:-translate-y-0.5 active:translate-y-0 active:shadow-none focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ink disabled:cursor-wait disabled:opacity-60";
+const buttonClass = "inline-flex min-h-11 w-full max-w-full items-center justify-center rounded-xl border-[3px] border-ink bg-pink px-5 py-3 font-display font-extrabold shadow-sticker transition hover:-translate-y-0.5 active:translate-y-0 active:shadow-none focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ink disabled:cursor-wait disabled:opacity-60 sm:w-auto";
 const initialFollowState: FollowState = { status: "idle" };
 const initialCreateState: CreateStartupState = { status: "idle" };
 
@@ -22,14 +22,14 @@ export function FollowButton({ slug, signedIn, memberNo }: {
   }
 
   return (
-    <form action={action} className="flex flex-wrap items-center gap-4" aria-busy={pending}>
+    <form action={action} className="flex w-full min-w-0 flex-wrap items-center gap-4" aria-busy={pending}>
       {memberNo !== null && (
-        <span className="rounded-xl border-[3px] border-ink bg-lime px-4 py-3 font-mono font-bold shadow-sticker">
+        <span className="min-h-11 w-full rounded-xl border-[3px] border-ink bg-lime px-4 py-3 text-center font-mono font-bold shadow-sticker sm:w-auto">
           Fan #{String(memberNo).padStart(4, "0")}
         </span>
       )}
       <button type="submit" name="intent" value={memberNo === null ? "follow" : "unfollow"}
-        disabled={pending} className={memberNo === null ? buttonClass : "rounded-xl border-2 border-ink bg-white px-4 py-3 font-bold disabled:cursor-wait disabled:opacity-60"}>
+        disabled={pending} className={memberNo === null ? buttonClass : "min-h-11 w-full rounded-xl border-2 border-ink bg-white px-4 py-3 font-bold disabled:cursor-wait disabled:opacity-60 sm:w-auto"}>
         {pending ? "Updating…" : memberNo === null ? "Become a fan" : "Unfollow"}
       </button>
       {state.status === "error" && <p role="alert" className="w-full text-sm font-semibold">{state.message}</p>}
@@ -57,13 +57,13 @@ export function StartupForm({ children }: { children: ReactNode }) {
           if (slugInput instanceof HTMLInputElement) slugInput.value = slugify(input.value);
         }
       }}>
-      <fieldset disabled={pending} className="space-y-5">
+      <fieldset disabled={pending} className="min-w-0 space-y-5">
         {children}
       </fieldset>
       {state.status === "error" && (
         <p role="alert" className="rounded-xl border-2 border-ink bg-sun p-4 font-semibold">{state.message}</p>
       )}
-      <button type="submit" disabled={pending} className={`${buttonClass} w-full`}>
+      <button type="submit" disabled={pending} className={`${buttonClass} sm:w-full`}>
         {pending ? "Creating…" : "Create your page"}
       </button>
     </form>

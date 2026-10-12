@@ -55,8 +55,8 @@ export default async function LoginPage({
         : null;
 
   return (
-    <main className="mx-auto min-h-screen max-w-xl px-5 py-10 sm:py-20">
-      <Link href="/" className="font-display text-xl font-extrabold tracking-tight">
+    <main className="mx-auto min-h-screen min-w-0 max-w-xl break-words px-5 py-10 sm:py-20">
+      <Link href="/" className="inline-flex min-h-11 items-center py-2 font-display text-xl font-extrabold tracking-tight">
         startupfans
       </Link>
       <section className="mt-10 rounded-3xl border-[3px] border-ink bg-cream p-6 shadow-sticker-lg sm:p-10">
@@ -82,7 +82,7 @@ export default async function LoginPage({
               <CopyMagicLinkButton link={devLink} />
               <a
                 href={devLink}
-                className="rounded-xl border-2 border-ink bg-pink px-4 py-2 font-bold shadow-sticker transition hover:-translate-y-0.5 active:translate-y-0 active:shadow-none"
+                className="inline-flex min-h-11 w-full items-center justify-center rounded-xl border-2 border-ink bg-pink px-4 py-2 font-bold shadow-sticker transition hover:-translate-y-0.5 active:translate-y-0 active:shadow-none sm:w-auto"
               >
                 Sign in
               </a>
@@ -106,11 +106,11 @@ export default async function LoginPage({
             maxLength={254}
             placeholder="you@example.com"
             defaultValue={sent ?? ""}
-            className="w-full rounded-xl border-2 border-ink bg-white px-4 py-3 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ink"
+            className="min-h-11 w-full min-w-0 rounded-xl border-2 border-ink bg-white px-4 py-3 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ink"
           />
           <button
             type="submit"
-            className="w-full rounded-xl border-[3px] border-ink bg-pink px-5 py-4 font-display text-lg font-extrabold shadow-sticker transition hover:-translate-y-0.5 active:translate-y-0 active:shadow-none"
+            className="min-h-11 w-full min-w-0 rounded-xl border-[3px] border-ink bg-pink px-5 py-4 font-display text-lg font-extrabold shadow-sticker transition hover:-translate-y-0.5 active:translate-y-0 active:shadow-none"
           >
             Send me a magic link
           </button>

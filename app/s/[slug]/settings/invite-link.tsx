@@ -4,7 +4,7 @@ import { useState, useTransition } from "react";
 import { useFormStatus } from "react-dom";
 import { createInviteAction, sendInviteAction } from "./actions";
 
-const buttonClass = "rounded-xl border-[3px] border-ink bg-lime px-4 py-2 font-bold shadow-sticker disabled:opacity-50";
+const buttonClass = "inline-flex min-h-11 w-full max-w-full items-center justify-center rounded-xl border-[3px] border-ink bg-lime px-4 py-2 font-bold shadow-sticker disabled:opacity-50 sm:w-auto";
 
 function SendInviteButton() {
   const { pending } = useFormStatus();
@@ -17,12 +17,12 @@ function SendInviteButton() {
 
 export function InviteByEmail({ slug }: { slug: string }) {
   return (
-    <form action={sendInviteAction.bind(null, slug)} className="space-y-4">
+    <form action={sendInviteAction.bind(null, slug)} className="min-w-0 space-y-4">
       <h3 className="font-display text-xl font-extrabold">Invite by email</h3>
       <label htmlFor="invite-email" className="block font-bold">Email address
         <input id="invite-email" name="email" type="email" autoComplete="email" required maxLength={254}
           placeholder="teammate@example.com"
-          className="mt-2 w-full rounded-xl border-2 border-ink bg-white px-4 py-3 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ink" />
+          className="mt-2 min-h-11 w-full min-w-0 rounded-xl border-2 border-ink bg-white px-4 py-3 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ink" />
       </label>
       <SendInviteButton />
       <p className="text-sm text-ink/70">They can join your team with a single-use link that expires in 7 days.</p>
@@ -58,7 +58,7 @@ export function InviteLink({ slug }: { slug: string }) {
   }
 
   return (
-    <div className="mt-5 space-y-4">
+    <div className="mt-5 min-w-0 space-y-4">
       <button type="button" onClick={createLink} disabled={pending} className={buttonClass}>
         {pending ? "Creating link…" : "Invite a teammate"}
       </button>
@@ -67,7 +67,7 @@ export function InviteLink({ slug }: { slug: string }) {
         <div className="space-y-3">
           <label className="block font-bold" htmlFor="invite-link">Your invite link
             <input id="invite-link" readOnly value={url} onFocus={(event) => event.currentTarget.select()}
-              className="mt-2 w-full rounded-xl border-2 border-ink bg-white px-4 py-3 font-mono text-sm" />
+              className="mt-2 min-h-11 w-full min-w-0 rounded-xl border-2 border-ink bg-white px-4 py-3 font-mono text-sm" />
           </label>
           <button type="button" className={buttonClass} onClick={() => copyLink(url)}>Copy link</button>
           <p role="status" className="text-sm">{copyMessage}</p>

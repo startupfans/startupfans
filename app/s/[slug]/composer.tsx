@@ -6,7 +6,7 @@ import { useActionState, useRef, useState } from "react";
 import { createPost, deletePost, type PostActionState } from "./post-actions";
 
 const initialState: PostActionState = { status: "idle" };
-const buttonClass = "rounded-xl border-[3px] border-ink bg-pink px-5 py-3 font-display font-extrabold shadow-sticker transition hover:-translate-y-0.5 disabled:cursor-wait disabled:opacity-60";
+const buttonClass = "inline-flex min-h-11 w-full max-w-full items-center justify-center rounded-xl border-[3px] border-ink bg-pink px-5 py-3 font-display font-extrabold shadow-sticker transition hover:-translate-y-0.5 disabled:cursor-wait disabled:opacity-60 sm:w-auto";
 const extensions = {
   "image/jpeg": "jpg",
   "image/png": "png",
@@ -112,24 +112,24 @@ export function Composer({ slug }: { slug: string }) {
   return (
     <form action={action} onSubmit={(event) => {
       if (pending || uploading) event.preventDefault();
-    }} className="mt-7 rounded-2xl border-[3px] border-ink bg-sky p-5 shadow-sticker sm:p-6" aria-busy={pending || uploading}>
+    }} className="mt-7 min-w-0 rounded-2xl border-[3px] border-ink bg-sky p-5 shadow-sticker sm:p-6" aria-busy={pending || uploading}>
       <label htmlFor="post-body" className="font-display text-xl font-extrabold">Share an update</label>
       <textarea id="post-body" name="body" value={body} onChange={(event) => setBody(event.target.value)}
         required maxLength={5000} rows={5} disabled={pending} placeholder="what are you working on today?"
-        className="mt-3 block w-full resize-y rounded-xl border-2 border-ink bg-white p-4" />
+        className="mt-3 block w-full min-w-0 resize-y rounded-xl border-2 border-ink bg-white p-4" />
       <p className="mt-2 text-sm">Markdown welcome. {body.length.toLocaleString("en-GB")}/5,000</p>
       <input type="hidden" name="mediaUrl" value={attachment?.url ?? ""} />
       <input type="hidden" name="mediaType" value={attachment?.type ?? ""} />
       <div className="mt-4 space-y-3">
         <label htmlFor="post-attachment" className="block text-sm font-bold">Optional image or video</label>
         <input id="post-attachment" ref={fileInput} type="file" accept={Object.keys(extensions).join(",")}
-          disabled={pending || uploading || attachment !== null} className="block w-full min-w-0 text-sm file:mr-3 file:rounded-lg file:border-2 file:border-ink file:bg-cream file:px-3 file:py-2 file:font-bold"
+          disabled={pending || uploading || attachment !== null} className="block min-h-11 w-full min-w-0 max-w-full text-sm file:mr-3 file:min-h-11 file:rounded-lg file:border-2 file:border-ink file:bg-cream file:px-3 file:py-2 file:font-bold"
           onChange={(event) => { const file = event.target.files?.[0]; if (file) void attachFile(file); }} />
         <p className="text-xs">Images up to 10 MB. MP4 or WebM videos up to 200 MB.</p>
         {(uploading || attachment) && <div className="flex flex-wrap items-center gap-3 text-sm">
           <span className="min-w-0 break-all">{attachment?.name ?? uploadName}</span>
-          {uploading && <><progress value={progress} max={100} aria-label="Attachment upload progress" /><span role="status">{progress}%</span></>}
-          <button type="button" onClick={removeAttachment} disabled={pending} className="font-bold underline underline-offset-4">Remove</button>
+          {uploading && <><progress value={progress} max={100} className="max-w-full" aria-label="Attachment upload progress" /><span role="status">{progress}%</span></>}
+          <button type="button" onClick={removeAttachment} disabled={pending} className="min-h-11 px-2 py-2 font-bold underline underline-offset-4">Remove</button>
         </div>}
         {uploadError && <p role="alert" className="rounded-xl border-2 border-ink bg-sun p-3 text-sm">{uploadError}</p>}
       </div>
@@ -157,8 +157,8 @@ export function DeletePostButton({ slug, postId, returnToStartup = false }: {
   return (
     <form action={action} onSubmit={(event) => {
       if (!window.confirm("Delete this post? This can't be undone.")) event.preventDefault();
-    }} aria-busy={pending}>
-      <button type="submit" disabled={pending} className="text-sm font-semibold underline underline-offset-4 disabled:opacity-60">
+    }} className="min-w-0 max-w-full break-words" aria-busy={pending}>
+      <button type="submit" disabled={pending} className="min-h-11 px-2 py-2 text-sm font-semibold underline underline-offset-4 disabled:opacity-60">
         {pending ? "Deleting…" : "Delete"}
       </button>
       {state.status === "error" && <p role="alert" className="mt-2 text-sm">{state.message}</p>}

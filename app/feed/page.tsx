@@ -24,10 +24,10 @@ export default async function FeedPage({ searchParams }: {
   const moreParams = new URLSearchParams();
   if (following) moreParams.set("filter", "following");
   if (nextCursor) moreParams.set("before", nextCursor);
-  const pillClass = "rounded-full border-[3px] border-ink px-5 py-2 font-display font-extrabold shadow-sticker transition hover:-translate-y-0.5 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ink";
+  const pillClass = "inline-flex min-h-11 w-full items-center justify-center rounded-full border-[3px] border-ink px-5 py-2 font-display font-extrabold shadow-sticker transition hover:-translate-y-0.5 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ink sm:w-auto";
 
   return (
-    <main className="mx-auto min-h-screen max-w-4xl px-5 py-10 sm:py-16">
+    <main className="mx-auto min-h-screen min-w-0 max-w-3xl break-words px-5 py-10 sm:py-16">
       <TopNav signedIn={user !== null} next={following ? "/feed?filter=following" : "/feed"} />
       <header className="mt-10">
         <Sticker className="inline-block -rotate-3 bg-lime normal-case">From the teams</Sticker>
@@ -45,20 +45,20 @@ export default async function FeedPage({ searchParams }: {
           <div className="rounded-2xl border-[3px] border-ink bg-sky p-6 shadow-sticker">
             <h2 className="font-display text-xl font-extrabold">Follow your favourites.</h2>
             <p className="mt-2">Sign in to see updates from the startups you follow.</p>
-            <Link href={followingLogin} className="mt-4 inline-block font-bold underline underline-offset-4">Sign in</Link>
+            <Link href={followingLogin} className="mt-4 inline-flex min-h-11 items-center py-2 font-bold underline underline-offset-4">Sign in</Link>
           </div>
         ) : posts.length === 0 ? (
           <div className="rounded-2xl border-[3px] border-ink bg-sun p-6 shadow-sticker">
             <h2 className="font-display text-xl font-extrabold">No updates yet.</h2>
             <p className="mt-2">{following ? "Follow startups from their pages to see their updates here." : "Startup teams will share their updates here."}</p>
-            {following && <Link href="/feed" className="mt-4 inline-block font-bold underline underline-offset-4">Find startups in Everyone</Link>}
-            {!following && <Link href="/start" className="mt-4 inline-block font-bold underline underline-offset-4">Start your fan club</Link>}
+            {following && <Link href="/feed" className="mt-4 inline-flex min-h-11 items-center py-2 font-bold underline underline-offset-4">Find startups in Everyone</Link>}
+            {!following && <Link href="/start" className="mt-4 inline-flex min-h-11 items-center py-2 font-bold underline underline-offset-4">Start your fan club</Link>}
           </div>
         ) : posts.map((post) => <PostCard key={post.id} post={post} showStartup />)}
       </section>
       {nextCursor && (
         <div className="mt-8 text-center">
-          <Link href={`/feed?${moreParams}`} className={`${pillClass} inline-block bg-lime`}>Load more</Link>
+          <Link href={`/feed?${moreParams}`} className={`${pillClass} bg-lime`}>Load more</Link>
         </div>
       )}
       <SiteFooter />

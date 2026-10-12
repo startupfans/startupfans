@@ -25,7 +25,7 @@ function LeaderboardList({ startups, singular, plural, suffix = "", emptyMessage
     return (
       <div className="mt-6 rounded-2xl border-[3px] border-ink bg-white p-6 shadow-sticker">
         <p>{emptyMessage}</p>
-        <Link href="/feed" className="mt-4 inline-block font-bold underline underline-offset-4">Explore the feed</Link>
+        <Link href="/feed" className="mt-4 inline-flex min-h-11 items-center py-2 font-bold underline underline-offset-4">Explore the feed</Link>
       </div>
     );
   }
@@ -46,7 +46,7 @@ function LeaderboardList({ startups, singular, plural, suffix = "", emptyMessage
             </span>
           )}
           <div className="min-w-0 flex-1 break-words">
-            <Link href={`/s/${startup.slug}`} className="font-display text-xl font-extrabold underline underline-offset-4">
+            <Link href={`/s/${startup.slug}`} className="inline-block min-h-11 max-w-full py-2 font-display text-xl font-extrabold underline underline-offset-4">
               {startup.name}
             </Link>
             {startup.tagline && <p className="mt-1 text-sm text-ink/70">{startup.tagline}</p>}
@@ -65,14 +65,14 @@ export default async function LeaderboardPage() {
   const [mostFollowed, mostActive] = await Promise.all([getMostFollowed(), getMostActive()]);
 
   return (
-    <main className="mx-auto min-h-screen max-w-6xl px-5 py-10 sm:py-16">
+    <main className="mx-auto min-h-screen min-w-0 max-w-6xl break-words px-5 py-10 sm:py-16">
       <TopNav signedIn={user !== null} next="/leaderboard" />
       <header className="mt-10">
         <Sticker className="inline-block -rotate-3 bg-pink normal-case">Fan favourites</Sticker>
         <h1 className="mt-7 font-display text-4xl font-extrabold tracking-tight sm:text-5xl">Leaderboard</h1>
         <p className="mt-4 text-lg text-ink/80">See who fans follow and who&apos;s sharing this week.</p>
       </header>
-      <div className="mt-10 grid gap-10 md:grid-cols-2">
+      <div className="mt-10 grid gap-10 lg:grid-cols-2">
         <section className="min-w-0" aria-label="Most followed startups">
           <SectionHeading eyebrow="The fan clubs" title="Most followed" />
           <LeaderboardList startups={mostFollowed} singular="fan" plural="fans"

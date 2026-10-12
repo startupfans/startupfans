@@ -351,6 +351,26 @@ Site copy only promises what exists. No pricing on the site (for fans or startup
 - `public/logo/`: brand assets, served at `/logo/...`. `startupfans-logo` is the full logo (SF wing monogram + wordmark), `startupfans-mark` is the square SF monogram (avatars, favicons). Each comes as SVG (outlined paths, no font dependency) and transparent PNG (logo 1820px wide, mark 1024px). Default files have a white wing and "Fans" for dark backgrounds; `-on-light` swaps those to ink. Logo blue is `#b6d3de` on dark backgrounds and the deeper `#2f7493` in the `-on-light` files (4.8:1 on cream; the pale blue was 1.4:1); wordmark is Fira Sans Condensed Bold. The nav and footer render `startupfans-logo-on-light.svg` via `next/image`; `app/icon.svg` (favicon) is the mark on an ink rounded square.
 - `Untitled/`: stray empty git repo, unrelated; excluded from TS and ESLint.
 
+### Responsive app layouts
+
+All app routes were reasoned about at **390, 768, 834, 1024 and 1440px**. Shared navigation wraps with the signed-in admin link, controls have 44px minimum heights, and pages retain 20px side gutters. Wide app shells cap at 72rem; feeds cap at 48rem and post bodies at 65ch. The landing page and global tokens were not edited.
+
+| Route | 390px | 768 and 834px | 1024 and 1440px |
+| --- | --- | --- | --- |
+| `/login` | Full-width fields and actions; long inbox addresses and development links wrap | Single capped form with comfortable padding | Form stays capped at 36rem |
+| `/me` | Avatar above a width-constrained name; full-width actions and fan cards | Avatar and wrapping name share a row; admin navigation can wrap | Account column stays capped at 36rem |
+| `/start` | Fields fit the card; fieldset can shrink; textarea resizes vertically | Stage and team-size fields share a row | Form stays capped at 42rem |
+| `/s/[slug]` | Logo above name; star stays above content; team pills and follow controls fill the card; composer and media fit | Profile and follow panel stay stacked; text remains capped | Profile and follow panel share a grid; updates use a separate 48rem column |
+| `/s/[slug]/p/[postId]` | Startup and author names wrap; report textarea fits; media and code lines stay inside the card | Post body stays at most 65ch | Single post column stays capped at 48rem |
+| `/s/[slug]/settings` | Long slugs wrap; fields and member actions fit; invite controls fill available width | Page details and team stay stacked; invite forms have their own rows | Members sit beside the page form in a 72rem shell |
+| `/join/[token]` | Startup names and closed-invite copy wrap; primary action fills the card | One capped invitation card | Invitation column stays capped at 36rem |
+| `/feed` | Full-width filter pills; wrapping author/startup names; media and expanded reports fit | One readable feed column; post text caps at 65ch | Feed stays capped at 48rem |
+| `/leaderboard` | Ranking cards and long startup names fit; startup links are tap-sized | Rankings remain stacked to leave room for names and logos | Two ranking columns in a 72rem shell |
+| `/admin` | Report excerpts/reasons wrap; actions stack and confirmation labels are tap-sized | Action forms wrap when needed | Report column stays capped at 56rem |
+| `/dev/emails` | Preview links wrap into rows with 44px targets | Preview index stays a single card | Index stays capped at 36rem; production 404 behavior is preserved |
+
+Verification: the page components and production styles were rendered in headless Chromium with synthetic long names, addresses, post text, image/video attachments, admin navigation and expanded report forms. All 65 renders (11 routes plus startup fan and closed-invite variants, each at five widths) had no horizontal overflow or measured controls below 44px. Build, typecheck and lint passed without application environment variables.
+
 ## Style
 
 Playful "fan club / sticker" look: thick `border-ink` outlines, hard offset shadows, slight rotations, bright fills on cream. Keep new sections consistent with that.

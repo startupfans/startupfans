@@ -15,11 +15,11 @@ export function CopyMagicLinkButton({ link }: { link: string }) {
   }
 
   return (
-    <div className="max-w-48">
+    <div className="w-full min-w-0 sm:max-w-48">
       <button
         type="button"
         onClick={copyLink}
-        className="rounded-xl border-2 border-ink bg-white px-4 py-2 font-bold shadow-sticker transition hover:-translate-y-0.5 active:translate-y-0 active:shadow-none"
+        className="min-h-11 w-full rounded-xl border-2 border-ink bg-white px-4 py-2 font-bold shadow-sticker transition hover:-translate-y-0.5 active:translate-y-0 active:shadow-none"
       >
         Copy
       </button>

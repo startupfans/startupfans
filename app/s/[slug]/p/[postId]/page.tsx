@@ -53,9 +53,9 @@ export async function PostPage({ params, searchParams }: PostPageProps & {
       : query.report === "failed" ? "We couldn't save your report. Try again." : null;
 
   return (
-    <main className="mx-auto min-h-screen max-w-4xl px-5 py-10 sm:py-16">
+    <main className="mx-auto min-h-screen min-w-0 max-w-3xl break-words px-5 py-10 sm:py-16">
       <TopNav signedIn={user !== null} next={`/s/${slug}/p/${postId}`} />
-      <Link href={`/s/${slug}`} className="my-8 inline-block font-display text-xl font-extrabold underline underline-offset-4">← {post.startupName}</Link>
+      <Link href={`/s/${slug}`} className="my-8 inline-block min-h-11 max-w-full py-2 font-display text-xl font-extrabold underline underline-offset-4">← {post.startupName}</Link>
       <h1 className="sr-only">An update from {post.startupName}</h1>
       {reportMessage && <p role={query.report === "thanks" ? "status" : "alert"}
         className="mb-6 rounded-xl border-2 border-ink bg-sun p-4">{reportMessage}</p>}

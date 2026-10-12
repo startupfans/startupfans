@@ -9,10 +9,10 @@ export async function TopNav({ signedIn, next }: { signedIn: boolean; next: stri
   const admin = signedIn && isAdmin(await getCurrentUser());
   return (
     <nav className="flex flex-wrap items-center justify-between gap-4" aria-label="Main navigation">
-      <Link href="/" aria-label="startupfans home" className="shrink-0">
+      <Link href="/" aria-label="startupfans home" className="inline-flex min-h-11 shrink-0 items-center">
         <Image src="/logo/startupfans-logo-on-light.svg" alt="startupfans" width={910} height={150} className="h-auto w-36 sm:w-44" />
       </Link>
-      <div className="flex flex-wrap items-center gap-4 font-bold underline underline-offset-4">
+      <div className="flex min-w-0 max-w-full flex-wrap items-center gap-x-4 font-bold underline underline-offset-4 [&_a]:inline-flex [&_a]:min-h-11 [&_a]:items-center [&_a]:py-2">
         <Link href="/feed">Feed</Link>
         <Link href="/leaderboard">Leaderboard</Link>
         {admin && <Link href="/admin">Reports</Link>}
@@ -27,9 +27,9 @@ export async function TopNav({ signedIn, next }: { signedIn: boolean; next: stri
 export function SiteFooter() {
   const contact = process.env.PRICING_CONTACT_EMAIL?.trim() || "hello@startupfans.co";
   return (
-    <footer className="mt-14 border-t-2 border-ink/15 pt-6 text-sm leading-relaxed text-ink/70">
+    <footer className="mt-14 break-words border-t-2 border-ink/15 pt-6 text-sm leading-relaxed text-ink/70">
       <p>startupfans · for people who like things early · keep it real, keep it legal, no spam</p>
-      <a href={`mailto:${contact}`} className="mt-2 inline-block underline underline-offset-4">Contact us for takedowns</a>
+      <a href={`mailto:${contact}`} className="mt-2 inline-flex min-h-11 items-center py-2 underline underline-offset-4">Contact us for takedowns</a>
     </footer>
   );
 }
@@ -37,15 +37,15 @@ export function SiteFooter() {
 export async function AdminDeleteStartup({ slug }: { slug: string }) {
   if (!isAdmin(await getCurrentUser())) return null;
   return (
-    <details className="mt-6 text-sm">
-      <summary className="cursor-pointer font-semibold underline underline-offset-4">Delete startup</summary>
+    <details className="mt-6 min-w-0 break-words text-sm">
+      <summary className="min-h-11 cursor-pointer py-3 font-semibold underline underline-offset-4">Delete startup</summary>
       <form action={deleteStartupAction.bind(null, slug)} className="mt-3 space-y-3">
         <p>This permanently deletes the startup, its posts, reports, team memberships and follows.</p>
-        <label className="flex items-start gap-2">
+        <label className="flex min-h-11 items-start gap-2 py-2">
           <input type="checkbox" name="confirm" value="delete" required className="mt-1" />
           I confirm this permanent deletion
         </label>
-        <button type="submit" className="rounded-xl border-2 border-ink bg-pink px-4 py-2 font-bold">Delete startup</button>
+        <button type="submit" className="min-h-11 w-full rounded-xl border-2 border-ink bg-pink px-4 py-2 font-bold sm:w-auto">Delete startup</button>
       </form>
     </details>
   );
@@ -53,7 +53,7 @@ export async function AdminDeleteStartup({ slug }: { slug: string }) {
 
 export function SectionHeading({ eyebrow, title, isDark = false }: { eyebrow: string; title: string; isDark?: boolean }) {
   return (
-    <div className="max-w-3xl">
+    <div className="min-w-0 max-w-3xl break-words">
       <p className={`font-mono text-xs font-bold tracking-widest uppercase ${isDark ? "text-sun" : "text-pink"}`}>
         {eyebrow}
       </p>
