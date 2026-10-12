@@ -6,6 +6,7 @@ import { db } from "@/db";
 import { magicLinks } from "@/db/schema";
 import { getSafeNextPath } from "@/lib/auth";
 import { sendEmail } from "@/lib/email";
+import { magicLinkEmail } from "@/lib/emails/magic-link";
 
 export async function requestMagicLink(formData: FormData) {
   const rawEmail = formData.get("email");
@@ -36,16 +37,9 @@ export async function requestMagicLink(formData: FormData) {
       expiresAt: new Date(Date.now() + 15 * 60 * 1000),
     });
 
-    const href = link.toString()
-      .replaceAll("&", "&amp;")
-      .replaceAll('"', "&quot;")
-      .replaceAll("<", "&lt;")
-      .replaceAll(">", "&gt;");
     const delivery = await sendEmail({
       to: email,
-      subject: "Your startupfans sign-in link",
-      html: `<p>Sign in to startupfans:</p><p><a href="${href}">Sign in</a></p><p>This link expires in 15 minutes. If you did not request it, you can ignore this email.</p>`,
-      text: `Sign in to startupfans:\n${link}\n\nThis link expires in 15 minutes. If you did not request it, you can ignore this email.`,
+      ...magicLinkEmail(link.toString()),
     });
     if (!delivery.delivered && process.env.NODE_ENV !== "production") {
       query.set("dev_link", link.toString());

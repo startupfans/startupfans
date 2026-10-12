@@ -5,6 +5,8 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { startups } from "@/db/schema";
 import { isValidSessionId } from "@/lib/auth";
+import { sendEmail } from "@/lib/email";
+import { inviteEmail } from "@/lib/emails/invite";
 import { createStartupInvite, revokeStartupInvite } from "@/lib/invites";
 import { isOptionalHttpsUrl, removeStartupMember, requireStartupOwner, textField, withOwnedStartup } from "@/lib/members";
 
@@ -79,6 +81,33 @@ export async function createInviteAction(slug: string) {
   const url = await createStartupInvite(slug, user.id);
   revalidatePath(`/s/${slug}/settings`);
   return url;
+}
+
+export async function sendInviteAction(slug: string, formData: FormData) {
+  const { user, startup } = await requireStartupOwner(slug);
+  const email = textField(formData, "email").toLowerCase();
+  if (
+    email.length > 254 ||
+    !/^[a-z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-z0-9](?:[a-z0-9-]*[a-z0-9])?(?:\.[a-z0-9](?:[a-z0-9-]*[a-z0-9])?)+$/.test(email) ||
+    email.startsWith(".") || email.includes("..") || email.includes(".@") ||
+    email.split("@")[0].length > 64
+  ) {
+    settingsMessage(slug, "invalid-email");
+  }
+
+  const url = await createStartupInvite(slug, user.id);
+  try {
+    await sendEmail({
+      to: email,
+      ...inviteEmail({ startupName: startup.name, inviter: user.name?.trim() || user.email, url }),
+    });
+  } catch (error) {
+    console.error("[startupfans invites] Could not send an invite.", error);
+    revalidatePath(`/s/${slug}/settings`);
+    settingsMessage(slug, "invite-send-failed");
+  }
+  revalidatePath(`/s/${slug}/settings`);
+  settingsMessage(slug, "invite-sent");
 }
 
 export async function revokeInviteAction(slug: string, formData: FormData) {

@@ -288,7 +288,8 @@ Built:
 - Posting: team members publish markdown updates with one optional image or video uploaded directly to Vercel Blob. Public post pages have share metadata; authors and owners can delete posts.
 - Follow and unfollow: signed-in fans receive unique member numbers; unfollowing never reuses a number.
 - Global feed (`app/feed/`): public posts newest first, startup names and logos, a signed-in following filter, and cursor pagination with 20 posts per page.
-- Team settings: owners edit page details, remove members while keeping at least one owner, and create or revoke single-use invite links that expire after 7 days. Signed-in teammates accept links to join as editors.
+- Team settings: owners edit page details, remove members while keeping at least one owner, and create, email or revoke single-use invite links that expire after 7 days. Signed-in teammates accept links to join as editors.
+- Sticker-style sign-in and team invite emails share a table-based HTML shell and plain-text content, with a console fallback without a Resend key. Dev-only previews live at `/dev/emails`.
 - Profiles: optional names and avatar URLs, avatars or initial badges on member lists and `/me`, plus followed startups and fan numbers on `/me`.
 - Share previews: a default site image and dynamic startup images with the tagline and current fan count; unknown slugs use the default image.
 
@@ -317,6 +318,8 @@ Site copy only promises what exists. No pricing on the site (for fans or startup
 - `scripts/seed.ts` and `scripts/import-waitlist.ts`: manual, idempotent startupfans seed and GetWaitlist CSV import using the shared database and follow allocator. Commands load `.env` with Node 24 and run through `tsx` with the `react-server` condition for server-only imports.
 - `db/`: Drizzle schema, migrations, and the lazy Postgres client exported as `db`. Without `DATABASE_URL` it falls back to the local Docker database on port 5433.
 - `lib/`: server-only auth and session helpers (`lib/auth.ts`) and Resend email delivery with a console fallback (`lib/email.ts`).
+- `lib/emails/`: pure sign-in and invite templates using a shared inline-styled, table-based sticker layout and matching plain text.
+- `app/dev/emails/`: development-only template index and HTML previews, with `?text=1` for plain text; all routes return 404 in production.
 - `lib/startups.ts`: startup creation with owner membership, profile lookup, team members, public posts and current fan counts. `lib/follows.ts` serializes follow changes with a startup row lock and keeps the member-number counter increasing. `lib/slug.ts` holds shared slug suggestions and validation.
 - `app/components/sticker.tsx`: shared `Star`, `Sticker` and `SectionHeading` components, copied from the landing page.
 - `app/opengraph-image.tsx`: default 1200 by 630 share preview and shared image renderer, with a cached Bricolage Grotesque font and a default font fallback.
@@ -327,7 +330,7 @@ Site copy only promises what exists. No pricing on the site (for fans or startup
 - `app/api/upload/route.ts`: Vercel Blob client upload authorization restricted to startup members, with image/video type and size limits; text posting works without a Blob store token.
 - `lib/posts.ts`: public post queries with author and startup details, cursor-paginated global and following feeds, membership lookup, and startup media URL validation.
 - `lib/members.ts` and `lib/invites.ts`: owner authorization, serialized team changes, profiles and followed startups, plus hashed single-use invite creation, revocation and acceptance.
-- `app/s/[slug]/settings/`: owner-only page editing, member management and unused invites; `invite-link.tsx` creates and copies invite links.
+- `app/s/[slug]/settings/`: owner-only page editing, member management and unused invites; `invite-link.tsx` creates and copies invite links and offers email invites through the settings action.
 - `app/join/[token]/`: signed-in invite confirmation with atomic editor membership creation and friendly invalid-link messages.
 - `app/components/markdown.tsx` and `post-media.tsx`: safe markdown rendering and sticker-framed images and videos.
 - `app/login/`: magic-link request form and its server action.

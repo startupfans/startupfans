@@ -4,7 +4,7 @@ import { getUnusedStartupInvites } from "@/lib/invites";
 import { requireStartupOwner } from "@/lib/members";
 import { getStartupMembers } from "@/lib/startups";
 import { removeMemberAction, revokeInviteAction, updateStartupAction } from "./actions";
-import { InviteLink } from "./invite-link";
+import { InviteByEmail, InviteLink } from "./invite-link";
 
 const inputClass = "mt-2 w-full rounded-xl border-2 border-ink bg-white px-4 py-3 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ink";
 const buttonClass = "rounded-xl border-[3px] border-ink bg-white px-4 py-2 font-bold shadow-sticker disabled:opacity-50";
@@ -22,6 +22,9 @@ const messages = new Map([
   ["member-removed", "Member removed."],
   ["invalid-invite", "Choose an invite from the list."],
   ["invite-revoked", "Invite revoked."],
+  ["invalid-email", "Enter a valid email address for your teammate."],
+  ["invite-sent", "Invite sent."],
+  ["invite-send-failed", "We couldn't send the email. Try again or create a link to share."],
 ]);
 
 async function SettingsPage({ params, searchParams }: {
@@ -98,7 +101,13 @@ async function SettingsPage({ params, searchParams }: {
           })}
         </ul>
         <p className="mt-4 text-sm text-ink/70">Your page needs at least one owner.</p>
-        <InviteLink slug={slug} />
+        <div className="mt-6 grid gap-8 sm:grid-cols-2">
+          <div>
+            <h3 className="font-display text-xl font-extrabold">Invite by link</h3>
+            <InviteLink slug={slug} />
+          </div>
+          <InviteByEmail slug={slug} />
+        </div>
       </section>
       <section className="mt-10 rounded-3xl border-[3px] border-ink bg-white p-6 shadow-sticker-lg sm:p-8" aria-labelledby="invites-heading">
         <h2 id="invites-heading" className="font-display text-2xl font-extrabold">Unused invites</h2>
