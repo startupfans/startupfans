@@ -1,6 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-import { TopNav } from "@/app/components/sticker";
+import { SiteFooter, TopNav } from "@/app/components/sticker";
 import { requireUser, signOut } from "@/lib/auth";
 import { getFollowedStartups } from "@/lib/members";
 import { updateProfileAction } from "./actions";
@@ -65,6 +65,7 @@ async function MePage({ searchParams }: { searchParams: Promise<{ message?: stri
           </ul>
         )}
       </section>
+      <SiteFooter />
     </main>
   );
 }

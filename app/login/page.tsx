@@ -44,7 +44,9 @@ export default async function LoginPage({
   const devLink = sent && process.env.NODE_ENV !== "production"
     ? await getDevLink(query.dev_link)
     : null;
-  const error = query.error === "expired"
+  const error = query.error === "rate-limit"
+    ? "Too many sign-in links requested. Try again in a few minutes."
+    : query.error === "expired"
     ? "That link has expired or has already been used. Request a fresh one below."
     : query.error === "invalid"
       ? "Please enter a valid email address."

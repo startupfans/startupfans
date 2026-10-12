@@ -1,12 +1,14 @@
 "use server";
 
 import { createHash, randomBytes } from "node:crypto";
+import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { db } from "@/db";
 import { magicLinks } from "@/db/schema";
 import { getSafeNextPath } from "@/lib/auth";
 import { sendEmail } from "@/lib/email";
 import { magicLinkEmail } from "@/lib/emails/magic-link";
+import { allowMagicLinkRequest } from "@/lib/ratelimit";
 
 export async function requestMagicLink(formData: FormData) {
   const rawEmail = formData.get("email");
@@ -23,6 +25,19 @@ export async function requestMagicLink(formData: FormData) {
     email.split("@")[0].length > 64
   ) {
     query.set("error", "invalid");
+    redirect(`/login?${query}`);
+  }
+
+  let allowed: boolean;
+  try {
+    allowed = await allowMagicLinkRequest(email, (await headers()).get("x-forwarded-for"));
+  } catch (error) {
+    console.error("[startupfans auth] Could not check sign-in limit.", error);
+    query.set("error", "sending");
+    redirect(`/login?${query}`);
+  }
+  if (!allowed) {
+    query.set("error", "rate-limit");
     redirect(`/login?${query}`);
   }
 

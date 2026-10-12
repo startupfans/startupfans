@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { SectionHeading, Star, TopNav } from "@/app/components/sticker";
+import { AdminDeleteStartup, SectionHeading, SiteFooter, Star, TopNav } from "@/app/components/sticker";
 import { getCurrentUser } from "@/lib/auth";
 import { getStartupFollow } from "@/lib/follows";
 import { getPublicStartupPosts } from "@/lib/posts";
@@ -88,6 +88,7 @@ async function StartupPage({ params }: StartupPageProps) {
           </ul>
           <p className="mt-3 text-sm text-ink/70">Everyone on the team posts here.</p>
         </div>
+        <AdminDeleteStartup slug={slug} />
       </section>
       <section className="mt-14" aria-label="Startup updates">
         <SectionHeading eyebrow="From the team" title="The latest." />
@@ -100,6 +101,7 @@ async function StartupPage({ params }: StartupPageProps) {
           ))}
         </div>
       </section>
+      <SiteFooter />
     </main>
   );
 }

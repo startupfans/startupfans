@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { Sticker, TopNav } from "@/app/components/sticker";
+import { SiteFooter, Sticker, TopNav } from "@/app/components/sticker";
 import { PostCard } from "@/app/s/[slug]/post-card";
 import { getCurrentUser } from "@/lib/auth";
 import { listFeed } from "@/lib/posts";
@@ -61,6 +61,7 @@ export default async function FeedPage({ searchParams }: {
           <Link href={`/feed?${moreParams}`} className={`${pillClass} inline-block bg-lime`}>Load more</Link>
         </div>
       )}
+      <SiteFooter />
     </main>
   );
 }

@@ -1,9 +1,12 @@
+import { sql } from "drizzle-orm";
 import {
   boolean,
+  check,
   index,
   integer,
   pgEnum,
   pgTable,
+  primaryKey,
   text,
   timestamp,
   unique,
@@ -118,4 +121,35 @@ export const emailEvents = pgTable(
     sentAt: timestamp("sent_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => [unique("email_events_post_id_user_id_unique").on(table.postId, table.userId)],
+);
+
+export const postReports = pgTable(
+  "post_reports",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    postId: uuid("post_id").notNull().references(() => posts.id, { onDelete: "cascade" }),
+    reporterId: uuid("reporter_id").references(() => users.id, { onDelete: "set null" }),
+    reason: text("reason").notNull().default(""),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    resolvedAt: timestamp("resolved_at", { withTimezone: true }),
+  },
+  (table) => [
+    unique("post_reports_post_id_reporter_id_unique").on(table.postId, table.reporterId),
+    check("post_reports_reason_length", sql`char_length(${table.reason}) <= 500`),
+    index("post_reports_post_id_idx").on(table.postId),
+  ],
+);
+
+export const loginAttempts = pgTable(
+  "login_attempts",
+  {
+    // Namespaced hashes of email addresses or IP addresses, never the raw values.
+    email: text("email").notNull(),
+    windowStart: timestamp("window_start", { withTimezone: true }).notNull(),
+    count: integer("count").notNull().default(0),
+  },
+  (table) => [
+    primaryKey({ columns: [table.email, table.windowStart] }),
+    index("login_attempts_window_start_idx").on(table.windowStart),
+  ],
 );

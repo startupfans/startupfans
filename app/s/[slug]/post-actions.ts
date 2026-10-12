@@ -2,10 +2,13 @@
 
 import { and, eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
+import { notFound, redirect } from "next/navigation";
 import { db } from "@/db";
 import { posts, startupMembers, startups } from "@/db/schema";
-import { getCurrentUser } from "@/lib/auth";
+import { isAdmin } from "@/lib/admin";
+import { getCurrentUser, isValidSessionId } from "@/lib/auth";
 import { isStartupMediaUrl } from "@/lib/posts";
+import { submitPostReport } from "@/lib/reports";
 
 export type PostActionState =
   | { status: "idle" }
@@ -80,6 +83,15 @@ export async function deletePost(
   if (!user) return { status: "error", message: "Sign in again to delete this post." };
   try {
     const deleted = await db.transaction(async (tx) => {
+      if (isAdmin(user)) {
+        const [startup] = await tx.select({ id: startups.id }).from(startups)
+          .where(eq(startups.slug, slug));
+        if (!startup) return false;
+        const [post] = await tx.delete(posts)
+          .where(and(eq(posts.id, postId), eq(posts.startupId, startup.id)))
+          .returning({ id: posts.id });
+        return Boolean(post);
+      }
       const [member] = await tx.select({ startupId: startups.id, role: startupMembers.role })
         .from(startupMembers).innerJoin(startups, eq(startups.id, startupMembers.startupId))
         .where(and(eq(startups.slug, slug), eq(startupMembers.userId, user.id)))
@@ -98,5 +110,24 @@ export async function deletePost(
   }
   revalidatePath(`/s/${slug}`);
   revalidatePath(`/s/${slug}/p/${postId}`);
+  revalidatePath("/feed");
+  revalidatePath("/admin");
   return { status: "success" };
+}
+
+export async function reportPost(slug: string, postId: string, formData: FormData) {
+  if (typeof slug !== "string" || !/^[a-z0-9-]{1,40}$/.test(slug)
+    || typeof postId !== "string" || !isValidSessionId(postId)) notFound();
+  const path = `/s/${slug}/p/${postId}`;
+  const reason = formData.get("reason") ?? "";
+  if (typeof reason !== "string" || reason.length > 500) redirect(`${path}?report=invalid`);
+  let reported = false;
+  try {
+    reported = await submitPostReport(slug, postId, reason);
+  } catch {
+    console.error("[startupfans] Could not save post report.");
+  }
+  if (!reported) redirect(`${path}?report=failed`);
+  revalidatePath("/admin");
+  redirect(`${path}?report=thanks`);
 }

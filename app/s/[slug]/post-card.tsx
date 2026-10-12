@@ -2,8 +2,11 @@ import Image from "next/image";
 import Link from "next/link";
 import { Markdown } from "@/app/components/markdown";
 import { PostMedia } from "@/app/components/post-media";
+import { isAdmin } from "@/lib/admin";
+import { getCurrentUser } from "@/lib/auth";
 import type { PublicPost } from "@/lib/posts";
 import { DeletePostButton } from "./composer";
+import { reportPost } from "./post-actions";
 
 function relativeDate(date: Date) {
   const seconds = Math.max(0, Math.floor((Date.now() - date.getTime()) / 1000));
@@ -16,12 +19,13 @@ function relativeDate(date: Date) {
   return formatter.format(-Math.floor(seconds / 31536000), "year");
 }
 
-export function PostCard({ post, showStartup = false, canDelete = false, onPostPage = false }: {
+export async function PostCard({ post, showStartup = false, canDelete = false, onPostPage = false }: {
   post: PublicPost;
   showStartup?: boolean;
   canDelete?: boolean;
   onPostPage?: boolean;
 }) {
+  const admin = isAdmin(await getCurrentUser());
   const postPath = `/s/${post.startupSlug}/p/${post.id}`;
   const authorName = post.authorName?.trim() || post.authorEmail.split("@")[0];
   return (
@@ -63,7 +67,16 @@ export function PostCard({ post, showStartup = false, canDelete = false, onPostP
       <PostMedia mediaUrl={post.mediaUrl} mediaType={post.mediaType} mediaPosterUrl={post.mediaPosterUrl} />
       <footer className="mt-5 flex flex-wrap items-start justify-between gap-4 border-t-2 border-ink/10 pt-4">
         <Link href={postPath} className="text-sm font-bold underline underline-offset-4">View post ↗</Link>
-        {canDelete && <DeletePostButton slug={post.startupSlug} postId={post.id} returnToStartup={onPostPage} />}
+        <details className="min-w-0 text-sm">
+          <summary className="cursor-pointer font-semibold underline underline-offset-4">Report</summary>
+          <form action={reportPost.bind(null, post.startupSlug, post.id)} className="mt-3 space-y-3">
+            <label htmlFor={`report-${post.id}`} className="block">Reason (optional)</label>
+            <textarea id={`report-${post.id}`} name="reason" maxLength={500} rows={3}
+              className="block w-full rounded-xl border-2 border-ink p-3" />
+            <button type="submit" className="rounded-lg border-2 border-ink bg-cream px-3 py-2 font-semibold">Send report</button>
+          </form>
+        </details>
+        {(canDelete || admin) && <DeletePostButton slug={post.startupSlug} postId={post.id} returnToStartup={onPostPage} />}
       </footer>
     </article>
   );

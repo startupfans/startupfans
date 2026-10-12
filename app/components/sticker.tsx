@@ -1,8 +1,12 @@
 import type { ReactNode } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { deleteStartupAction } from "@/app/admin/actions";
+import { isAdmin } from "@/lib/admin";
+import { getCurrentUser } from "@/lib/auth";
 
-export function TopNav({ signedIn, next }: { signedIn: boolean; next: string }) {
+export async function TopNav({ signedIn, next }: { signedIn: boolean; next: string }) {
+  const admin = signedIn && isAdmin(await getCurrentUser());
   return (
     <nav className="flex flex-wrap items-center justify-between gap-4" aria-label="Main navigation">
       <Link href="/" aria-label="startupfans home" className="shrink-0">
@@ -11,11 +15,39 @@ export function TopNav({ signedIn, next }: { signedIn: boolean; next: string }) 
       <div className="flex flex-wrap items-center gap-4 font-bold underline underline-offset-4">
         <Link href="/feed">Feed</Link>
         <Link href="/leaderboard">Leaderboard</Link>
+        {admin && <Link href="/admin">Reports</Link>}
         <Link href={signedIn ? "/me" : `/login?next=${encodeURIComponent(next)}`}>
           {signedIn ? "Your account" : "Sign in"}
         </Link>
       </div>
     </nav>
+  );
+}
+
+export function SiteFooter() {
+  const contact = process.env.PRICING_CONTACT_EMAIL?.trim() || "hello@startupfans.co";
+  return (
+    <footer className="mt-14 border-t-2 border-ink/15 pt-6 text-sm leading-relaxed text-ink/70">
+      <p>startupfans · for people who like things early · keep it real, keep it legal, no spam</p>
+      <a href={`mailto:${contact}`} className="mt-2 inline-block underline underline-offset-4">Contact us for takedowns</a>
+    </footer>
+  );
+}
+
+export async function AdminDeleteStartup({ slug }: { slug: string }) {
+  if (!isAdmin(await getCurrentUser())) return null;
+  return (
+    <details className="mt-6 text-sm">
+      <summary className="cursor-pointer font-semibold underline underline-offset-4">Delete startup</summary>
+      <form action={deleteStartupAction.bind(null, slug)} className="mt-3 space-y-3">
+        <p>This permanently deletes the startup, its posts, reports, team memberships and follows.</p>
+        <label className="flex items-start gap-2">
+          <input type="checkbox" name="confirm" value="delete" required className="mt-1" />
+          I confirm this permanent deletion
+        </label>
+        <button type="submit" className="rounded-xl border-2 border-ink bg-pink px-4 py-2 font-bold">Delete startup</button>
+      </form>
+    </details>
   );
 }
 

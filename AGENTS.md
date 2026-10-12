@@ -293,6 +293,7 @@ Built:
 - Sticker-style sign-in and team invite emails share a table-based HTML shell and plain-text content, with a console fallback without a Resend key. Dev-only previews live at `/dev/emails`.
 - Profiles: optional names and avatar URLs, avatars or initial badges on member lists and `/me`, plus followed startups and fan numbers on `/me`.
 - Share previews: a default site image and dynamic startup images with the tagline and current fan count; unknown slugs use the default image.
+- Moderation: database-backed sign-in limits (5 requests per email and 30 per IP per 15-minute window), public post reports, and an admin report queue. Site admins configured in `ADMIN_EMAILS` can delete any post or startup; startup deletion requires confirmation and cascades to its content. App pages include a content policy and takedown contact.
 
 Also built: Postgres + Drizzle data layer (`db/`, local Docker database) and email magic-link sign-in with sessions (`app/login`, `app/auth`, `app/me`, `lib/auth.ts`).
 
@@ -319,10 +320,12 @@ Site copy only promises what exists. No pricing on the site (for fans or startup
 - `scripts/seed.ts` and `scripts/import-waitlist.ts`: manual, idempotent startupfans seed and GetWaitlist CSV import using the shared database and follow allocator. The importer skips team members and reports that reason in its summary. Commands load `.env` with Node 24 and run through `tsx` with the `react-server` condition for server-only imports.
 - `db/`: Drizzle schema, migrations, and the lazy Postgres client exported as `db`. Without `DATABASE_URL` it falls back to the local Docker database on port 5433.
 - `lib/`: server-only auth and session helpers (`lib/auth.ts`) and Resend email delivery with a console fallback (`lib/email.ts`).
+- `lib/ratelimit.ts`, `lib/reports.ts`, `lib/admin.ts`: atomic hashed sign-in counters, private post report submission and resolution, and site admin authorization/deletion. Reports retain their resolved timestamp so signed-in users cannot report a post twice.
+- `app/admin/`: admin-only open report queue with post excerpts, reasons, counts, resolution and confirmed deletion. `ADMIN_EMAILS` grants access; other visitors receive a 404.
 - `lib/emails/`: pure sign-in and invite templates using a shared inline-styled, table-based sticker layout and matching plain text.
 - `app/dev/emails/`: development-only template index and HTML previews, with `?text=1` for plain text; all routes return 404 in production.
 - `lib/startups.ts`: startup creation with owner membership, profile lookup, team members, public posts and current fan counts. `lib/follows.ts` serializes follow changes with a startup row lock and keeps the member-number counter increasing. `lib/slug.ts` holds shared slug suggestions and validation.
-- `app/components/sticker.tsx`: shared `Star`, `Sticker` and `SectionHeading` components, copied from the landing page.
+- `app/components/sticker.tsx`: shared `Star`, `Sticker`, `SectionHeading` and `TopNav` components, plus confirmed admin startup deletion and `SiteFooter` for app pages. The footer uses `PRICING_CONTACT_EMAIL` or `hello@startupfans.co` for takedowns.
 - `app/leaderboard/page.tsx` and `lib/leaderboard.ts`: public sticker-style rankings with logos, taglines, fan and weekly post counts, and empty states; each list uses one aggregate query and excludes zero counts. The page renders on demand with queries cached for 300 seconds.
 - `app/opengraph-image.tsx`: default 1200 by 630 share preview and shared image renderer, with a cached Bricolage Grotesque font and a default font fallback.
 - `app/s/[slug]/opengraph-image.tsx`: dynamic startup share preview using the current follower count, with the default site image for unknown slugs.
