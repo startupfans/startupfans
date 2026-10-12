@@ -1,0 +1,72 @@
+@import "tailwindcss";
+
+@theme inline {
+  --font-display: var(--font-bricolage);
+  --font-sans: var(--font-geist);
+  --font-mono: var(--font-geist-mono);
+}
+
+@theme {
+  --color-cream: #fff4e0;
+  --color-ink: #16120f;
+  --color-pink: #ff5fa8;
+  --color-sun: #ffd23f;
+  --color-lime: #b8f04a;
+  --color-sky: #6ec6ff;
+  --color-tangerine: #ff8a3d;
+
+  --shadow-sticker: 5px 5px 0 0 var(--color-ink);
+  --shadow-sticker-lg: 8px 8px 0 0 var(--color-ink);
+
+  --animate-marquee: marquee 28s linear infinite;
+  --animate-wobble: wobble 3s ease-in-out infinite;
+
+  @keyframes marquee {
+    from {
+      transform: translateX(0);
+    }
+    to {
+      transform: translateX(-50%);
+    }
+  }
+
+  @keyframes wobble {
+    0%,
+    100% {
+      transform: rotate(var(--tilt, -6deg));
+    }
+    50% {
+      transform: rotate(calc(var(--tilt, -6deg) * -0.5));
+    }
+  }
+}
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    background-color: var(--color-cream);
+    color: var(--color-ink);
+    background-image: radial-gradient(color-mix(in oklab, var(--color-ink) 12%, transparent) 1px, transparent 1px);
+    background-size: 22px 22px;
+  }
+
+  ::selection {
+    background-color: var(--color-pink);
+    color: var(--color-ink);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+  }
+}
