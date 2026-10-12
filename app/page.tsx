@@ -1,4 +1,8 @@
+import Image from "next/image";
 import { WaitlistForm } from "./waitlist-form";
+
+const LOGO_WIDTH = 910;
+const LOGO_HEIGHT = 150;
 
 interface ValueProp {
   emoji: string;
@@ -88,9 +92,15 @@ export default function Home() {
 function Nav() {
   return (
     <header className="mx-auto flex max-w-6xl items-center justify-between px-5 py-5 sm:px-8">
-      <a href="#" className="flex items-center gap-2 font-display text-xl font-extrabold tracking-tight">
-        <Star className="size-7 text-sun" />
-        startupfans
+      <a href="#">
+        <Image
+          src="/logo/startupfans-logo-on-light.svg"
+          alt="StartupFans"
+          width={LOGO_WIDTH}
+          height={LOGO_HEIGHT}
+          loading="eager"
+          className="h-8 w-auto sm:h-9"
+        />
       </a>
       <nav className="flex items-center gap-5">
         <a href="#fans" className="hidden font-bold hover:text-pink sm:inline">
@@ -270,10 +280,13 @@ function JoinSection() {
 function Footer() {
   return (
     <footer className="mx-auto flex max-w-6xl flex-col items-start justify-between gap-3 px-5 pb-12 text-sm text-ink/70 sm:flex-row sm:items-center sm:px-8">
-      <span className="flex items-center gap-2 font-display text-base font-extrabold text-ink">
-        <Star className="size-5 text-sun" />
-        startupfans
-      </span>
+      <Image
+        src="/logo/startupfans-logo-on-light.svg"
+        alt="StartupFans"
+        width={LOGO_WIDTH}
+        height={LOGO_HEIGHT}
+        className="h-6 w-auto"
+      />
       <span>For people who like things early. © {new Date().getFullYear()}</span>
     </footer>
   );
