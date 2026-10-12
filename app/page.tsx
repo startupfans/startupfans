@@ -24,18 +24,25 @@ const VALUE_PROPS: ValueProp[] = [
     tiltClass: "md:-rotate-2",
   },
   {
+    emoji: "🤫",
+    title: "Get the inside scoop",
+    body: "Behind-the-scenes updates straight from founders: what they're building, what's working, and what's coming next. The stuff that never makes the press release.",
+    colorClass: "bg-sky",
+    tiltClass: "md:rotate-2",
+  },
+  {
     emoji: "🎟️",
     title: "Get in first",
     body: "Early access and founding-fan pricing on products you actually want. First in line, every time.",
     colorClass: "bg-pink",
-    tiltClass: "md:rotate-1",
+    tiltClass: "md:-rotate-1",
   },
   {
     emoji: "📣",
     title: "Shape what gets built",
     body: "Your feedback goes straight to the founders. Tell them what you'd pay for, then watch it ship.",
     colorClass: "bg-lime",
-    tiltClass: "md:-rotate-1",
+    tiltClass: "md:rotate-1",
   },
 ];
 
@@ -48,8 +55,8 @@ const STEPS: Step[] = [
   },
   {
     label: "Step 2",
-    title: "Get the drops",
-    body: "New startups land in your inbox before anyone else hears about them.",
+    title: "Get the inside track",
+    body: "Insider updates on what founders are building, plus new startups before anyone else hears about them.",
     colorClass: "bg-tangerine",
   },
   {
@@ -62,7 +69,7 @@ const STEPS: Step[] = [
 
 const BARCODE_BARS = [2, 4, 1, 3, 2, 5, 1, 2, 4, 1, 3, 1, 5, 2, 1, 3, 4, 1, 2, 3];
 
-const TICKER_WORDS = ["Find them early", "Get in first", "Be a fan", "Shape what ships", "Brag forever"];
+const TICKER_WORDS = ["Find them early", "Get the inside scoop", "Get in first", "Be a fan", "Shape what ships"];
 
 export default function Home() {
   return (
@@ -126,8 +133,8 @@ function HeroCopy() {
       </h1>
 
       <p className="mt-6 max-w-2xl text-lg text-pretty text-ink/80 sm:text-xl">
-        startupfans is where people who love new things find startups early, get in first, and help shape what gets
-        built next.
+        startupfans gives you the inside track on new startups: what founders are building, what&apos;s shipping next,
+        and first access before anyone else.
       </p>
 
       <div className="mt-10 flex flex-wrap items-center gap-4">
@@ -162,8 +169,8 @@ function FanCard() {
 
         <ul className="mt-6 space-y-2 rounded-2xl border-2 border-ink bg-white p-4 text-sm font-semibold">
           <li>⚡ First dibs on new startups</li>
+          <li>🤫 Insider updates from founders</li>
           <li>💸 Founding-fan pricing</li>
-          <li>🗣️ A direct line to founders</li>
         </ul>
 
         <div className="mt-6 flex items-end justify-between gap-4">
@@ -207,7 +214,7 @@ function ValueProps() {
   return (
     <section className="mx-auto max-w-6xl px-5 py-24 sm:px-8">
       <SectionHeading eyebrow="Why be a fan" title="The best seat in the house for what's next." />
-      <div className="mt-14 grid gap-8 md:grid-cols-3">
+      <div className="mt-14 grid gap-8 md:grid-cols-2 lg:grid-cols-4">
         {VALUE_PROPS.map((prop) => (
           <article
             key={prop.title}

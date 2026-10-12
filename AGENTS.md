@@ -12,7 +12,7 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 ## What we're building
 
-startupfans is a startup, and this repo is its public website. The pitch on the site: **"Be a fan before they're famous."** Fans find new startups early, get in first (early access, founding-fan pricing), and give feedback that shapes what gets built. The product definition is still being nailed down; check with Ian before adding claims about features that don't exist yet.
+startupfans is a startup, and this repo is its public website. The pitch on the site: **"Be a fan before they're famous."** Fans find new startups early, get insider info on what founders are building (behind-the-scenes updates, what's shipping next), get in first (early access, founding-fan pricing), and give feedback that shapes what gets built. The product definition is still being nailed down; check with Ian before adding claims about features that don't exist yet.
 
 Current state: a single landing page with value props and a fan sign-up form that feeds a GetWaitlist waitlist (email only, no payment yet).
 
