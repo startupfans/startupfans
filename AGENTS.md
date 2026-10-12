@@ -287,13 +287,14 @@ Built:
 - Posting: team members publish markdown updates with one optional image or video uploaded directly to Vercel Blob. Public post pages have share metadata; authors and owners can delete posts.
 - Follow and unfollow: signed-in fans receive unique member numbers; unfollowing never reuses a number.
 - Global feed (`app/feed/`): public posts newest first, startup names and logos, a signed-in following filter, and cursor pagination with 20 posts per page.
+- Team settings: owners edit page details, remove members while keeping at least one owner, and create or revoke single-use invite links that expire after 7 days. Signed-in teammates accept links to join as editors.
+- Profiles: optional names and avatar URLs, avatars or initial badges on member lists and `/me`, plus followed startups and fan numbers on `/me`.
 - Share previews: a default site image and dynamic startup images with the tagline and current fan count; unknown slugs use the default image.
 
 Also built: Postgres + Drizzle data layer (`db/`, local Docker database) and email magic-link sign-in with sessions (`app/login`, `app/auth`, `app/me`, `lib/auth.ts`).
 
 Not built yet (from MVP must-haves):
 - Richer startup waitlist fields above
-- Team invitations
 
 Parked for now: founding spot payment (£99/year Stripe link). It's free for everyone at the moment.
 
@@ -323,10 +324,13 @@ Site copy only promises what exists. No pricing on the site (for fans or startup
 - `app/feed/`: public global feed with Everyone and Following filters, sign-in and discovery empty states, and server-rendered load-more links.
 - `app/api/upload/route.ts`: Vercel Blob client upload authorization restricted to startup members, with image/video type and size limits; text posting works without a Blob store token.
 - `lib/posts.ts`: public post queries with author and startup details, cursor-paginated global and following feeds, membership lookup, and startup media URL validation.
+- `lib/members.ts` and `lib/invites.ts`: owner authorization, serialized team changes, profiles and followed startups, plus hashed single-use invite creation, revocation and acceptance.
+- `app/s/[slug]/settings/`: owner-only page editing, member management and unused invites; `invite-link.tsx` creates and copies invite links.
+- `app/join/[token]/`: signed-in invite confirmation with atomic editor membership creation and friendly invalid-link messages.
 - `app/components/markdown.tsx` and `post-media.tsx`: safe markdown rendering and sticker-framed images and videos.
 - `app/login/`: magic-link request form and its server action.
 - `app/auth/`: magic-link verification route that creates a session and sets the `sf_session` cookie.
-- `app/me/`: signed-in email and sign-out form, protected by `requireUser`.
+- `app/me/`: profile name and avatar editing, followed startups with member numbers, and sign out, protected by `requireUser`.
 - `app/page.tsx`: the landing page (server components; the only client component is the waitlist form). Copy and data are typed arrays at the top (`FAN_PROPS`, `STARTUP_PROPS`, `TICKER_WORDS`); edit those to change content. Both audience sections render through `AudienceSection` (`#fans` light, `#startups` dark), linked from the nav.
 - `app/globals.css`: design tokens in `@theme` (colors `cream/ink/pink/sun/lime/sky/tangerine`, `shadow-sticker`, marquee/wobble animations). Reduced motion disables animations.
 - `app/layout.tsx`: fonts (Bricolage Grotesque display, Geist sans/mono via `next/font`) and metadata.

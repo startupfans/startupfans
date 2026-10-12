@@ -26,7 +26,7 @@ export async function createStartup(input: typeof startups.$inferInsert) {
 }
 
 export async function getStartupMembers(startupId: string) {
-  return db.select({ id: users.id, name: users.name, email: users.email, role: startupMembers.role })
+  return db.select({ id: users.id, name: users.name, avatarUrl: users.avatarUrl, email: users.email, role: startupMembers.role })
     .from(startupMembers).innerJoin(users, eq(users.id, startupMembers.userId))
     .where(eq(startupMembers.startupId, startupId)).orderBy(asc(users.createdAt), asc(users.id));
 }

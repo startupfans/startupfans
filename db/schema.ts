@@ -20,6 +20,7 @@ export const users = pgTable("users", {
   id: uuid("id").primaryKey().defaultRandom(),
   email: text("email").notNull().unique(),
   name: text("name"),
+  avatarUrl: text("avatar_url"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
@@ -67,6 +68,14 @@ export const startupMembers = pgTable(
   },
   (table) => [unique("startup_members_startup_id_user_id_unique").on(table.startupId, table.userId)],
 );
+
+export const startupInvites = pgTable("startup_invites", {
+  tokenHash: text("token_hash").primaryKey(),
+  startupId: uuid("startup_id").notNull().references(() => startups.id, { onDelete: "cascade" }),
+  createdBy: uuid("created_by").notNull().references(() => users.id),
+  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+  usedAt: timestamp("used_at", { withTimezone: true }),
+});
 
 export const posts = pgTable(
   "posts",

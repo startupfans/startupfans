@@ -63,7 +63,7 @@ async function StartupPage({ params }: StartupPageProps) {
         {startup.description && <p className="mt-7 whitespace-pre-wrap break-words leading-relaxed text-ink/80">{startup.description}</p>}
         <div className="mt-6 flex flex-wrap gap-5 font-bold">
           {startup.website && <a href={startup.website} target="_blank" rel="noopener noreferrer" className="underline underline-offset-4">Visit website ↗</a>}
-          {isMember && <Link href={`/s/${slug}/settings`} className="underline underline-offset-4">Settings</Link>}
+          {isOwner && <Link href={`/s/${slug}/settings`} className="underline underline-offset-4">Settings</Link>}
         </div>
         <div className="mt-8 flex flex-wrap items-center gap-5 border-t-2 border-ink/15 pt-6">
           <FollowButton slug={slug} signedIn={user !== null} memberNo={follow?.memberNo ?? null} />
@@ -72,11 +72,18 @@ async function StartupPage({ params }: StartupPageProps) {
         <div className="mt-8">
           <h2 className="font-display text-xl font-extrabold">The team</h2>
           <ul className="mt-3 flex flex-wrap gap-3">
-            {members.map((member) => (
-              <li key={member.id} className="max-w-full break-words rounded-xl border-2 border-ink bg-cream px-3 py-2 text-sm font-semibold">
-                {member.name?.trim() || member.email.split("@")[0]}
-              </li>
-            ))}
+            {members.map((member) => {
+              const name = member.name?.trim() || member.email.split("@")[0];
+              return (
+                <li key={member.id} className="flex max-w-full items-center gap-2 rounded-xl border-2 border-ink bg-cream px-3 py-2 text-sm font-semibold">
+                  {member.avatarUrl ? (
+                    <Image src={member.avatarUrl} alt={`${name}'s avatar`} width={32} height={32} unoptimized referrerPolicy="no-referrer"
+                      className="h-8 w-8 shrink-0 rounded-full border-2 border-ink object-cover" />
+                  ) : <span aria-hidden="true" className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border-2 border-ink bg-sun font-bold">{name.charAt(0).toUpperCase()}</span>}
+                  <span className="min-w-0 break-words">{name}</span>
+                </li>
+              );
+            })}
           </ul>
         </div>
       </section>
