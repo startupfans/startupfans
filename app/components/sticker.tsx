@@ -8,8 +8,9 @@ export function TopNav({ signedIn, next }: { signedIn: boolean; next: string }) 
       <Link href="/" aria-label="startupfans home" className="shrink-0">
         <Image src="/logo/startupfans-logo-on-light.svg" alt="startupfans" width={910} height={150} className="h-auto w-36 sm:w-44" />
       </Link>
-      <div className="flex items-center gap-4 font-bold underline underline-offset-4">
+      <div className="flex flex-wrap items-center gap-4 font-bold underline underline-offset-4">
         <Link href="/feed">Feed</Link>
+        <Link href="/leaderboard">Leaderboard</Link>
         <Link href={signedIn ? "/me" : `/login?next=${encodeURIComponent(next)}`}>
           {signedIn ? "Your account" : "Sign in"}
         </Link>
