@@ -323,7 +323,7 @@ Site copy only promises what exists. No pricing on the site (for fans or startup
 - `app/dev/emails/`: development-only template index and HTML previews, with `?text=1` for plain text; all routes return 404 in production.
 - `lib/startups.ts`: startup creation with owner membership, profile lookup, team members, public posts and current fan counts. `lib/follows.ts` serializes follow changes with a startup row lock and keeps the member-number counter increasing. `lib/slug.ts` holds shared slug suggestions and validation.
 - `app/components/sticker.tsx`: shared `Star`, `Sticker` and `SectionHeading` components, copied from the landing page.
-- `app/leaderboard/page.tsx` and `lib/leaderboard.ts`: public sticker-style rankings with logos, taglines, fan and weekly post counts, and empty states; each list uses one aggregate query and excludes zero counts. The page revalidates every 300 seconds.
+- `app/leaderboard/page.tsx` and `lib/leaderboard.ts`: public sticker-style rankings with logos, taglines, fan and weekly post counts, and empty states; each list uses one aggregate query and excludes zero counts. The page renders on demand with queries cached for 300 seconds.
 - `app/opengraph-image.tsx`: default 1200 by 630 share preview and shared image renderer, with a cached Bricolage Grotesque font and a default font fallback.
 - `app/s/[slug]/opengraph-image.tsx`: dynamic startup share preview using the current follower count, with the default site image for unknown slugs.
 - `app/start/`: protected startup creation page and validated server action. Its client form wrapper lives alongside `FollowButton` in `app/s/[slug]/follow-button.tsx`; fields render on the server.

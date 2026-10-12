@@ -2,9 +2,8 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { SectionHeading, Sticker, TopNav } from "@/app/components/sticker";
+import { getCurrentUser } from "@/lib/auth";
 import { getMostActive, getMostFollowed, type LeaderboardStartup } from "@/lib/leaderboard";
-
-export const revalidate = 300;
 
 export function generateMetadata(): Metadata {
   return {
@@ -35,9 +34,9 @@ function LeaderboardList({ startups, singular, plural, suffix = "", emptyMessage
     <ol className="mt-6 space-y-4">
       {startups.map((startup, index) => (
         <li key={startup.id} className="flex items-start gap-3 rounded-2xl border-[3px] border-ink bg-white p-4 shadow-sticker sm:gap-4 sm:p-5">
-          <Sticker className={`inline-block shrink-0 -rotate-3 px-2 py-1 ${rankColors[index] ?? "bg-white"}`}>
+          <span className={`inline-block shrink-0 -rotate-3 rounded-xl border-[3px] border-ink px-2 py-1 font-display text-sm font-extrabold shadow-sticker ${rankColors[index] ?? "bg-white"}`}>
             #{index + 1}
-          </Sticker>
+          </span>
           {startup.logoUrl ? (
             <Image src={startup.logoUrl} alt="" width={44} height={44} unoptimized
               className="h-11 w-11 shrink-0 rotate-3 rounded-xl border-2 border-ink bg-cream object-contain p-1" />
@@ -62,11 +61,12 @@ function LeaderboardList({ startups, singular, plural, suffix = "", emptyMessage
 }
 
 export default async function LeaderboardPage() {
+  const user = await getCurrentUser();
   const [mostFollowed, mostActive] = await Promise.all([getMostFollowed(), getMostActive()]);
 
   return (
     <main className="mx-auto min-h-screen max-w-6xl px-5 py-10 sm:py-16">
-      <TopNav signedIn={false} next="/leaderboard" />
+      <TopNav signedIn={user !== null} next="/leaderboard" />
       <header className="mt-10">
         <Sticker className="inline-block -rotate-3 bg-pink normal-case">Fan favourites</Sticker>
         <h1 className="mt-7 font-display text-4xl font-extrabold tracking-tight sm:text-5xl">Leaderboard</h1>

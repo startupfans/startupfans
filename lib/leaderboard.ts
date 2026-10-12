@@ -1,6 +1,7 @@
 import "server-only";
 
 import { and, asc, count, desc, eq, sql } from "drizzle-orm";
+import { unstable_cache } from "next/cache";
 import { db } from "@/db";
 import { follows, posts, startups } from "@/db/schema";
 
@@ -12,16 +13,16 @@ const startupFields = {
   logoUrl: startups.logoUrl,
 };
 
-export async function getMostFollowed(limit = 10) {
+export const getMostFollowed = unstable_cache(async (limit = 10) => {
   const fanCount = count(follows.userId);
   return db.select({ ...startupFields, count: fanCount }).from(startups)
     .innerJoin(follows, eq(follows.startupId, startups.id))
     .groupBy(startups.id)
     .orderBy(desc(fanCount), asc(startups.name), asc(startups.id))
     .limit(limit);
-}
+}, ["leaderboard-most-followed"], { revalidate: 300 });
 
-export async function getMostActive(limit = 10, days = 7) {
+export const getMostActive = unstable_cache(async (limit = 10, days = 7) => {
   const postCount = count(posts.id);
   return db.select({ ...startupFields, count: postCount }).from(startups)
     .innerJoin(posts, eq(posts.startupId, startups.id))
@@ -33,6 +34,6 @@ export async function getMostActive(limit = 10, days = 7) {
     .groupBy(startups.id)
     .orderBy(desc(postCount), asc(startups.name), asc(startups.id))
     .limit(limit);
-}
+}, ["leaderboard-most-active"], { revalidate: 300 });
 
 export type LeaderboardStartup = Awaited<ReturnType<typeof getMostFollowed>>[number];
