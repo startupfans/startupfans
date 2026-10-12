@@ -283,6 +283,8 @@ Built:
 - Landing page (`app/page.tsx`): hero "Get the inside track on startups." with waitlist form, a "For fans" section and a "For startups" section (three value props each), and a second waitlist form at the bottom.
 - Waitlist: email only, via GetWaitlist (`app/waitlist-form.tsx`).
 
+Also built: Postgres + Drizzle data layer (`db/`, local Docker database) and email magic-link sign-in with sessions (`app/login`, `app/auth`, `app/me`, `lib/auth.ts`).
+
 Not built yet (from MVP must-haves):
 - Richer startup waitlist fields above
 - Company pages, team membership, posts, feeds, follows (no backend yet)
@@ -304,6 +306,11 @@ Site copy only promises what exists. No pricing on the site (for fans or startup
 
 ## Layout
 
+- `db/`: Drizzle schema, migrations, and the lazy Postgres client exported as `db`. Without `DATABASE_URL` it falls back to the local Docker database on port 5433.
+- `lib/`: server-only auth and session helpers (`lib/auth.ts`) and Resend email delivery with a console fallback (`lib/email.ts`).
+- `app/login/`: magic-link request form and its server action.
+- `app/auth/`: magic-link verification route that creates a session and sets the `sf_session` cookie.
+- `app/me/`: signed-in email and sign-out form, protected by `requireUser`.
 - `app/page.tsx`: the landing page (server components; the only client component is the waitlist form). Copy and data are typed arrays at the top (`FAN_PROPS`, `STARTUP_PROPS`, `TICKER_WORDS`); edit those to change content. Both audience sections render through `AudienceSection` (`#fans` light, `#startups` dark), linked from the nav.
 - `app/globals.css`: design tokens in `@theme` (colors `cream/ink/pink/sun/lime/sky/tangerine`, `shadow-sticker`, marquee/wobble animations). Reduced motion disables animations.
 - `app/layout.tsx`: fonts (Bricolage Grotesque display, Geist sans/mono via `next/font`) and metadata.

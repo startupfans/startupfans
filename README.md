@@ -12,15 +12,28 @@ See `AGENTS.md` for what we're building, structure, and conventions.
 
 ## Database
 
-Start the local Postgres database and apply the generated migrations:
+For local development, teammates only need Docker running. Start Postgres, apply
+the generated migrations, and run the app; no `.env` is required:
 
 ```bash
-cp .env.example .env
-corepack pnpm db:up
-corepack pnpm db:migrate
+pnpm db:up
+pnpm db:migrate
+pnpm dev
 ```
 
 Postgres runs on port 5433 and persists data in a named Docker volume. The app
-and Drizzle CLI read `DATABASE_URL` from `.env`; an exported variable takes precedence.
-After editing `db/schema.ts`, run `corepack pnpm db:generate` and then
-`corepack pnpm db:migrate`. Use `corepack pnpm db:studio` to inspect the database.
+and Drizzle CLI default to `postgres://startupfans:startupfans@localhost:5433/startupfans`.
+Set `DATABASE_URL` in `.env` or your environment to override it; an exported variable takes precedence.
+Production uses a Vercel-hosted Postgres with `DATABASE_URL` set on the Vercel project.
+After editing `db/schema.ts`, run `pnpm db:generate` and then
+`pnpm db:migrate`. Use `pnpm db:studio` to inspect the database.
+
+## Auth
+
+Visit `/login` to sign in with an email magic link. Links expire after 15 minutes
+and can be used once; sessions last 30 days. `/me` shows your email and sign-out button.
+Set `APP_URL` to the site's public origin, `RESEND_API_KEY` for delivery, and
+`EMAIL_FROM` to a verified sender. Without a Resend key, the server logs the full
+sign-in link with a `[startupfans email: dev fallback]` prefix; open it locally
+to sign in. Auth requests require a running database; locally, the Docker default
+works without setting `DATABASE_URL`.
