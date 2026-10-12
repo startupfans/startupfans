@@ -8,22 +8,288 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 <!-- END:nextjs-agent-rules -->
 
-# startupfans
+# StartupFans
 
-## What we're building
+This repo is the public website for StartupFans (live at startupfans.co, hosted on Vercel). Working title; the final name isn't decided (see Naming). Team: Ian, Tori, Irakli, Jake. Coordination happens in Slack `#startupfans`.
 
-startupfans is a startup, and this repo is its public website. The pitch on the site: **"Get the inside track on startups."** Fans find new startups early, get insider info on what founders are building (behind-the-scenes updates, what's shipping next), get in first (early access, founding-fan pricing), and give feedback that shapes what gets built. The product definition is still being nailed down; check with Ian before adding claims about features that don't exist yet.
+**Hard rule for the public site:** nothing public-facing (page copy, metadata, OG tags, alt text, client-shipped comments) may mention the hackathon, launchathon, offsite, Lightdash, "72 hours", "3 days", or that this is a time-boxed experiment. The site should read like StartupFans' own website. All of that context lives here instead.
 
-Current state: a single landing page with value props and a fan sign-up form that feeds a GetWaitlist waitlist (email only, no payment yet).
+## Context (internal)
 
-## Internal context (never put this on the site)
+- Built during the Lightdash company offsite, October 2026, as part of a launchathon.
+- 3 days to launch a new product and make as much money as possible.
+- Scoring priorities, in order:
+  1. Launch: a real, live product within 3 days
+  2. Traction: a clear signal that people want it. Revenue is the gold standard; a waitlist with a card on file beats a plain waitlist
+  3. Attention: something people share and talk about
 
-- startupfans is being built during a 3-day launchathon at the Lightdash company offsite.
-- Goals, in order: **launch** (live and public), **traction** (clear signal people want it; revenue is the gold standard), **attention** (shareable, posts well).
-- Revenue rule: a paying customer beats a waitlist; a waitlist with a card on file beats vibes. So the sign-up form should collect intent that's as close to payment as possible.
-- Ian's idea shortlist and scoring live in his notes (`business/ideas/launchathon.md` in Obsidian), not in this repo.
+## The idea
 
-**Hard rule:** nothing public-facing (page copy, metadata, OG tags, alt text, comments that ship to the client) may mention the hackathon, launchathon, offsite, Lightdash, "72 hours", "3 days", or that this is a time-boxed experiment. The site should read like startupfans' own website.
+"OnlyFans for startups." Tongue-in-cheek: exclusive, insider content straight from the team.
+
+A feed that takes the best parts of X, LinkedIn, Substack and Instagram. Any startup can sign up, and anyone on its team can post:
+
+- an update on what they're working on today
+- something they shipped
+- a photo from the offsite, a team dinner, a launch, etc.
+
+Anyone can follow a startup and see its feed.
+
+## The problem
+
+- Every startup has a #wins or #shipped Slack channel full of good content nobody outside the company ever sees.
+- What does get shared publicly is scattered across employees' personal LinkedIn and X accounts.
+- LinkedIn company pages are mostly dead.
+- There's no single place to see what a team is shipping and what it's like to work there.
+
+## Who it's for and why they'd join
+
+Marketing
+- The team already creates content every day; this gives it somewhere to live
+- Behind-the-scenes posts feel human compared with polished brand posts
+- Gives people a reason to follow the company, beyond the founder
+
+GTM and sales
+- Prospects see the team is real and shipping fast
+- A more interesting link to send in outbound than a case study
+- Customers see their feature requests getting built
+
+Hiring
+- Candidates see the real team and work before applying
+- Better than a generic "life at" careers page
+- Job posts reach people who already follow the company (needs job posts feature)
+
+Fundraising
+- Angels and scouts track momentum between monthly investor updates
+- Somewhere for warm inbound to land after a pitch or demo day
+
+Team and culture
+- Credit goes to the people who did the work, beyond the founders
+- A public record of what the team has shipped
+
+Community
+- Founders learn from each other
+- Startups in the same portfolio or community can support each other
+
+## Business model
+
+**Current decision: StartupFans is free for everyone (fans and startups). Nothing is charged yet.** The plan below is the longer-term direction, not what's live.
+
+The OnlyFans mechanic (fans pay creators) doesn't fit: few people will pay to follow a startup. The money is with startups, who have hiring and brand budgets.
+
+- Free for followers ("fans")
+- Startups pay
+- Launch offer: founding spot, £99/year, first 50 startups (Stripe payment link)
+
+Later revenue options:
+- Verified / Pro company page: custom domain, careers page embed, analytics
+- Paid job posts (around £99 each), pinned in the feed
+- Investor tier: angels and scouts pay for early signal / deal flow
+
+## Differentiators
+
+1. Zero-effort posting. Teams already post wins in Slack. A Slack bot or emoji reaction publishes a chosen message to the company page, so the feed fills itself. This is the main answer to "why not just post on LinkedIn?"
+2. One aggregated team feed per company, instead of updates scattered across personal accounts.
+3. Embeddable feed for the company's careers page.
+4. Verified metrics (later): live charts in posts (e.g. Stripe MRR, usage) built with Lightdash embedding, plus a leaderboard. Ties the product to Lightdash and makes it a marketing channel for the core business.
+
+## Where it could go
+
+- Employer brand and hiring platform (strongest revenue path)
+- Public / semi-public investor updates
+- Open-startup verified metrics and leaderboards
+- Fantasy startup league: fans "back" startups with points and climb a leaderboard
+
+## MVP scope (3 days)
+
+Must have
+- Landing page with waitlist and founding spot payment
+- Company pages (name, logo, description, website)
+- Team members can join a company
+- Posts: text plus image
+- Global feed and per-company feed
+- Follow a company
+- Stripe payment link for the founding spot
+
+Nice to have
+- Slack bot / emoji reaction to publish from Slack
+- Leaderboard (most active, most followed)
+- Careers page embed widget
+
+Out of scope for the 3 days
+- Fan subscriptions / paywalled content
+- Job posts
+- Verified metrics
+- Native mobile app (PWA is fine)
+
+## Suggested stack (suggestion only)
+
+- Frontend: Next.js (in use)
+- Backend / auth / DB: Supabase
+- Payments: Stripe (payment links first, subscriptions later)
+- Email: Resend
+- Hosting: Vercel (in use)
+
+## Data model sketch
+
+- companies: id, name, slug, logo_url, website, description, stage, team_size, is_founding, created_at
+- users: id, name, email, avatar_url
+- memberships: user_id, company_id, role (owner, member)
+- posts: id, company_id, author_id, body, image_url, created_at, source (web, slack)
+- follows: user_id, company_id, created_at
+- waitlist_entries: company_name, website, contact_name, role, email, team_size, stage, main_reason, first_post_idea, wants_founding_spot, created_at
+- payments: company_id, stripe_session_id, amount, status, created_at
+
+## 3-day plan
+
+Day 1
+- Build company pages, posts, feed, follow, Stripe founding spot
+- Lightdash is the first startup on the platform and posts the offsite
+- Post the LinkedIn announcement, open the waitlist
+- DM 50 startups
+
+Day 2
+- Onboard 10 to 20 startups by hand
+- Each posts a team photo or what they're shipping
+
+Day 3
+- Public launch on X, LinkedIn and Product Hunt, leaning on the joke
+- Leaderboard live
+- Count results
+
+## Distribution
+
+- Lightdash team posts first (offsite content is day-one material)
+- Lightdash team reposts the announcement with their own one-liners and photos
+- Investor portfolio network (e.g. Moonfire portfolio founders group)
+- London builder communities (e.g. Ramen Club, Encode Club, cr3w)
+- Friendly startups in the Lightdash customer and partner network
+- Also floated: launch on tinylaunch
+
+## Success metrics (priority order)
+
+1. Paid founding spots
+2. Startups actively posting
+3. Waitlist signups
+4. Followers / feed views
+5. Launch post engagement
+
+## Risks and mitigations
+
+- Cold start: hand-onboard startups, have Lightdash post first, make posting zero effort through Slack
+- "Why not LinkedIn?": one company feed, Slack posting, careers embed, no algorithm burying posts
+- Category graveyard: professional networks often die (Polywork and Read.cv both shut down; verify before citing publicly). Peerlist and Indie Hackers already exist. Go niche and lead with distribution, not features
+- Brand risk: an OnlyFans joke under the Lightdash name while selling to enterprise. Get leadership sign-off. Option: keep the joke in launch copy and use a less explicit product name, or run it as a separate brand
+- Trademark: run a check on any name containing "Fans"
+- Wrong audience: the name may attract NSFW expectations or spam signups. Keep basic moderation and a clear content policy
+
+## Naming
+
+Domains and trademarks not checked.
+
+- Keeps the riff: StartupFans, OnlyStartups, OnlyShips, OnlyBuilders, ShipFans, FounderFans
+- Fan energy without the porn reference: Groupie, Superfan, Fanbase, Startup Crush
+- Insider / leak: Out of Stealth, Unstealth, Leaked, Backstage, Off the Record, Inner Circle, Sneak Peek, Keyhole
+- Says what you post: Standup, Shiplog, Shipped, Build Log, Dispatch, Pulse, Today I Shipped
+- Instagram / BeReal style: Startupgram, Candid, Unfiltered, BeShipping
+
+Favourites:
+- Out of Stealth: startup in-joke with the same "exclusive" energy, no porn reference needed
+- Groupie: keeps the fan mechanic, brand-safe
+- OnlyShips: if fully committing to the joke
+- Option: use "OnlyFans for startups" as the tagline, e.g. "Out of Stealth: OnlyFans for startups"
+
+## Copy voice
+
+Copy is written in Ian's voice:
+- mostly lowercase, conversational
+- no em dashes
+- never "shout" as in "shout if..."
+- no "it's not X, it's Y" framing
+- spare emoji, rare exclamation marks
+- no bold in posts
+- avoid AI words like pivotal, robust, landscape, foster, enhance
+
+## LinkedIn announcement (main)
+
+```text
+we have 3 days to launch a startup and make some money.
+
+we're at the lightdash offsite running a launchathon, and the idea we landed on is StartupFans 😏
+
+onlyfans for startups. exclusive content, straight from the team.
+
+every startup has a #wins channel full of great stuff nobody outside the company ever sees. the feature that finally shipped, the customer message that made someone's week, the offsite photos. it gets buried in slack or scattered across thirty personal linkedin accounts.
+
+StartupFans gives your company one feed for all of it. anyone on the team can post what they're working on today, and anyone can follow along.
+
+why you'd want your startup on it:
+- marketing: a steady stream of real content from the people building the product
+- gtm: prospects and customers see what you're shipping, as you ship it
+- hiring: candidates see what it's like to work with you before they apply
+- fundraising: investors see your momentum between update emails
+- team: everyone gets credit for their work, beyond the founders
+
+we're letting the first startups in this week. if you want your company on it, the waitlist is here: [link]
+
+first exclusive drop is our offsite. subscribe to unlock 🔒
+```
+
+## LinkedIn announcement (short)
+
+```text
+we're building onlyfans for startups.
+
+3 days, one lightdash offsite, and a launchathon where the goal is real users and real revenue.
+
+StartupFans is a feed where anyone on your team can post what they're working on, what they shipped, or the photos from your offsite. one place for prospects, candidates and investors to see what you're really like.
+
+first startups get in this week. waitlist: [link]
+```
+
+Irakli's live launch post (fan-side framing: open up the kitchen, fans get it first): linkedin.com/feed/update/urn:li:activity:7515469992105213952
+
+## Posting tips
+
+- Put the waitlist link in the first comment; LinkedIn is commonly reported to show posts with external links to fewer people
+- Optional hook: "comment FANS and I'll send you an invite" (gets comments and a DM list)
+- Team reposts with a photo of everyone building beat a logo
+
+## Waitlist form fields (target)
+
+- Company name and website
+- Your name, role and email
+- Team size and stage
+- Main reason for joining (marketing, sales, hiring, fundraising, team)
+- What you'd post first
+- Optional: "Want a founding spot? £99/year, first 50 startups" with Stripe link
+
+## Open questions
+
+- Final name and domain
+- Lightdash-branded or a separate brand
+- Leadership sign-off on the OnlyFans angle
+- Founding spot price and whether it's annual or lifetime
+- Which nice-to-haves (Slack bot, leaderboard, embed) make the 3-day cut
+- Who owns build, distribution and copy during the launchathon
+
+## How we got here
+
+Picked from a shortlist of about 50 ideas from Ian's notes, scored on launch speed, revenue traction and attention. Other strong options were GTM/Attio office hours, a SaaS vendor-onboarding concierge, a plain-English contract reviewer, a feedback-to-roadmap agent and a wine menu decoder. Ian's own app (miniti) was ruled out.
+
+## What's built vs the brief
+
+Built:
+- Landing page (`app/page.tsx`): hero "Get the inside track on startups." with waitlist form, a "For fans" section and a "For startups" section (three value props each), and a second waitlist form at the bottom.
+- Waitlist: email only, via GetWaitlist (`app/waitlist-form.tsx`).
+
+Not built yet (from MVP must-haves):
+- Richer startup waitlist fields above
+- Company pages, team membership, posts, feeds, follows (no backend yet)
+
+Parked for now: founding spot payment (£99/year Stripe link). It's free for everyone at the moment.
+
+Site copy only promises what exists. No pricing on the site (for fans or startups), and no paywalls, job posts or verified metrics until they exist.
 
 ## Stack
 
@@ -38,10 +304,11 @@ Current state: a single landing page with value props and a fan sign-up form tha
 
 ## Layout
 
-- `app/page.tsx`: the landing page (server components; the only client component is the waitlist form). Copy and data are typed arrays at the top (`VALUE_PROPS`, `STEPS`, `TICKER_WORDS`); edit those to change content.
+- `app/page.tsx`: the landing page (server components; the only client component is the waitlist form). Copy and data are typed arrays at the top (`FAN_PROPS`, `STARTUP_PROPS`, `TICKER_WORDS`); edit those to change content. Both audience sections render through `AudienceSection` (`#fans` light, `#startups` dark), linked from the nav.
 - `app/globals.css`: design tokens in `@theme` (colors `cream/ink/pink/sun/lime/sky/tangerine`, `shadow-sticker`, marquee/wobble animations). Reduced motion disables animations.
 - `app/layout.tsx`: fonts (Bricolage Grotesque display, Geist sans/mono via `next/font`) and metadata.
 - `app/waitlist-form.tsx`: client component rendered twice: in the hero (primary CTA, top of page) and again in `JoinSection`. Posts emails straight to the GetWaitlist API (unauthenticated, waitlist ID in `WAITLIST_ID`) and shows queue position plus referral link on success. Signups are managed in the GetWaitlist dashboard.
+- `public/logo/`: brand assets, served at `/logo/...`. `startupfans-logo` is the full logo (SF wing monogram + wordmark), `startupfans-mark` is the square SF monogram (avatars, favicons). Each comes as SVG (outlined paths, no font dependency) and transparent PNG (logo 1820px wide, mark 1024px). Default files have a white wing and "Fans" for dark backgrounds; `-on-light` swaps those to ink. Logo blue is `#b6d3de`; wordmark is Fira Sans Condensed Bold.
 - `Untitled/`: stray empty git repo, unrelated; excluded from TS and ESLint.
 
 ## Style

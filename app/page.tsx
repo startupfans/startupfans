@@ -8,68 +8,57 @@ interface ValueProp {
   tiltClass: string;
 }
 
-interface Step {
-  label: string;
-  title: string;
-  body: string;
-  colorClass: string;
-}
-
-const VALUE_PROPS: ValueProp[] = [
-  {
-    emoji: "🔭",
-    title: "Find them early",
-    body: "Hand-picked new startups, before they hit your feed. The good stuff, minus the launch-day noise.",
-    colorClass: "bg-sun",
-    tiltClass: "md:-rotate-2",
-  },
+const FAN_PROPS: ValueProp[] = [
   {
     emoji: "🤫",
     title: "Get the inside scoop",
-    body: "Behind-the-scenes updates straight from founders: what they're building, what's working, and what's coming next. The stuff that never makes the press release.",
+    body: "Exclusive posts straight from the team: what they're working on today, what they just shipped, and the photos from the team dinner.",
     colorClass: "bg-sky",
-    tiltClass: "md:rotate-2",
+    tiltClass: "md:-rotate-2",
   },
   {
-    emoji: "🎟️",
-    title: "Get in first",
-    body: "Early access and founding-fan pricing on products you actually want. First in line, every time.",
+    emoji: "🚢",
+    title: "See what's shipping",
+    body: "Watch features land as they ship, posted by the people who built them. Before it's a press release, and sometimes instead of one.",
     colorClass: "bg-pink",
-    tiltClass: "md:-rotate-1",
+    tiltClass: "md:rotate-1",
   },
   {
-    emoji: "📣",
-    title: "Shape what gets built",
-    body: "Your feedback goes straight to the founders. Tell them what you'd pay for, then watch it ship.",
+    emoji: "💌",
+    title: "Free for fans",
+    body: "Follow every startup you care about in one feed, for free, with no algorithm burying the good stuff.",
     colorClass: "bg-lime",
-    tiltClass: "md:rotate-1",
+    tiltClass: "md:-rotate-1",
   },
 ];
 
-const STEPS: Step[] = [
+const STARTUP_PROPS: ValueProp[] = [
   {
-    label: "Step 1",
-    title: "Join the fan club",
-    body: "Tell us what you're into. It takes about thirty seconds.",
-    colorClass: "bg-sky",
+    emoji: "📣",
+    title: "Marketing that writes itself",
+    body: "Your team already makes great content every day. Give it somewhere to live: a steady stream of real posts from the people building the product.",
+    colorClass: "bg-sun",
+    tiltClass: "md:rotate-1",
   },
   {
-    label: "Step 2",
-    title: "Get the inside track",
-    body: "Insider updates on what founders are building, plus new startups before anyone else hears about them.",
+    emoji: "🤝",
+    title: "Show prospects you ship",
+    body: "Prospects and customers see what you're shipping, as you ship it. A better link to send than another case study.",
     colorClass: "bg-tangerine",
+    tiltClass: "md:-rotate-2",
   },
   {
-    label: "Step 3",
-    title: "Back what you love",
-    body: "Grab early access, lock in founding-fan pricing, and tell founders what to build next.",
-    colorClass: "bg-lime",
+    emoji: "🧲",
+    title: "Hire people who get you",
+    body: "Candidates see the real team and what it's like to work with you before they apply. Way better than a stock-photo careers page.",
+    colorClass: "bg-pink",
+    tiltClass: "md:rotate-2",
   },
 ];
 
 const BARCODE_BARS = [2, 4, 1, 3, 2, 5, 1, 2, 4, 1, 3, 1, 5, 2, 1, 3, 4, 1, 2, 3];
 
-const TICKER_WORDS = ["Find them early", "Get the inside scoop", "Get in first", "Be a fan", "Shape what ships"];
+const TICKER_WORDS = ["Get the inside scoop", "See what's shipping", "Follow for free", "Open the kitchen", "Be a fan"];
 
 export default function Home() {
   return (
@@ -77,8 +66,19 @@ export default function Home() {
       <Nav />
       <Hero />
       <Ticker />
-      <ValueProps />
-      <HowItWorks />
+      <AudienceSection
+        id="fans"
+        eyebrow="For fans"
+        title="The best seat in the house for what's next."
+        props={FAN_PROPS}
+      />
+      <AudienceSection
+        id="startups"
+        eyebrow="For startups"
+        title="Your #wins channel deserves an audience."
+        props={STARTUP_PROPS}
+        isDark
+      />
       <JoinSection />
       <Footer />
     </main>
@@ -92,12 +92,20 @@ function Nav() {
         <Star className="size-7 text-sun" />
         startupfans
       </a>
-      <a
-        href="#join"
-        className="rounded-full border-2 border-ink bg-white px-4 py-2 text-sm font-bold shadow-sticker transition hover:-translate-y-0.5 hover:bg-sun active:translate-y-0 active:shadow-none"
-      >
-        Become a fan
-      </a>
+      <nav className="flex items-center gap-5">
+        <a href="#fans" className="hidden font-bold hover:text-pink sm:inline">
+          For fans
+        </a>
+        <a href="#startups" className="hidden font-bold hover:text-pink sm:inline">
+          For startups
+        </a>
+        <a
+          href="#join"
+          className="rounded-full border-2 border-ink bg-white px-4 py-2 text-sm font-bold shadow-sticker transition hover:-translate-y-0.5 hover:bg-sun active:translate-y-0 active:shadow-none"
+        >
+          Join the waitlist
+        </a>
+      </nav>
     </header>
   );
 }
@@ -131,8 +139,8 @@ function HeroCopy() {
       <div aria-hidden className="mt-8 h-3 w-28 -rotate-2 rounded-full border-2 border-ink bg-pink sm:h-4 sm:w-40" />
 
       <p className="mt-8 max-w-2xl text-lg text-pretty text-ink/80 sm:text-xl">
-        Insider updates straight from founders on what they&apos;re building and what&apos;s shipping next, plus first
-        access before anyone else.
+        Every startup has a #wins channel nobody outside ever sees. StartupFans gives it one public feed, posted by
+        the whole team. Follow along for free.
       </p>
 
       <WaitlistForm />
@@ -156,9 +164,9 @@ function FanCard() {
         <p className="mt-2 font-display text-lg font-bold">Could be you.</p>
 
         <ul className="mt-6 space-y-2 rounded-2xl border-2 border-ink bg-white p-4 text-sm font-semibold">
-          <li>⚡ First dibs on new startups</li>
-          <li>🤫 Insider updates from founders</li>
-          <li>💸 Founding-fan pricing</li>
+          <li>🤫 The inside scoop</li>
+          <li>🚢 What&apos;s shipping, as it ships</li>
+          <li>💌 Free to follow</li>
         </ul>
 
         <div className="mt-6 flex items-end justify-between gap-4">
@@ -198,47 +206,40 @@ function Ticker() {
   );
 }
 
-function ValueProps() {
+function AudienceSection({
+  id,
+  eyebrow,
+  title,
+  props,
+  isDark = false,
+}: {
+  id: string;
+  eyebrow: string;
+  title: string;
+  props: ValueProp[];
+  isDark?: boolean;
+}) {
   return (
-    <section className="mx-auto max-w-6xl px-5 py-24 sm:px-8">
-      <SectionHeading eyebrow="Why be a fan" title="The best seat in the house for what's next." />
-      <div className="mt-14 grid gap-8 md:grid-cols-2 lg:grid-cols-4">
-        {VALUE_PROPS.map((prop) => (
-          <article
-            key={prop.title}
-            className={`rounded-3xl border-[3px] border-ink p-7 shadow-sticker-lg transition hover:rotate-0 hover:-translate-y-1 ${prop.colorClass} ${prop.tiltClass}`}
-          >
-            <div className="flex size-14 items-center justify-center rounded-2xl border-[3px] border-ink bg-white text-3xl">
-              {prop.emoji}
-            </div>
-            <h3 className="mt-6 font-display text-2xl font-extrabold tracking-tight">{prop.title}</h3>
-            <p className="mt-3 text-ink/80">{prop.body}</p>
-          </article>
-        ))}
-      </div>
-    </section>
-  );
-}
-
-function HowItWorks() {
-  return (
-    <section id="how" className="scroll-mt-8 border-y-[3px] border-ink bg-ink py-24 text-cream">
+    <section
+      id={id}
+      className={`scroll-mt-8 py-24 ${isDark ? "border-y-[3px] border-ink bg-ink text-cream" : ""}`}
+    >
       <div className="mx-auto max-w-6xl px-5 sm:px-8">
-        <SectionHeading eyebrow="How it works" title="Three steps to front row." isDark />
-
-        <ol className="mt-14 grid gap-6 md:grid-cols-3">
-          {STEPS.map((step) => (
-            <li key={step.label} className="rounded-3xl border-[3px] border-cream/90 bg-ink p-7">
-              <span
-                className={`inline-block rounded-full border-2 border-ink px-3 py-1 font-mono text-xs font-bold tracking-wide text-ink uppercase ${step.colorClass}`}
-              >
-                {step.label}
-              </span>
-              <h3 className="mt-5 font-display text-3xl font-extrabold tracking-tight">{step.title}</h3>
-              <p className="mt-3 text-cream/75">{step.body}</p>
-            </li>
+        <SectionHeading eyebrow={eyebrow} title={title} isDark={isDark} />
+        <div className="mt-14 grid gap-8 md:grid-cols-3">
+          {props.map((prop) => (
+            <article
+              key={prop.title}
+              className={`rounded-3xl border-[3px] border-ink p-7 text-ink transition hover:rotate-0 hover:-translate-y-1 ${isDark ? "shadow-[8px_8px_0_0_var(--color-cream)]" : "shadow-sticker-lg"} ${prop.colorClass} ${prop.tiltClass}`}
+            >
+              <div className="flex size-14 items-center justify-center rounded-2xl border-[3px] border-ink bg-white text-3xl">
+                {prop.emoji}
+              </div>
+              <h3 className="mt-6 font-display text-2xl font-extrabold tracking-tight">{prop.title}</h3>
+              <p className="mt-3 text-ink/80">{prop.body}</p>
+            </article>
           ))}
-        </ol>
+        </div>
       </div>
     </section>
   );

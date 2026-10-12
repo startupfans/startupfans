@@ -20,7 +20,7 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "startupfans: the inside track on startups",
   description:
-    "The inside track on new startups: insider updates on what founders are building, early access, and founding-fan pricing.",
+    "One public feed for everything a startup's team is shipping, posted by the people building it. Free to follow.",
   openGraph: {
     title: "startupfans",
     description: "Get the inside track on startups.",
