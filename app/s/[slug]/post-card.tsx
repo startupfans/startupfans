@@ -23,11 +23,22 @@ export function PostCard({ post, showStartup = false, canDelete = false, onPostP
   onPostPage?: boolean;
 }) {
   const postPath = `/s/${post.startupSlug}/p/${post.id}`;
+  const authorName = post.authorName?.trim() || post.authorEmail.split("@")[0];
   return (
     <article className="min-w-0 rounded-2xl border-[3px] border-ink bg-white p-5 shadow-sticker sm:p-6">
       <header className="flex flex-wrap items-center justify-between gap-3 text-sm text-ink/70">
         <div className="min-w-0 break-words">
-          <span className="font-bold text-ink">{post.authorName?.trim() || post.authorEmail.split("@")[0]}</span>
+          <div className="flex items-center gap-2">
+            {post.authorAvatarUrl ? (
+              <Image src={post.authorAvatarUrl} alt="" width={32} height={32} unoptimized referrerPolicy="no-referrer"
+                className="h-8 w-8 shrink-0 rounded-full border-2 border-ink object-cover" />
+            ) : (
+              <span aria-hidden="true" className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border-2 border-ink bg-sun font-bold">
+                {authorName.charAt(0).toUpperCase()}
+              </span>
+            )}
+            <span className="min-w-0 break-words font-bold text-ink">{authorName}</span>
+          </div>
           {showStartup && (
             <Link href={`/s/${post.startupSlug}`} className="mt-2 flex items-center gap-2 font-bold text-ink underline underline-offset-4">
               {post.startupLogoUrl ? (

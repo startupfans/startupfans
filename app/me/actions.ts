@@ -10,10 +10,10 @@ export async function updateProfileAction(formData: FormData) {
   const name = textField(formData, "name");
   const avatarUrl = textField(formData, "avatarUrl");
   if (name.length > 60) {
-    redirect(`/me?${new URLSearchParams({ message: "Use up to 60 characters for your name." })}`);
+    redirect("/me?message=name-too-long");
   }
   if (!isOptionalHttpsUrl(avatarUrl)) {
-    redirect(`/me?${new URLSearchParams({ message: "Use a full https:// address for your avatar." })}`);
+    redirect("/me?message=invalid-avatar");
   }
   await updateProfile(user.id, name || null, avatarUrl || null);
   revalidatePath("/me");
@@ -21,5 +21,5 @@ export async function updateProfileAction(formData: FormData) {
   revalidatePath("/s/[slug]/settings", "page");
   revalidatePath("/s/[slug]/p/[postId]", "page");
   revalidatePath("/feed");
-  redirect(`/me?${new URLSearchParams({ message: "Profile saved." })}`);
+  redirect("/me?message=saved");
 }

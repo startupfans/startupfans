@@ -5,10 +5,14 @@ import { acceptInviteAction } from "./actions";
 
 export const metadata = { title: "Join a team on startupfans", robots: { index: false, follow: false } };
 
-async function JoinPage({ params }: { params: Promise<{ token: string }> }) {
-  const { token } = await params;
-  await requireUser(`/join/${token}`);
-  const invite = await getValidStartupInvite(token);
+async function JoinPage({ params, searchParams }: {
+  params: Promise<{ token: string }>;
+  searchParams: Promise<{ invalid?: string | string[] }>;
+}) {
+  const [{ token }, query] = await Promise.all([params, searchParams]);
+  const invalid = query.invalid === "1";
+  await requireUser(`/join/${token}${invalid ? "?invalid=1" : ""}`);
+  const invite = invalid ? null : await getValidStartupInvite(token);
 
   return (
     <main className="mx-auto min-h-screen max-w-xl px-5 py-10 sm:py-20">

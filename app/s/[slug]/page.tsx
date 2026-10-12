@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { SectionHeading, Star } from "@/app/components/sticker";
+import { SectionHeading, Star, TopNav } from "@/app/components/sticker";
 import { getCurrentUser } from "@/lib/auth";
 import { getStartupFollow } from "@/lib/follows";
 import { getPublicStartupPosts } from "@/lib/posts";
@@ -17,7 +17,7 @@ export async function generateMetadata({ params }: StartupPageProps): Promise<Me
   const { slug } = await params;
   const startup = await getStartupBySlug(slug);
   if (!startup) notFound();
-  return { title: `${startup.name} on startupfans`, description: startup.tagline ?? "" };
+  return { title: `${startup.name} on startupfans`, ...(startup.tagline ? { description: startup.tagline } : {}) };
 }
 
 async function StartupPage({ params }: StartupPageProps) {
@@ -36,10 +36,7 @@ async function StartupPage({ params }: StartupPageProps) {
 
   return (
     <main className="mx-auto min-h-screen max-w-4xl px-5 py-10 sm:py-16">
-      <nav className="flex items-center justify-between gap-4" aria-label="Main navigation">
-        <Link href="/" className="font-display text-xl font-extrabold tracking-tight">startupfans</Link>
-        <Link href={user ? "/me" : `/login?next=/s/${slug}`} className="font-bold underline underline-offset-4">{user ? "Your account" : "Sign in"}</Link>
-      </nav>
+      <TopNav signedIn={user !== null} next={`/s/${slug}`} />
       <section className="relative mt-10 rounded-3xl border-[3px] border-ink bg-white p-6 shadow-sticker-lg sm:p-10" aria-labelledby="startup-name">
         <Star className="absolute -top-6 right-5 h-12 w-12 rotate-12 text-sun sm:h-16 sm:w-16" />
         <div className="flex flex-col gap-6 sm:flex-row sm:items-center">

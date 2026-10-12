@@ -44,10 +44,13 @@ export async function createStartupAction(
     return { status: "error", message: "Choose a name between 2 and 60 characters." };
   }
   if (!isValidSlug(slug)) {
-    return { status: "error", message: "Choose another page address. Use lowercase letters, numbers and hyphens, up to 40 characters." };
+    return { status: "error", message: "Choose an available address like your-startup: 3 to 40 lowercase letters, numbers or hyphens, starting and ending with a letter or number." };
   }
   if (tagline.length > 120 || description.length > 2000) {
     return { status: "error", message: "Use up to 120 characters for the tagline and 2,000 for the description." };
+  }
+  if (logoUrl.length > 500 || website.length > 500) {
+    return { status: "error", message: "Use up to 500 characters for your logo and website addresses." };
   }
   if (!isHttpsUrl(logoUrl) || !isHttpsUrl(website)) {
     return { status: "error", message: "Use a full https:// address for your logo and website." };

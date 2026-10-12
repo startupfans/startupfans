@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { Sticker } from "@/app/components/sticker";
+import { Sticker, TopNav } from "@/app/components/sticker";
 import { PostCard } from "@/app/s/[slug]/post-card";
 import { getCurrentUser } from "@/lib/auth";
 import { listFeed } from "@/lib/posts";
@@ -15,6 +15,7 @@ export default async function FeedPage({ searchParams }: {
   const [query, user] = await Promise.all([searchParams, getCurrentUser()]);
   const following = query.filter === "following";
   const needsSignIn = following && !user;
+  const followingLogin = `/login?next=${encodeURIComponent("/feed?filter=following")}`;
   const { posts, nextCursor } = await listFeed({
     userId: user?.id,
     following,
@@ -27,10 +28,7 @@ export default async function FeedPage({ searchParams }: {
 
   return (
     <main className="mx-auto min-h-screen max-w-4xl px-5 py-10 sm:py-16">
-      <nav className="flex items-center justify-between gap-4" aria-label="Main navigation">
-        <Link href="/" className="font-display text-xl font-extrabold tracking-tight">startupfans</Link>
-        <Link href={user ? "/me" : "/login?next=/feed"} className="font-bold underline underline-offset-4">{user ? "Your account" : "Sign in"}</Link>
-      </nav>
+      <TopNav signedIn={user !== null} next={following ? "/feed?filter=following" : "/feed"} />
       <header className="mt-10">
         <Sticker className="inline-block -rotate-3 bg-lime normal-case">From the teams</Sticker>
         <h1 className="mt-7 font-display text-4xl font-extrabold tracking-tight sm:text-5xl">The latest.</h1>
@@ -39,7 +37,7 @@ export default async function FeedPage({ searchParams }: {
       <nav className="mt-8 flex flex-wrap gap-4" aria-label="Feed filter">
         <Link href="/feed" aria-current={!following ? "page" : undefined}
           className={`${pillClass} -rotate-2 ${!following ? "bg-sun" : "bg-white"}`}>Everyone</Link>
-        <Link href={user ? "/feed?filter=following" : "/login?next=/feed"} aria-current={following ? "page" : undefined}
+        <Link href={user ? "/feed?filter=following" : followingLogin} aria-current={following ? "page" : undefined}
           className={`${pillClass} rotate-2 ${following ? "bg-sun" : "bg-white"}`}>Following</Link>
       </nav>
       <section className="mt-8 space-y-6" aria-label={following ? "Updates from startups you follow" : "Updates from all startups"}>
@@ -47,7 +45,7 @@ export default async function FeedPage({ searchParams }: {
           <div className="rounded-2xl border-[3px] border-ink bg-sky p-6 shadow-sticker">
             <h2 className="font-display text-xl font-extrabold">Follow your favourites.</h2>
             <p className="mt-2">Sign in to see updates from the startups you follow.</p>
-            <Link href="/login?next=/feed" className="mt-4 inline-block font-bold underline underline-offset-4">Sign in</Link>
+            <Link href={followingLogin} className="mt-4 inline-block font-bold underline underline-offset-4">Sign in</Link>
           </div>
         ) : posts.length === 0 ? (
           <div className="rounded-2xl border-[3px] border-ink bg-sun p-6 shadow-sticker">

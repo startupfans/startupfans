@@ -1,4 +1,22 @@
 import type { ReactNode } from "react";
+import Image from "next/image";
+import Link from "next/link";
+
+export function TopNav({ signedIn, next }: { signedIn: boolean; next: string }) {
+  return (
+    <nav className="flex flex-wrap items-center justify-between gap-4" aria-label="Main navigation">
+      <Link href="/" aria-label="startupfans home" className="shrink-0">
+        <Image src="/logo/startupfans-logo-on-light.svg" alt="startupfans" width={910} height={150} className="h-auto w-36 sm:w-44" />
+      </Link>
+      <div className="flex items-center gap-4 font-bold underline underline-offset-4">
+        <Link href="/feed">Feed</Link>
+        <Link href={signedIn ? "/me" : `/login?next=${encodeURIComponent(next)}`}>
+          {signedIn ? "Your account" : "Sign in"}
+        </Link>
+      </div>
+    </nav>
+  );
+}
 
 export function SectionHeading({ eyebrow, title, isDark = false }: { eyebrow: string; title: string; isDark?: boolean }) {
   return (

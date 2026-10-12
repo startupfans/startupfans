@@ -4,7 +4,7 @@ const RESERVED_SLUGS = new Set([
 ]);
 
 export function slugify(name: string): string {
-  return name
+  const slug = name
     .normalize("NFKD")
     .replace(/[\u0300-\u036f]/g, "")
     .toLowerCase()
@@ -12,9 +12,10 @@ export function slugify(name: string): string {
     .replace(/^-+|-+$/g, "")
     .slice(0, 40)
     .replace(/-+$/g, "");
+  return slug.length >= 3 ? slug : slug ? `${slug}-hq` : "startup-hq";
 }
 
 export function isValidSlug(slug: string): boolean {
-  return /^[a-z0-9](?:[a-z0-9-]{1,38}[a-z0-9])?$/.test(slug)
+  return /^[a-z0-9][a-z0-9-]{1,38}[a-z0-9]$/.test(slug)
     && !RESERVED_SLUGS.has(slug);
 }

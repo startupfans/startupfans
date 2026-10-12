@@ -29,18 +29,21 @@ export async function updateStartupAction(slug: string, formData: FormData) {
   const rawTeamSize = textField(formData, "teamSize");
   const teamSize = rawTeamSize ? Number(rawTeamSize) : null;
 
-  if (name.length < 2 || name.length > 60) settingsMessage(slug, "Choose a name between 2 and 60 characters.");
+  if (name.length < 2 || name.length > 60) settingsMessage(slug, "invalid-name");
   if (tagline.length > 120 || description.length > 2000) {
-    settingsMessage(slug, "Use up to 120 characters for the tagline and 2,000 for the description.");
+    settingsMessage(slug, "text-too-long");
+  }
+  if (logoUrl.length > 500 || website.length > 500) {
+    settingsMessage(slug, "url-too-long");
   }
   if (!isOptionalHttpsUrl(logoUrl) || !isOptionalHttpsUrl(website)) {
-    settingsMessage(slug, "Use a full https:// address for your logo and website.");
+    settingsMessage(slug, "invalid-url");
   }
   if (stage && !["idea", "pre-seed", "seed", "series-a", "growth", "bootstrapped"].includes(stage)) {
-    settingsMessage(slug, "Choose a stage from the list.");
+    settingsMessage(slug, "invalid-stage");
   }
   if (teamSize !== null && (!/^\d+$/.test(rawTeamSize) || !Number.isInteger(teamSize) || teamSize < 1 || teamSize > 10000)) {
-    settingsMessage(slug, "Team size must be a whole number from 1 to 10,000.");
+    settingsMessage(slug, "invalid-team-size");
   }
   await withOwnedStartup(slug, user.id, async (tx, startup) => {
     await tx.update(startups).set({
@@ -49,23 +52,23 @@ export async function updateStartupAction(slug: string, formData: FormData) {
     }).where(eq(startups.id, startup.id));
   });
   refreshStartup(slug);
-  settingsMessage(slug, "Page saved.");
+  settingsMessage(slug, "saved");
 }
 
 export async function removeMemberAction(slug: string, formData: FormData) {
   const { user } = await requireStartupOwner(slug);
   const memberId = textField(formData, "memberId");
-  if (!isValidSessionId(memberId)) settingsMessage(slug, "Choose a member from the list.");
+  if (!isValidSessionId(memberId)) settingsMessage(slug, "invalid-member");
   const result = await removeStartupMember(slug, user.id, memberId);
   switch (result.status) {
     case "last-owner":
-      settingsMessage(slug, "Keep at least one owner on your page.");
+      settingsMessage(slug, "last-owner");
     case "missing":
-      settingsMessage(slug, "This person is already out of the team.");
+      settingsMessage(slug, "missing-member");
     case "removed":
       refreshStartup(slug);
       if (memberId === user.id) redirect(`/s/${slug}`);
-      settingsMessage(slug, "Member removed.");
+      settingsMessage(slug, "member-removed");
     default:
       result satisfies never;
   }
@@ -81,9 +84,9 @@ export async function createInviteAction(slug: string) {
 export async function revokeInviteAction(slug: string, formData: FormData) {
   const { user } = await requireStartupOwner(slug);
   const hash = textField(formData, "tokenHash");
-  if (!/^[0-9a-f]{64}$/.test(hash)) settingsMessage(slug, "Choose an invite from the list.");
+  if (!/^[0-9a-f]{64}$/.test(hash)) settingsMessage(slug, "invalid-invite");
   await revokeStartupInvite(slug, user.id, hash);
   revalidatePath(`/s/${slug}/settings`);
   revalidatePath("/join/[token]", "page");
-  settingsMessage(slug, "Invite revoked.");
+  settingsMessage(slug, "invite-revoked");
 }

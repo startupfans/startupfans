@@ -21,7 +21,7 @@ async function StartPage() {
           </label>
           <label htmlFor="slug" className="block font-bold">Page address
             <span id="slug-help" className="mt-1 block text-sm font-normal text-ink/70">startupfans.co/s/your-name</span>
-            <input id="slug" name="slug" required maxLength={40} pattern="[a-z0-9](?:[a-z0-9\-]{1,38}[a-z0-9])?" aria-describedby="slug-help" autoCapitalize="none" autoCorrect="off" spellCheck={false} className={inputClass} />
+            <input id="slug" name="slug" required minLength={3} maxLength={40} pattern="[a-z0-9][a-z0-9\-]{1,38}[a-z0-9]" aria-describedby="slug-help" autoCapitalize="none" autoCorrect="off" spellCheck={false} className={inputClass} />
           </label>
           <label htmlFor="tagline" className="block font-bold">Tagline <span className="font-normal">(optional)</span>
             <input id="tagline" name="tagline" maxLength={120} className={inputClass} />
@@ -30,10 +30,10 @@ async function StartPage() {
             <textarea id="description" name="description" maxLength={2000} rows={5} className={inputClass} />
           </label>
           <label htmlFor="logoUrl" className="block font-bold">Logo URL <span className="font-normal">(optional)</span>
-            <input id="logoUrl" name="logoUrl" type="url" pattern="https://.*" placeholder="https://" className={inputClass} />
+            <input id="logoUrl" name="logoUrl" type="url" pattern="https://.*" maxLength={500} placeholder="https://" className={inputClass} />
           </label>
           <label htmlFor="website" className="block font-bold">Website <span className="font-normal">(optional)</span>
-            <input id="website" name="website" type="url" pattern="https://.*" placeholder="https://" autoComplete="url" className={inputClass} />
+            <input id="website" name="website" type="url" pattern="https://.*" maxLength={500} placeholder="https://" autoComplete="url" className={inputClass} />
           </label>
           <div className="grid gap-5 sm:grid-cols-2">
             <label htmlFor="stage" className="block font-bold">Stage <span className="font-normal">(optional)</span>

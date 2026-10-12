@@ -1,21 +1,26 @@
 import Image from "next/image";
 import Link from "next/link";
+import { TopNav } from "@/app/components/sticker";
 import { requireUser, signOut } from "@/lib/auth";
 import { getFollowedStartups } from "@/lib/members";
 import { updateProfileAction } from "./actions";
 
 const inputClass = "mt-2 w-full rounded-xl border-2 border-ink bg-white px-4 py-3 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ink";
+const messages = new Map([
+  ["name-too-long", "Use up to 60 characters for your name."],
+  ["invalid-avatar", "Use a full https:// address for your avatar."],
+  ["saved", "Profile saved."],
+]);
 
 async function MePage({ searchParams }: { searchParams: Promise<{ message?: string | string[] }> }) {
   const user = await requireUser("/me");
   const [followedStartups, query] = await Promise.all([getFollowedStartups(user.id), searchParams]);
   const name = user.name?.trim() || user.email.split("@")[0];
+  const message = typeof query.message === "string" ? messages.get(query.message) : undefined;
 
   return (
     <main className="mx-auto min-h-screen max-w-xl px-5 py-10 sm:py-20">
-      <Link href="/" className="font-display text-xl font-extrabold tracking-tight">
-        startupfans
-      </Link>
+      <TopNav signedIn next="/me" />
       <section className="mt-10 rounded-3xl border-[3px] border-ink bg-sky p-6 shadow-sticker-lg sm:p-10">
         <div className="flex items-center gap-4">
           {user.avatarUrl ? (
@@ -25,7 +30,7 @@ async function MePage({ searchParams }: { searchParams: Promise<{ message?: stri
           <h1 className="min-w-0 break-words font-display text-4xl font-extrabold tracking-tight">Hi, {name}.</h1>
         </div>
         <p className="mt-5 break-words text-lg">Signed in as <strong>{user.email}</strong></p>
-        {typeof query.message === "string" && <p role="status" className="mt-5 rounded-xl border-2 border-ink bg-sun p-4">{query.message}</p>}
+        {message && <p role="status" className="mt-5 rounded-xl border-2 border-ink bg-sun p-4">{message}</p>}
         <form action={updateProfileAction} className="mt-8 space-y-5">
           <label htmlFor="name" className="block font-bold">Your name <span className="font-normal">(optional)</span>
             <input id="name" name="name" defaultValue={user.name ?? ""} maxLength={60} autoComplete="name" className={inputClass} />
