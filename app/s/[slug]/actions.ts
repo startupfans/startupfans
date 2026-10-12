@@ -28,7 +28,10 @@ export async function updateFollow(
     const startup = await getStartupBySlug(slug);
     if (!startup) return { status: "error", message: "This startup couldn't be found." };
     if (intent === "follow") {
-      await followStartup(user.id, startup.id);
+      const result = await followStartup(user.id, startup.id);
+      if (result.status === "member") {
+        return { status: "error", message: "You're on the team, so you're already closer than a fan." };
+      }
     } else {
       await unfollowStartup(user.id, startup.id);
     }

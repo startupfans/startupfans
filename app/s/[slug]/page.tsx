@@ -28,8 +28,8 @@ async function StartupPage({ params }: StartupPageProps) {
   const [user, members, posts, fanCount] = await Promise.all([
     getCurrentUser(), getStartupMembers(startup.id), getPublicStartupPosts(startup.id), getStartupFanCount(startup.id),
   ]);
-  const follow = user ? await getStartupFollow(user.id, startup.id) : null;
   const isMember = members.some((member) => member.id === user?.id);
+  const follow = user && !isMember ? await getStartupFollow(user.id, startup.id) : null;
   const isOwner = members.some((member) => member.id === user?.id && member.role === "owner");
   const stageLabel = startup.stage === "series-a" ? "Series A" : startup.stage
     ? startup.stage.charAt(0).toUpperCase() + startup.stage.slice(1) : null;
@@ -63,7 +63,11 @@ async function StartupPage({ params }: StartupPageProps) {
           {isOwner && <Link href={`/s/${slug}/settings`} className="underline underline-offset-4">Settings</Link>}
         </div>
         <div className="mt-8 flex flex-wrap items-center gap-5 border-t-2 border-ink/15 pt-6">
-          <FollowButton slug={slug} signedIn={user !== null} memberNo={follow?.memberNo ?? null} />
+          {isMember ? (
+            <span className="-rotate-3 rounded-xl border-[3px] border-ink bg-lime px-5 py-3 font-display font-extrabold shadow-sticker">
+              On the team
+            </span>
+          ) : <FollowButton slug={slug} signedIn={user !== null} memberNo={follow?.memberNo ?? null} />}
           <p className="font-mono text-sm font-bold">{fanCount.toLocaleString("en-GB")} {fanCount === 1 ? "fan" : "fans"}</p>
         </div>
         <div className="mt-8">
@@ -82,6 +86,7 @@ async function StartupPage({ params }: StartupPageProps) {
               );
             })}
           </ul>
+          <p className="mt-3 text-sm text-ink/70">Everyone on the team posts here.</p>
         </div>
       </section>
       <section className="mt-14" aria-label="Startup updates">

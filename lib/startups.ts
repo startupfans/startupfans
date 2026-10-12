@@ -16,6 +16,7 @@ export async function createStartup(input: typeof startups.$inferInsert) {
       .onConflictDoNothing({ target: startups.slug }).returning();
     if (!startup) return null;
 
+    // The creator joins as an owner, never as a fan of their own startup.
     await tx.insert(startupMembers).values({
       startupId: startup.id,
       userId: input.createdBy,

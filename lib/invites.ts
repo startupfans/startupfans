@@ -3,7 +3,7 @@ import "server-only";
 import { createHash, randomBytes } from "node:crypto";
 import { and, asc, eq, gt, isNull } from "drizzle-orm";
 import { db } from "@/db";
-import { startupInvites, startupMembers, startups } from "@/db/schema";
+import { follows, startupInvites, startupMembers, startups } from "@/db/schema";
 import { withOwnedStartup } from "@/lib/members";
 
 function tokenHash(token: string) {
@@ -64,6 +64,8 @@ export async function acceptStartupInvite(token: string, userId: string) {
     if (!claimed) return null;
     await tx.insert(startupMembers).values({ startupId: claimed.startupId, userId, role: "editor" })
       .onConflictDoNothing({ target: [startupMembers.startupId, startupMembers.userId] });
+    await tx.delete(follows)
+      .where(and(eq(follows.userId, userId), eq(follows.startupId, claimed.startupId)));
     return startup;
   });
 }

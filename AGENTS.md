@@ -286,7 +286,7 @@ Built:
 - Startup creation (`app/start/`): signed-in users create a public page and become its owner, with optional stage and team size.
 - Public startup pages (`app/s/[slug]/`): profile, team members, current fan count and a markdown feed, plus member settings links.
 - Posting: team members publish markdown updates with one optional image or video uploaded directly to Vercel Blob. Public post pages have share metadata; authors and owners can delete posts.
-- Follow and unfollow: signed-in fans receive unique member numbers; unfollowing never reuses a number.
+- Follow and unfollow: signed-in fans receive unique member numbers; unfollowing never reuses a number. Team members see an "On the team" badge and cannot follow their own startup; accepting an invite removes any existing follow without reusing its number.
 - Global feed (`app/feed/`): public posts newest first, startup names and logos, a signed-in following filter, and cursor pagination with 20 posts per page.
 - Team settings: owners edit page details, remove members while keeping at least one owner, and create, email or revoke single-use invite links that expire after 7 days. Signed-in teammates accept links to join as editors.
 - Sticker-style sign-in and team invite emails share a table-based HTML shell and plain-text content, with a console fallback without a Resend key. Dev-only previews live at `/dev/emails`.
@@ -315,7 +315,7 @@ Site copy only promises what exists. No pricing on the site (for fans or startup
 
 ## Layout
 
-- `scripts/seed.ts` and `scripts/import-waitlist.ts`: manual, idempotent startupfans seed and GetWaitlist CSV import using the shared database and follow allocator. Commands load `.env` with Node 24 and run through `tsx` with the `react-server` condition for server-only imports.
+- `scripts/seed.ts` and `scripts/import-waitlist.ts`: manual, idempotent startupfans seed and GetWaitlist CSV import using the shared database and follow allocator. The importer skips team members and reports that reason in its summary. Commands load `.env` with Node 24 and run through `tsx` with the `react-server` condition for server-only imports.
 - `db/`: Drizzle schema, migrations, and the lazy Postgres client exported as `db`. Without `DATABASE_URL` it falls back to the local Docker database on port 5433.
 - `lib/`: server-only auth and session helpers (`lib/auth.ts`) and Resend email delivery with a console fallback (`lib/email.ts`).
 - `lib/emails/`: pure sign-in and invite templates using a shared inline-styled, table-based sticker layout and matching plain text.

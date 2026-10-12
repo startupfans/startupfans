@@ -3,7 +3,7 @@ import { eq } from "drizzle-orm";
 import type postgres from "postgres";
 import { db } from "../db/index";
 import { startups, users } from "../db/schema";
-import { followStartup, getStartupFollow } from "../lib/follows";
+import { followStartup } from "../lib/follows";
 
 export function parseCsv(input: string): string[][] {
   const rows: string[][] = [];
@@ -81,6 +81,7 @@ export async function importWaitlist(path: string) {
   let createdUsers = 0;
   let newFollows = 0;
   let skippedRows = 0;
+  let skippedMembers = 0;
   const invalidEmails: string[] = [];
   for (const { row } of orderedRows) {
     if (row.length === 1 && row[0] === "") continue;
@@ -101,16 +102,21 @@ export async function importWaitlist(path: string) {
     const [user] = created ? [created] : await db.select().from(users)
       .where(eq(users.email, email)).limit(1);
     if (!user) throw new Error(`Could not upsert user ${email}`);
-    const existing = await getStartupFollow(user.id, startup.id);
-    const follow = await followStartup(user.id, startup.id);
-    if (existing) {
+    const result = await followStartup(user.id, startup.id);
+    if (result.status === "member") {
+      skippedRows++;
+      skippedMembers++;
+      continue;
+    }
+    if (!result.created) {
       skippedRows++;
     } else {
       newFollows++;
-      console.log(`New follow: ${email}, fan #${follow.memberNo}`);
+      console.log(`New follow: ${email}, fan #${result.follow.memberNo}`);
     }
   }
   console.log(`Created users: ${createdUsers}; new follows: ${newFollows}; skipped rows: ${skippedRows}`);
+  console.log(`Skipped team members: ${skippedMembers} (already on the team, so cannot be fans)`);
   console.log(`First invalid emails (up to 3): ${invalidEmails.length ? invalidEmails.join(", ") : "none"}`);
 }
 
