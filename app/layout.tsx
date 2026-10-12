@@ -17,14 +17,27 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+const SITE_URL = "https://startupfans.co";
+const TITLE = "startupfans: get your startup in front of fans";
+const DESCRIPTION =
+  "A curated community of early startups. Apply to get selected and promoted to fans. Free to join. Launching today.";
+
 export const metadata: Metadata = {
-  title: "startupfans: the inside track on startups",
-  description:
-    "One public feed for everything a startup's team is shipping, posted by the people building it. Free to follow.",
+  metadataBase: new URL(SITE_URL),
+  title: TITLE,
+  description: DESCRIPTION,
   openGraph: {
     title: "startupfans",
-    description: "Get the inside track on startups.",
+    description: DESCRIPTION,
+    url: SITE_URL,
+    siteName: "StartupFans",
     type: "website",
+    locale: "en_GB",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "startupfans: get your startup in front of fans",
+    description: DESCRIPTION,
   },
 };
 

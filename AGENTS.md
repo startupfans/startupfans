@@ -280,8 +280,9 @@ Picked from a shortlist of about 50 ideas from Ian's notes, scored on launch spe
 ## What's built vs the brief
 
 Built:
-- Landing page (`app/page.tsx`): hero "Get the inside track on startups." with waitlist form, a "For fans" section and a "For startups" section (three value props each), and a second waitlist form at the bottom.
-- Waitlist: email only, via GetWaitlist (`app/waitlist-form.tsx`).
+- Landing page (`app/page.tsx`): startup-first hero ("Get your startup in front of fans.") with waitlist CTA to apply for selection, honest "launching today · free to join" badge, fan path link, startups section before fans, and a second apply form at the bottom. Positioning: curated community of early startups, free to join, selected startups get promoted to fans.
+- Waitlist: email only, via GetWaitlist (`app/waitlist-form.tsx`). Post-signup shows queue position, copy-link, and a one-click X share with prefilled text + referral URL.
+- OG / social: `metadataBase` + Twitter `summary_large_image` in `app/layout.tsx`; generated share card in `app/opengraph-image.tsx`.
 
 Not built yet (from MVP must-haves):
 - Richer startup waitlist fields above
@@ -289,7 +290,7 @@ Not built yet (from MVP must-haves):
 
 Parked for now: founding spot payment (£99/year Stripe link). It's free for everyone at the moment.
 
-Site copy only promises what exists. No pricing on the site (for fans or startups), and no paywalls, job posts or verified metrics until they exist.
+Site copy only promises what exists. No pricing on the site (for fans or startups), and no paywalls, job posts or verified metrics until they exist. No fake startup counts or social proof numbers.
 
 ## Stack
 

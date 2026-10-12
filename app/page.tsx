@@ -12,11 +12,35 @@ interface ValueProp {
   tiltClass: string;
 }
 
+const STARTUP_PROPS: ValueProp[] = [
+  {
+    emoji: "📣",
+    title: "Get selected, get promoted",
+    body: "We pick early startups and put them in front of fans who actually want the inside track. Free to join.",
+    colorClass: "bg-sun",
+    tiltClass: "md:rotate-1",
+  },
+  {
+    emoji: "🚢",
+    title: "Show what you're shipping",
+    body: "One feed for the team: what you're working on, what just shipped, the real stuff prospects and candidates never see.",
+    colorClass: "bg-tangerine",
+    tiltClass: "md:-rotate-2",
+  },
+  {
+    emoji: "🧲",
+    title: "Hire people who get you",
+    body: "Candidates see the real team before they apply. Way better than a stock-photo careers page.",
+    colorClass: "bg-pink",
+    tiltClass: "md:rotate-2",
+  },
+];
+
 const FAN_PROPS: ValueProp[] = [
   {
     emoji: "🤫",
     title: "Get the inside scoop",
-    body: "Exclusive posts straight from the team: what they're working on today, what they just shipped, and the photos from the team dinner.",
+    body: "Exclusive posts straight from selected startups: what they're working on today, what they just shipped, and the photos from the team dinner.",
     colorClass: "bg-sky",
     tiltClass: "md:-rotate-2",
   },
@@ -36,33 +60,15 @@ const FAN_PROPS: ValueProp[] = [
   },
 ];
 
-const STARTUP_PROPS: ValueProp[] = [
-  {
-    emoji: "📣",
-    title: "Marketing that writes itself",
-    body: "Your team already makes great content every day. Give it somewhere to live: a steady stream of real posts from the people building the product.",
-    colorClass: "bg-sun",
-    tiltClass: "md:rotate-1",
-  },
-  {
-    emoji: "🤝",
-    title: "Show prospects you ship",
-    body: "Prospects and customers see what you're shipping, as you ship it. A better link to send than another case study.",
-    colorClass: "bg-tangerine",
-    tiltClass: "md:-rotate-2",
-  },
-  {
-    emoji: "🧲",
-    title: "Hire people who get you",
-    body: "Candidates see the real team and what it's like to work with you before they apply. Way better than a stock-photo careers page.",
-    colorClass: "bg-pink",
-    tiltClass: "md:rotate-2",
-  },
-];
-
 const BARCODE_BARS = [2, 4, 1, 3, 2, 5, 1, 2, 4, 1, 3, 1, 5, 2, 1, 3, 4, 1, 2, 3];
 
-const TICKER_WORDS = ["Get the inside scoop", "See what's shipping", "Follow for free", "Open the kitchen", "Be a fan"];
+const TICKER_WORDS = [
+  "Curated early startups",
+  "Free to join",
+  "Get selected",
+  "Launching today",
+  "Promoted to fans",
+];
 
 export default function Home() {
   return (
@@ -71,17 +77,17 @@ export default function Home() {
       <Hero />
       <Ticker />
       <AudienceSection
+        id="startups"
+        eyebrow="For startups"
+        title="Apply. Get selected. Get in front of fans."
+        props={STARTUP_PROPS}
+        isDark
+      />
+      <AudienceSection
         id="fans"
         eyebrow="For fans"
         title="The best seat in the house for what's next."
         props={FAN_PROPS}
-      />
-      <AudienceSection
-        id="startups"
-        eyebrow="For startups"
-        title="Your #wins channel deserves an audience."
-        props={STARTUP_PROPS}
-        isDark
       />
       <JoinSection />
       <Footer />
@@ -103,17 +109,17 @@ function Nav() {
         />
       </a>
       <nav className="flex items-center gap-5">
-        <a href="#fans" className="hidden font-bold hover:text-pink sm:inline">
-          For fans
-        </a>
         <a href="#startups" className="hidden font-bold hover:text-pink sm:inline">
           For startups
+        </a>
+        <a href="#fans" className="hidden font-bold hover:text-pink sm:inline">
+          For fans
         </a>
         <a
           href="#join"
           className="rounded-full border-2 border-ink bg-white px-4 py-2 text-sm font-bold shadow-sticker transition hover:-translate-y-0.5 hover:bg-sun active:translate-y-0 active:shadow-none"
         >
-          Join the waitlist
+          Apply now
         </a>
       </nav>
     </header>
@@ -139,21 +145,29 @@ function HeroCopy() {
           <span className="absolute inline-flex size-full animate-ping rounded-full bg-pink opacity-75" />
           <span className="relative inline-flex size-2.5 rounded-full bg-pink" />
         </span>
-        Now accepting early fans
+        Launching today · free to join
       </div>
 
       <h1 className="mt-8 max-w-4xl font-display text-5xl leading-[0.95] font-extrabold tracking-tight text-balance sm:text-7xl lg:text-[5.25rem]">
-        Get the inside track on startups.
+        Get your startup in front of fans.
       </h1>
 
       <div aria-hidden className="mt-8 h-3 w-28 -rotate-2 rounded-full border-2 border-ink bg-pink sm:h-4 sm:w-40" />
 
       <p className="mt-8 max-w-2xl text-lg text-pretty text-ink/80 sm:text-xl">
-        Every startup has a #wins channel nobody outside ever sees. StartupFans gives it one public feed, posted by
-        the whole team. Follow along for free.
+        StartupFans is a curated community of early startups. Apply to get selected, then we promote you to fans who
+        want the inside track. Free for everyone.
       </p>
 
       <WaitlistForm />
+
+      <p className="mt-2 max-w-xl text-sm font-semibold text-ink/60">
+        just here as a fan?{" "}
+        <a href="#fans" className="underline decoration-2 underline-offset-2 hover:text-pink">
+          same list
+        </a>
+        . we&apos;ll email when selected startups start posting.
+      </p>
     </>
   );
 }
@@ -161,22 +175,22 @@ function HeroCopy() {
 function FanCard() {
   return (
     <div className="relative mx-auto w-full max-w-sm lg:mx-0 lg:justify-self-end">
-      <Sticker className="absolute -top-6 -left-4 animate-wobble bg-lime [--tilt:-10deg]">fan since day one</Sticker>
-      <Sticker className="absolute -right-3 -bottom-5 animate-wobble bg-sky [--tilt:8deg]">early &gt; everyone</Sticker>
+      <Sticker className="absolute -top-6 -left-4 animate-wobble bg-lime [--tilt:-10deg]">free to join</Sticker>
+      <Sticker className="absolute -right-3 -bottom-5 animate-wobble bg-sky [--tilt:8deg]">launching today</Sticker>
 
       <div className="rotate-3 rounded-3xl border-[3px] border-ink bg-sun p-6 shadow-sticker-lg transition hover:rotate-0">
         <div className="flex items-center justify-between">
-          <span className="font-mono text-xs font-bold tracking-widest uppercase">Official fan club</span>
+          <span className="font-mono text-xs font-bold tracking-widest uppercase">Selected startup</span>
           <Star className="size-9 text-pink" />
         </div>
-        <p className="mt-6 font-mono text-xs font-semibold tracking-wide text-ink/60 uppercase">Member no.</p>
+        <p className="mt-6 font-mono text-xs font-semibold tracking-wide text-ink/60 uppercase">Spot no.</p>
         <p className="font-display text-7xl leading-none font-extrabold tabular-nums">#0001</p>
         <p className="mt-2 font-display text-lg font-bold">Could be you.</p>
 
         <ul className="mt-6 space-y-2 rounded-2xl border-2 border-ink bg-white p-4 text-sm font-semibold">
-          <li>🤫 The inside scoop</li>
-          <li>🚢 What&apos;s shipping, as it ships</li>
-          <li>💌 Free to follow</li>
+          <li>📣 Get selected &amp; promoted</li>
+          <li>🚢 Show what you&apos;re shipping</li>
+          <li>💌 Free for startups &amp; fans</li>
         </ul>
 
         <div className="mt-6 flex items-end justify-between gap-4">
@@ -185,7 +199,7 @@ function FanCard() {
               <span key={index} className="h-full bg-ink" style={{ width }} />
             ))}
           </div>
-          <span className="font-mono text-[10px] font-bold tracking-wide uppercase">Early access</span>
+          <span className="font-mono text-[10px] font-bold tracking-wide uppercase">Apply today</span>
         </div>
       </div>
     </div>
@@ -261,17 +275,17 @@ function JoinSection() {
       <div className="relative overflow-hidden rounded-[2rem] border-[3px] border-ink bg-pink p-8 shadow-sticker-lg sm:p-14">
         <Star className="absolute -top-10 -right-10 size-48 rotate-12 text-sun opacity-90" />
         <div className="relative max-w-2xl">
-          <p className="font-mono text-xs font-bold tracking-widest uppercase">The fan list</p>
+          <p className="font-mono text-xs font-bold tracking-widest uppercase">Launching today</p>
           <h2 className="mt-3 font-display text-4xl leading-none font-extrabold tracking-tight text-balance sm:text-6xl">
-            Get in before everyone else.
+            Apply to get your startup selected.
           </h2>
           <p className="mt-5 text-lg text-ink/80">
-            Fans hear about new startups first, get founding-fan pricing, and get a direct line to the people building
-            them.
+            We&apos;re opening the first wave now. Drop your email, tell a friend, and move up the list. Fans welcome
+            too.
           </p>
         </div>
 
-        <WaitlistForm />
+        <WaitlistForm ctaLabel="Apply now →" />
       </div>
     </section>
   );
