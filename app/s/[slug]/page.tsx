@@ -5,8 +5,11 @@ import { notFound } from "next/navigation";
 import { SectionHeading, Star } from "@/app/components/sticker";
 import { getCurrentUser } from "@/lib/auth";
 import { getStartupFollow } from "@/lib/follows";
-import { getStartupBySlug, getStartupFanCount, getStartupMembers, getStartupPosts } from "@/lib/startups";
+import { getPublicStartupPosts } from "@/lib/posts";
+import { getStartupBySlug, getStartupFanCount, getStartupMembers } from "@/lib/startups";
+import { Composer } from "./composer";
 import { FollowButton } from "./follow-button";
+import { PostCard } from "./post-card";
 
 type StartupPageProps = { params: Promise<{ slug: string }> };
 
@@ -23,10 +26,11 @@ async function StartupPage({ params }: StartupPageProps) {
   if (!startup) notFound();
 
   const [user, members, posts, fanCount] = await Promise.all([
-    getCurrentUser(), getStartupMembers(startup.id), getStartupPosts(startup.id), getStartupFanCount(startup.id),
+    getCurrentUser(), getStartupMembers(startup.id), getPublicStartupPosts(startup.id), getStartupFanCount(startup.id),
   ]);
   const follow = user ? await getStartupFollow(user.id, startup.id) : null;
   const isMember = members.some((member) => member.id === user?.id);
+  const isOwner = members.some((member) => member.id === user?.id && member.role === "owner");
   const stageLabel = startup.stage === "series-a" ? "Series A" : startup.stage
     ? startup.stage.charAt(0).toUpperCase() + startup.stage.slice(1) : null;
 
@@ -78,17 +82,12 @@ async function StartupPage({ params }: StartupPageProps) {
       </section>
       <section className="mt-14" aria-label="Startup updates">
         <SectionHeading eyebrow="From the team" title="The latest." />
+        {isMember && <Composer slug={slug} />}
         <div className="mt-7 space-y-6">
           {posts.length === 0 ? (
             <p className="rounded-2xl border-[3px] border-ink bg-sun p-6 shadow-sticker">No updates yet. Become a fan and follow along.</p>
           ) : posts.map((post) => (
-            <article key={post.id} className="rounded-2xl border-[3px] border-ink bg-white p-6 shadow-sticker">
-              <div className="flex flex-wrap items-center justify-between gap-3 text-sm text-ink/70">
-                <span>{post.authorName?.trim() || post.authorEmail.split("@")[0]}</span>
-                <time dateTime={post.publishedAt.toISOString()}>{post.publishedAt.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" })}</time>
-              </div>
-              <p className="mt-4 whitespace-pre-wrap break-words leading-relaxed">{post.body}</p>
-            </article>
+            <PostCard key={post.id} post={post} canDelete={isMember && (isOwner || post.authorId === user?.id)} />
           ))}
         </div>
       </section>

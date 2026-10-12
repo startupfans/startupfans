@@ -283,7 +283,8 @@ Built:
 - Landing page (`app/page.tsx`): hero "Get the inside track on startups." with waitlist form, a "For fans" section and a "For startups" section (three value props each), and a second waitlist form at the bottom.
 - Waitlist: email only, via GetWaitlist (`app/waitlist-form.tsx`).
 - Startup creation (`app/start/`): signed-in users create a public page and become its owner, with optional stage and team size.
-- Public startup pages (`app/s/[slug]/`): profile, team members, current fan count and a plain-text feed, plus member settings links.
+- Public startup pages (`app/s/[slug]/`): profile, team members, current fan count and a markdown feed, plus member settings links.
+- Posting: team members publish markdown updates with one optional image or video uploaded directly to Vercel Blob. Public post pages have share metadata; authors and owners can delete posts.
 - Follow and unfollow: signed-in fans receive unique member numbers; unfollowing never reuses a number.
 - Share previews: a default site image and dynamic startup images with the tagline and current fan count; unknown slugs use the default image.
 
@@ -291,7 +292,7 @@ Also built: Postgres + Drizzle data layer (`db/`, local Docker database) and ema
 
 Not built yet (from MVP must-haves):
 - Richer startup waitlist fields above
-- Team invitations, post creation with media, and the global feed
+- Team invitations and the global feed
 
 Parked for now: founding spot payment (£99/year Stripe link). It's free for everyone at the moment.
 
@@ -317,7 +318,10 @@ Site copy only promises what exists. No pricing on the site (for fans or startup
 - `app/opengraph-image.tsx`: default 1200 by 630 share preview and shared image renderer, with a cached Bricolage Grotesque font and a default font fallback.
 - `app/s/[slug]/opengraph-image.tsx`: dynamic startup share preview using the current follower count, with the default site image for unknown slugs.
 - `app/start/`: protected startup creation page and validated server action. Its client form wrapper lives alongside `FollowButton` in `app/s/[slug]/follow-button.tsx`; fields render on the server.
-- `app/s/[slug]/`: public startup profile, team list and plain-text post feed, startup metadata, and follow actions with pending and error states.
+- `app/s/[slug]/`: public startup profile, team list, member composer and markdown post cards, startup metadata, and follow actions with pending and error states. `post-actions.ts` checks membership for creation and author/owner deletion; `/p/[postId]` renders individual public posts.
+- `app/api/upload/route.ts`: Vercel Blob client upload authorization restricted to startup members, with image/video type and size limits; text posting works without a Blob store token.
+- `lib/posts.ts`: public post queries with author and startup details, membership lookup, and startup media URL validation.
+- `app/components/markdown.tsx` and `post-media.tsx`: safe markdown rendering and sticker-framed images and videos.
 - `app/login/`: magic-link request form and its server action.
 - `app/auth/`: magic-link verification route that creates a session and sets the `sf_session` cookie.
 - `app/me/`: signed-in email and sign-out form, protected by `requireUser`.

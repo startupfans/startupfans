@@ -13,6 +13,8 @@ import {
 export const plan = pgEnum("plan", ["free", "pro"]);
 export const role = pgEnum("role", ["owner", "editor"]);
 export const visibility = pgEnum("visibility", ["public", "fans"]);
+export const mediaType = pgEnum("media_type", ["image", "video"]);
+export const postSource = pgEnum("post_source", ["web", "slack"]);
 
 export const users = pgTable("users", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -72,8 +74,11 @@ export const posts = pgTable(
     id: uuid("id").primaryKey().defaultRandom(),
     startupId: uuid("startup_id").notNull().references(() => startups.id, { onDelete: "cascade" }),
     authorId: uuid("author_id").notNull().references(() => users.id),
-    title: text("title").notNull(),
     bodyMd: text("body_md").notNull(),
+    mediaUrl: text("media_url"),
+    mediaType: mediaType("media_type"),
+    mediaPosterUrl: text("media_poster_url"),
+    source: postSource("source").notNull().default("web"),
     visibility: visibility("visibility").notNull().default("public"),
     publishedAt: timestamp("published_at", { withTimezone: true }).notNull().defaultNow(),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),

@@ -1,0 +1,74 @@
+import { handleUpload, type HandleUploadBody } from "@vercel/blob/client";
+import { getCurrentUser } from "@/lib/auth";
+import { getPostMembership } from "@/lib/posts";
+
+const unavailableMessage = "Attachments are unavailable because the Vercel Blob store is not configured. You can still post text.";
+const imageContentTypes = ["image/jpeg", "image/png", "image/webp", "image/gif"];
+const videoContentTypes = ["video/mp4", "video/webm"];
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
+}
+
+function isUploadBody(value: unknown): value is HandleUploadBody {
+  if (!isRecord(value) || !isRecord(value.payload)) return false;
+  const payload = value.payload;
+  if (value.type === "blob.generate-client-token") {
+    return typeof payload.pathname === "string" && typeof payload.multipart === "boolean"
+      && (payload.clientPayload === null || typeof payload.clientPayload === "string");
+  }
+  if (value.type === "blob.upload-completed" && isRecord(payload.blob)) {
+    const blob = payload.blob;
+    return typeof blob.url === "string" && typeof blob.pathname === "string"
+      && typeof blob.downloadUrl === "string" && typeof blob.contentType === "string"
+      && typeof blob.contentDisposition === "string"
+      && (payload.tokenPayload === undefined || payload.tokenPayload === null || typeof payload.tokenPayload === "string");
+  }
+  return false;
+}
+
+export async function GET() {
+  if (!process.env.BLOB_READ_WRITE_TOKEN) {
+    return Response.json({ error: unavailableMessage }, { status: 503 });
+  }
+  return Response.json({ ready: true });
+}
+
+export async function POST(request: Request) {
+  if (!process.env.BLOB_READ_WRITE_TOKEN) {
+    return Response.json({ error: unavailableMessage }, { status: 503 });
+  }
+  try {
+    const body: unknown = await request.json();
+    if (!isUploadBody(body)) return Response.json({ error: "Invalid upload request." }, { status: 400 });
+
+    const result = await handleUpload({
+      body,
+      request,
+      onBeforeGenerateToken: async (pathname, clientPayload) => {
+        const payload: unknown = JSON.parse(clientPayload ?? "null");
+        if (!isRecord(payload) || typeof payload.slug !== "string" || !/^[a-z0-9-]{1,40}$/.test(payload.slug)) {
+          throw new Error("Choose a startup before uploading.");
+        }
+        const user = await getCurrentUser();
+        if (!user || !await getPostMembership(payload.slug, user.id)) {
+          throw new Error("Only signed-in team members can upload here.");
+        }
+        const prefix = `startups/${payload.slug}/`;
+        const filename = pathname.slice(prefix.length);
+        if (!pathname.startsWith(prefix) || !/^[-a-zA-Z0-9_.]+\.(jpe?g|png|webp|gif|mp4|webm)$/i.test(filename)) {
+          throw new Error("Upload an image or video to this startup's media folder.");
+        }
+        const isImage = /\.(jpe?g|png|webp|gif)$/i.test(filename);
+        return {
+          allowedContentTypes: isImage ? imageContentTypes : videoContentTypes,
+          maximumSizeInBytes: (isImage ? 10 : 200) * 1024 * 1024,
+          addRandomSuffix: true,
+        };
+      },
+    });
+    return Response.json(result);
+  } catch {
+    return Response.json({ error: "Couldn't authorize this upload. Check your team membership and file type, then try again." }, { status: 400 });
+  }
+}

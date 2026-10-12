@@ -15,6 +15,13 @@
       "when": 1791833230831,
       "tag": "0001_wise_fallen_one",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1791833848454,
+      "tag": "0002_zippy_selene",
+      "breakpoints": true
     }
   ]
 }

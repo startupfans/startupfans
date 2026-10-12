@@ -1,0 +1,42 @@
+import type { Metadata } from "next";
+import Link from "next/link";
+import { notFound } from "next/navigation";
+import { getCurrentUser } from "@/lib/auth";
+import { getPostMembership, getPublicPost } from "@/lib/posts";
+import { PostCard } from "../../post-card";
+
+type PostPageProps = { params: Promise<{ slug: string; postId: string }> };
+
+export async function generateMetadata({ params }: PostPageProps): Promise<Metadata> {
+  const { slug, postId } = await params;
+  const post = await getPublicPost(slug, postId);
+  if (!post) notFound();
+  const description = post.body.slice(0, 160);
+  return {
+    title: post.startupName,
+    description,
+    openGraph: { title: post.startupName, description },
+    twitter: { title: post.startupName, description },
+  };
+}
+
+export async function PostPage({ params }: PostPageProps) {
+  const { slug, postId } = await params;
+  const [post, user] = await Promise.all([getPublicPost(slug, postId), getCurrentUser()]);
+  if (!post) notFound();
+  const member = user ? await getPostMembership(slug, user.id) : null;
+  const canDelete = member !== null && (member.role === "owner" || user?.id === post.authorId);
+
+  return (
+    <main className="mx-auto min-h-screen max-w-4xl px-5 py-10 sm:py-16">
+      <header className="mb-8 flex flex-wrap items-center justify-between gap-4">
+        <Link href={`/s/${slug}`} className="font-display text-xl font-extrabold underline underline-offset-4">← {post.startupName}</Link>
+        <Link href="/" className="font-display text-xl font-extrabold">startupfans</Link>
+      </header>
+      <h1 className="sr-only">An update from {post.startupName}</h1>
+      <PostCard post={post} showStartup canDelete={canDelete} onPostPage />
+    </main>
+  );
+}
+
+export { PostPage as default };
