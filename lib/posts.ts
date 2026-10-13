@@ -106,16 +106,12 @@ export async function listFeed({ userId, following = false, cursor }: {
 
 export const getPublicPost = cache(async (slug: string, postId: string) => {
   if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(postId)) return null;
-  const [post] = await db.select({
-    ...publicPostFields,
-    mentionBodies: sql<string[]>`coalesce((select json_agg(${postComments.body}) from ${postComments}
-      where ${postComments.postId} = ${posts.id} and ${postComments.deletedAt} is null), '[]'::json)`,
-  }).from(posts)
+  const [post] = await db.select(publicPostFields).from(posts)
     .innerJoin(users, eq(users.id, posts.authorId))
     .innerJoin(startups, eq(startups.id, posts.startupId))
     .where(and(eq(posts.id, postId), eq(startups.slug, slug), eq(posts.visibility, "public")))
     .limit(1);
-  if (post) await resolveMentions([post.body, ...post.mentionBodies]);
+  if (post) await resolveMentions([post.body]);
   return post ?? null;
 });
 

@@ -22,6 +22,10 @@ function isSuggestion(value: unknown): value is MentionSuggestion {
     && (reason === null || reason === "On the team" || reason === "Fan" || reason === "In your circle");
 }
 
+function mentionQuery(value: string, caret: number) {
+  return /(?:^|[^\w])@([a-z0-9_]{1,24})$/i.exec(value.slice(0, caret));
+}
+
 export function MentionAutocomplete({ value, onValueChange, startup, textareaRef, onKeyDown, onSelect, onFocus, onBlur, ...props }: MentionTextareaProps) {
   const ownRef = useRef<HTMLTextAreaElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -32,12 +36,12 @@ export function MentionAutocomplete({ value, onValueChange, startup, textareaRef
   const [dismissed, setDismissed] = useState<string | null>(null);
   const [active, setActive] = useState(0);
   const [popoverTop, setPopoverTop] = useState<number | null>(null);
-  const [result, setResult] = useState<{ key: string; suggestions: MentionSuggestion[] } | null>(null);
-  const match = /(?:^|[^\w])@([a-z0-9_]{1,24})$/i.exec(value.slice(0, caret));
+  const [result, setResult] = useState<MentionSuggestion[] | null>(null);
+  const match = mentionQuery(value, caret);
   const query = match?.[1] ?? "";
   const start = caret - query.length - 1;
   const key = focused && query && !props.disabled ? `${startup}:${start}:${query}:${caret}` : "";
-  const suggestions = key && result?.key === key && dismissed !== key ? result.suggestions : [];
+  const suggestions = key && dismissed !== key ? result ?? [] : [];
   const open = suggestions.length > 0;
 
   useLayoutEffect(() => {
@@ -89,7 +93,7 @@ export function MentionAutocomplete({ value, onValueChange, startup, textareaRef
         if (!response.ok) return;
         const data: unknown = await response.json();
         if (!controller.signal.aborted && Array.isArray(data) && data.every(isSuggestion)) {
-          setResult({ key, suggestions: data.slice(0, 8) });
+          setResult(data.slice(0, 8));
         }
       } catch {
         // Writing stays available when suggestions cannot be loaded.
@@ -97,6 +101,11 @@ export function MentionAutocomplete({ value, onValueChange, startup, textareaRef
     }, 150);
     return () => { clearTimeout(timer); controller.abort(); };
   }, [key, query, startup, dismissed, value]);
+
+  function updateCaret(input: HTMLTextAreaElement) {
+    setCaret(input.selectionStart);
+    if (!mentionQuery(input.value, input.selectionStart)) setResult(null);
+  }
 
   function select(suggestion: MentionSuggestion) {
     const insertion = `@${suggestion.handle} `;
@@ -117,16 +126,16 @@ export function MentionAutocomplete({ value, onValueChange, startup, textareaRef
         aria-activedescendant={open ? `${listId}-${Math.min(active, suggestions.length - 1)}` : undefined}
         onChange={(event) => {
           onValueChange(event.target.value);
-          setCaret(event.target.selectionStart);
+          updateCaret(event.target);
           setActive(0);
           setDismissed(null);
         }}
-        onSelect={(event) => { setCaret(event.currentTarget.selectionStart); onSelect?.(event); }}
-        onFocus={(event) => { setFocused(true); setCaret(event.currentTarget.selectionStart); onFocus?.(event); }}
+        onSelect={(event) => { updateCaret(event.currentTarget); onSelect?.(event); }}
+        onFocus={(event) => { setFocused(true); updateCaret(event.currentTarget); onFocus?.(event); }}
         onBlur={(event) => { setFocused(false); onBlur?.(event); }}
         onKeyDown={(event) => {
           if (!event.nativeEvent.isComposing && !event.metaKey && !event.ctrlKey) {
-            if (event.key === "Escape" && key) { event.preventDefault(); setDismissed(key); return; }
+            if (event.key === "Escape" && open) { event.preventDefault(); setDismissed(key); return; }
             if (open) {
               if (event.key === "ArrowDown" || event.key === "ArrowUp") {
                 event.preventDefault();

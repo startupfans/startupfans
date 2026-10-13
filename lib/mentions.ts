@@ -2,7 +2,6 @@ import "server-only";
 
 import { asc, inArray, sql } from "drizzle-orm";
 import { cache } from "react";
-import ReactMarkdown from "react-markdown";
 import { db } from "@/db";
 import { users, startupMembers, startups, follows, startupFollows } from "@/db/schema";
 
@@ -31,26 +30,45 @@ function mentionTokens(body: string) {
   }));
 }
 
-export function parseMentions(body: string) {
+export const parseMentions = cache((body: string, markdown = true) => {
+  const tokens = mentionTokens(body);
+  if (!markdown) return tokens;
   const excluded: { start: number; end: number }[] = [];
-  function visit(node: MentionNode) {
-    if (excludedNodes.has(node.type)) {
-      const start = node.position?.start.offset;
-      const end = node.position?.end.offset;
-      if (start !== undefined && end !== undefined) excluded.push({ start, end });
-      return;
+  const referenceLabel = (label: string) => label.trim().replace(/\s+/g, " ").toLowerCase();
+  const references = new Set<string>();
+  const referenceLinks: { start: number; end: number; label: string }[] = [];
+  const syntax = /^ {0,3}(`{3,}|~{3,})[^\n]*$|(?<!`)(`+)(?!`)[\s\S]*?(?<!`)\2(?!`)|^ {0,3}\[([^\]\n]+)\]:[^\n]*(?:\n[ \t]+[^\n]*)*|!?\[((?:\\.|[^\[\]\\]|\[[^\]\n]*\])*)\](\((?:\\.|[^()\\]|\([^()]*\))*\)|[ \t]*\[[^\]\n]*\])?|<!--[\s\S]*?-->|<\/?[a-z][^>\n]*>|<(?:https?:\/\/|mailto:)[^>\n]*>/gim;
+  for (let match = syntax.exec(body); match !== null; match = syntax.exec(body)) {
+    let end = match.index + match[0].length;
+    if (match[3] !== undefined) references.add(referenceLabel(match[3]));
+    const suffix = match[5]?.trim();
+    if (match[4] !== undefined && !suffix?.startsWith("(")) {
+      referenceLinks.push({ start: match.index, end, label: referenceLabel(suffix?.slice(1, -1) || match[4]) });
+      continue;
     }
-    node.children?.forEach(visit);
+    if (match[1]) {
+      const fence = match[1];
+      const closing = new RegExp(`^ {0,3}${fence[0]}{${fence.length},}[ \\t]*$`, "gm");
+      closing.lastIndex = end;
+      const close = closing.exec(body);
+      end = close ? close.index + close[0].length : body.length;
+    }
+    excluded.push({ start: match.index, end });
+    syntax.lastIndex = end;
   }
-  ReactMarkdown({ children: body, skipHtml: true, remarkPlugins: [() => visit] });
-  return mentionTokens(body).filter((token) => !excluded.some((range) => token.start >= range.start && token.start < range.end));
-}
+  excluded.push(...referenceLinks.filter((link) => references.has(link.label)));
+  return tokens.filter((token) => !excluded.some((range) => token.start >= range.start && token.start < range.end));
+});
 
 // React's cache is scoped to a server render, including missing handles.
 const mentionCache = cache(() => new Map<string, Promise<boolean>>());
 
 export async function resolveMentions(bodies: readonly string[]) {
   const handles = [...new Set(bodies.flatMap((body) => parseMentions(body).map((token) => token.handle)))];
+  return resolveMentionHandles(handles);
+}
+
+export async function resolveMentionHandles(handles: readonly string[]) {
   const lookup = mentionCache();
   const missing = handles.filter((handle) => !lookup.has(handle));
   if (missing.length) {
@@ -62,8 +80,8 @@ export async function resolveMentions(bodies: readonly string[]) {
   return new Set(results.filter((handle) => handle !== null));
 }
 
-export function mentionSegments(body: string, resolved: ReadonlySet<string>): MentionSegment[] {
-  return segmentsFromTokens(body, parseMentions(body), resolved);
+export function mentionSegments(body: string, resolved: ReadonlySet<string>, tokens = parseMentions(body, false)): MentionSegment[] {
+  return segmentsFromTokens(body, tokens, resolved);
 }
 
 function segmentsFromTokens(body: string, tokens: ReturnType<typeof mentionTokens>, resolved: ReadonlySet<string>): MentionSegment[] {

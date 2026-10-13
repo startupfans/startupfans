@@ -3,7 +3,7 @@ import "server-only";
 import { and, asc, desc, eq, inArray, isNull, or, sql } from "drizzle-orm";
 import { db } from "@/db";
 import { commentLikes, follows, postComments, posts, startupMembers, startups, users } from "@/db/schema";
-import { mentionSegments, resolveMentions } from "@/lib/mentions";
+import { mentionSegments, parseMentions, resolveMentionHandles } from "@/lib/mentions";
 import { isAdmin } from "@/lib/admin";
 import { allowRateLimit } from "@/lib/ratelimit";
 
@@ -48,8 +48,10 @@ function commentQuery(postId: string, viewerId: string | null = null, threadIds?
 }
 
 async function resolveCommentMentions(comments: Awaited<ReturnType<typeof commentQuery>>) {
-  const mentions = await resolveMentions(comments.map((comment) => comment.body));
-  return comments.map((comment) => ({ ...comment, mentions: mentionSegments(comment.body, mentions) }));
+  const parsed = comments.map((comment) => ({ comment, tokens: parseMentions(comment.body, false) }));
+  const handles = [...new Set(parsed.flatMap(({ tokens }) => tokens.map((token) => token.handle)))];
+  const mentions = await resolveMentionHandles(handles);
+  return parsed.map(({ comment, tokens }) => ({ ...comment, mentions: mentionSegments(comment.body, mentions, tokens) }));
 }
 
 export async function getPublicComments(postId: string, viewerId: string | null = null) {

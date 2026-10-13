@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -9,7 +10,18 @@ import { getPublicUser } from "@/lib/users";
 
 const roleLabels = { owner: "Owner", editor: "Editor" };
 
-export async function UserPage({ params }: { params: Promise<{ handle: string }> }) {
+type UserPageProps = { params: Promise<{ handle: string }> };
+
+export async function generateMetadata({ params }: UserPageProps): Promise<Metadata> {
+  const { handle } = await params;
+  const profile = await getPublicUser(handle);
+  if (!profile) notFound();
+  const name = profile.name?.trim();
+  const label = name ? `${name} (@${profile.handle})` : `@${profile.handle}`;
+  return { title: `${label} on startupfans`, description: `See ${label}'s startups, fan clubs and latest public posts.` };
+}
+
+export async function UserPage({ params }: UserPageProps) {
   const { handle } = await params;
   const [profile, viewer] = await Promise.all([getPublicUser(handle), getCurrentUser()]);
   if (!profile) notFound();
