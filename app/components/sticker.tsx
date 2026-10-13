@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { AdminLink } from "./admin-link";
 import { deleteStartupAction } from "@/app/admin/actions";
 import { isAdmin } from "@/lib/admin";
 import { getCurrentUser } from "@/lib/auth";
@@ -15,7 +16,7 @@ export async function TopNav({ signedIn, next }: { signedIn: boolean; next: stri
       <div className="flex min-w-0 max-w-full flex-wrap items-center gap-x-4 font-bold underline underline-offset-4 [&_a]:inline-flex [&_a]:min-h-11 [&_a]:items-center [&_a]:py-2">
         <Link href="/feed">Feed</Link>
         <Link href="/leaderboard">Leaderboard</Link>
-        {admin && <Link href="/admin">Reports</Link>}
+        {admin && <AdminLink />}
         <Link href={signedIn ? "/me" : `/login?next=${encodeURIComponent(next)}`}>
           {signedIn ? "Your account" : "Sign in"}
         </Link>

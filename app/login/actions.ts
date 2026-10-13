@@ -9,12 +9,17 @@ import { getSafeNextPath } from "@/lib/auth";
 import { sendEmail } from "@/lib/email";
 import { magicLinkEmail } from "@/lib/emails/magic-link";
 import { allowMagicLinkRequest } from "@/lib/ratelimit";
+import { isInviteToken } from "@/lib/invites";
+import { canSignUp } from "@/lib/signup";
 
 export async function requestMagicLink(formData: FormData) {
   const rawEmail = formData.get("email");
   const email = typeof rawEmail === "string" ? rawEmail.trim().toLowerCase() : "";
-  const next = getSafeNextPath(formData.get("next"));
+  const rawInvite = formData.get("invite");
+  const inviteToken = typeof rawInvite === "string" && isInviteToken(rawInvite) ? rawInvite : undefined;
+  const next = inviteToken ? `/join/${inviteToken}` : getSafeNextPath(formData.get("next"));
   const query = new URLSearchParams({ next });
+  if (inviteToken) query.set("invite", inviteToken);
 
   if (
     email.length > 254 ||
@@ -40,6 +45,16 @@ export async function requestMagicLink(formData: FormData) {
     query.set("error", "rate-limit");
     redirect(`/login?${query}`);
   }
+
+  let canReceiveLink: boolean;
+  try {
+    canReceiveLink = await canSignUp(email, { inviteToken });
+  } catch (error) {
+    console.error("[startupfans auth] Could not check sign-up eligibility.", error);
+    query.set("error", "sending");
+    redirect(`/login?${query}`);
+  }
+  if (!canReceiveLink) redirect("/login?error=invite-only");
 
   try {
     const token = randomBytes(32).toString("hex");

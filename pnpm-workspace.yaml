@@ -2,3 +2,7 @@ allowBuilds:
   core-js: false
   esbuild: false
   unrs-resolver: false
+
+# pnpm 12 rejects lockfile entries published in the last 24h by default. Our lockfile pins versions and
+# Expo, PostHog and friends ship daily, so the age policy is off for now. Revisit after launch week.
+minimumReleaseAge: 0

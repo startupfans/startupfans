@@ -1,11 +1,21 @@
 import Image from "next/image";
 import Link from "next/link";
+import type { ReactNode } from "react";
+import { IconField } from "@/app/components/icon-field";
+import { GitHubIcon, GlobeIcon, InstagramIcon, LinkedInIcon, PinIcon, TikTokIcon, XIcon, YouTubeIcon } from "@/app/components/icons";
 import { getUnusedStartupInvites } from "@/lib/invites";
 import { requireStartupOwner } from "@/lib/members";
 import { getStartupMembers } from "@/lib/startups";
 import { getSlackConnection, isSlackConfigured } from "@/lib/slack";
 import { disconnectSlackAction, removeMemberAction, revokeInviteAction, updateStartupAction } from "./actions";
 import { InviteByEmail, InviteLink } from "./invite-link";
+import { BioField, ImageUpload } from "./image-upload";
+import { socialNetworks, type SocialNetwork } from "@/lib/socials";
+
+const socialIcons = {
+  x: XIcon, linkedin: LinkedInIcon, github: GitHubIcon,
+  instagram: InstagramIcon, youtube: YouTubeIcon, tiktok: TikTokIcon,
+} satisfies Record<SocialNetwork, () => ReactNode>;
 
 const inputClass = "mt-2 min-h-11 w-full min-w-0 rounded-xl border-2 border-ink bg-white px-4 py-3 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ink";
 const buttonClass = "inline-flex min-h-11 w-full max-w-full items-center justify-center rounded-xl border-[3px] border-ink bg-white px-4 py-2 font-bold shadow-sticker disabled:opacity-50 sm:w-auto";
@@ -14,9 +24,15 @@ const messages = new Map([
   ["slack-disconnected", "Slack disconnected."],
   ["slack-connect-failed", "We couldn't connect Slack. Check that this workspace isn't connected to another startup, then try again."],
   ["invalid-name", "Choose a name between 2 and 60 characters."],
-  ["text-too-long", "Use up to 120 characters for the tagline and 2,000 for the description."],
-  ["url-too-long", "Use up to 500 characters for your logo and website addresses."],
-  ["invalid-url", "Use a full https:// address for your logo and website."],
+  ["text-too-long", "Use up to 120 characters for the tagline and location, 280 for the bio and 2,000 for the description."],
+  ["url-too-long", "Use up to 500 characters for image and website addresses."],
+  ["invalid-url", "Upload images to this page's profile folder or paste an https:// image URL. Your website also needs an https:// address."],
+  ["invalid-social-x", "Use an X handle or an https://x.com/ profile URL."],
+  ["invalid-social-linkedin", "Use an https://www.linkedin.com/company/ or /in/ profile URL."],
+  ["invalid-social-github", "Use an https://github.com/ profile URL."],
+  ["invalid-social-instagram", "Use an Instagram handle or an https://www.instagram.com/ profile URL."],
+  ["invalid-social-youtube", "Use an https://www.youtube.com/ channel URL."],
+  ["invalid-social-tiktok", "Use a TikTok handle or an https://www.tiktok.com/@ profile URL."],
   ["invalid-stage", "Choose a stage from the list."],
   ["invalid-team-size", "Team size must be a whole number from 1 to 10,000."],
   ["saved", "Page saved."],
@@ -36,7 +52,7 @@ async function SettingsPage({ params, searchParams }: {
   searchParams: Promise<{ message?: string | string[] }>;
 }) {
   const { slug } = await params;
-  const { startup } = await requireStartupOwner(slug);
+  const { startup, user } = await requireStartupOwner(slug);
   const slackConfigured = isSlackConfigured();
   const [members, invites, query, slackConnection] = await Promise.all([
     getStartupMembers(startup.id), getUnusedStartupInvites(startup.id), searchParams,
@@ -79,14 +95,17 @@ async function SettingsPage({ params, searchParams }: {
             <label htmlFor="tagline" className="block font-bold">Tagline
               <input id="tagline" name="tagline" defaultValue={startup.tagline ?? ""} maxLength={120} className={inputClass} />
             </label>
+            <BioField initialBio={startup.bio ?? ""} />
             <label htmlFor="description" className="block font-bold">Description
               <textarea id="description" name="description" defaultValue={startup.description ?? ""} maxLength={2000} rows={5} className={`${inputClass} resize-y`} />
             </label>
-            <label htmlFor="logoUrl" className="block font-bold">Logo URL
-              <input id="logoUrl" name="logoUrl" defaultValue={startup.logoUrl ?? ""} type="url" pattern="https://.*" maxLength={500} placeholder="https://" className={inputClass} />
+            <ImageUpload name="logoUrl" label="Logo" slug={slug} initialUrl={startup.logoUrl ?? ""} creatorId={user.id} />
+            <ImageUpload name="coverUrl" label="Cover image" slug={slug} initialUrl={startup.coverUrl ?? ""} creatorId={user.id} />
+            <label htmlFor="location" className="block font-bold">Location
+              <IconField icon={<PinIcon />} id="location" name="location" defaultValue={startup.location ?? ""} maxLength={120} placeholder="City, country or remote" />
             </label>
             <label htmlFor="website" className="block font-bold">Website
-              <input id="website" name="website" defaultValue={startup.website ?? ""} type="url" pattern="https://.*" maxLength={500} placeholder="https://" autoComplete="url" className={inputClass} />
+              <IconField icon={<GlobeIcon />} id="website" name="website" defaultValue={startup.website ?? ""} type="url" pattern="https://.*" maxLength={500} placeholder="https://" autoComplete="url" />
             </label>
             <div className="grid gap-5 sm:grid-cols-2">
               <label htmlFor="stage" className="block min-w-0 font-bold">Stage
@@ -101,6 +120,16 @@ async function SettingsPage({ params, searchParams }: {
                 <input id="teamSize" name="teamSize" defaultValue={startup.teamSize ?? ""} type="number" min={1} max={10000} step={1} className={inputClass} />
               </label>
             </div>
+            <fieldset className="min-w-0 space-y-5">
+              <legend className="mb-3 font-display text-xl font-extrabold">Social profiles</legend>
+              {socialNetworks.map(({ network, field, label, placeholder }) => {
+                const SocialIcon = socialIcons[network];
+                return <label key={field} htmlFor={field} className="block font-bold">{label}
+                  <IconField icon={<SocialIcon />} id={field} name={field} defaultValue={startup[field] ?? ""} maxLength={500} placeholder={placeholder}
+                    autoCapitalize="none" autoCorrect="off" spellCheck={false} />
+                </label>;
+              })}
+            </fieldset>
             <button type="submit" className={`${buttonClass} bg-lime`}>Save page</button>
           </form>
         </section>

@@ -7,14 +7,17 @@ import { magicLinks, sessions, users } from "@/db/schema";
 import { getSafeNextPath, SESSION_COOKIE_NAME } from "@/lib/auth";
 import { captureServerEvent } from "@/lib/posthog-server";
 import { emitPostHogLog } from "@/lib/posthog-logs";
+import { canSignUp, existingUser } from "@/lib/signup";
 
 export async function GET(request: Request) {
   const url = new URL(request.url);
   const next = getSafeNextPath(url.searchParams.get("next"));
+  const inviteToken = /^\/join\/([0-9a-f]{64})(?:[?#]|$)/.exec(next)?.[1];
   const expiredLoginUrl = `/login?${new URLSearchParams({ error: "expired", next })}`;
+  const retryLoginUrl = inviteToken ? `${expiredLoginUrl}&invite=${inviteToken}` : expiredLoginUrl;
   const token = url.searchParams.get("token");
   if (!token || !/^[0-9a-f]{64}$/.test(token)) {
-    redirect(expiredLoginUrl);
+    redirect(retryLoginUrl);
   }
 
   const tokenHash = createHash("sha256").update(token).digest("hex");
@@ -29,19 +32,24 @@ export async function GET(request: Request) {
       .returning({ email: magicLinks.email });
     if (!link) return null;
 
-    const [user] = await tx
+    if (!await canSignUp(link.email, { inviteToken })) return { status: "invite-only" } as const;
+    const email = link.email.trim().toLowerCase();
+    const existing = await existingUser(email);
+    const [created] = existing ? [] : await tx
       .insert(users)
-      .values({ email: link.email })
-      .onConflictDoUpdate({ target: users.email, set: { email: link.email } })
+      .values({ email })
+      .onConflictDoUpdate({ target: users.email, set: { email } })
       .returning({ id: users.id });
+    const user = existing ?? created;
     if (!user) throw new Error("Could not create a user.");
 
     const id = randomUUID();
     await tx.insert(sessions).values({ id, userId: user.id, expiresAt });
-    return { id, userId: user.id };
+    return { status: "signed-in", id, userId: user.id } as const;
   });
 
-  if (!sessionId) redirect(expiredLoginUrl);
+  if (!sessionId) redirect(retryLoginUrl);
+  if (sessionId.status === "invite-only") redirect("/login?error=invite-only");
 
   await captureServerEvent({
     distinctId: sessionId.userId,

@@ -14,12 +14,13 @@ export function isInviteToken(token: string) {
   return /^[0-9a-f]{64}$/.test(token);
 }
 
-export async function createStartupInvite(slug: string, userId: string) {
+export async function createStartupInvite(slug: string, userId: string, invitedEmail?: string) {
   const token = randomBytes(32).toString("hex");
   const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
   await withOwnedStartup(slug, userId, async (tx, startup) => {
     await tx.insert(startupInvites).values({
       tokenHash: tokenHash(token), startupId: startup.id, createdBy: userId, expiresAt,
+      invitedEmail: invitedEmail?.trim().toLowerCase() || null,
     });
   });
   return `${(process.env.APP_URL ?? "http://localhost:3000").replace(/\/$/, "")}/join/${token}`;

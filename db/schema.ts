@@ -44,6 +44,22 @@ export const magicLinks = pgTable("magic_links", {
   usedAt: timestamp("used_at", { withTimezone: true }),
 });
 
+export const waitlistEntries = pgTable("waitlist_entries", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  email: text("email").notNull().unique(),
+  source: text("source", { enum: ["csv", "getwaitlist"] }).notNull(),
+  position: integer("position"),
+  signedUpAt: timestamp("signed_up_at", { withTimezone: true }),
+  verified: boolean("verified"),
+  invitedAt: timestamp("invited_at", { withTimezone: true }),
+  joinedUserId: uuid("joined_user_id").references(() => users.id, { onDelete: "set null" }),
+  joinedAt: timestamp("joined_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [
+  check("waitlist_entries_source_check", sql`${table.source} in ('csv', 'getwaitlist')`),
+  index("waitlist_entries_order_idx").on(table.position, table.signedUpAt),
+]);
+
 export const startups = pgTable("startups", {
   id: uuid("id").primaryKey().defaultRandom(),
   slug: text("slug").notNull().unique(),
@@ -51,6 +67,15 @@ export const startups = pgTable("startups", {
   tagline: text("tagline"),
   description: text("description"),
   logoUrl: text("logo_url"),
+  coverUrl: text("cover_url"),
+  bio: text("bio"),
+  location: text("location"),
+  xHandle: text("x_handle"),
+  linkedinUrl: text("linkedin_url"),
+  githubUrl: text("github_url"),
+  instagramHandle: text("instagram_handle"),
+  youtubeUrl: text("youtube_url"),
+  tiktokHandle: text("tiktok_handle"),
   website: text("website"),
   stage: text("stage"),
   teamSize: integer("team_size"),
@@ -75,6 +100,7 @@ export const startupMembers = pgTable(
 
 export const startupInvites = pgTable("startup_invites", {
   tokenHash: text("token_hash").primaryKey(),
+  invitedEmail: text("invited_email"),
   startupId: uuid("startup_id").notNull().references(() => startups.id, { onDelete: "cascade" }),
   createdBy: uuid("created_by").notNull().references(() => users.id),
   expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),

@@ -3,25 +3,33 @@ import Link from "next/link";
 import { SiteFooter, TopNav } from "@/app/components/sticker";
 import { SignOutButton } from "@/app/login/dev-inbox";
 import { requireUser, signOut } from "@/lib/auth";
-import { getFollowedStartups } from "@/lib/members";
+import { isAdmin } from "@/lib/admin";
+import { getFollowedStartups, getMemberStartups } from "@/lib/members";
+import { listAllStartups } from "@/lib/startups";
 import { updateProfileAction } from "./actions";
+import { AvatarUpload } from "./avatar-upload";
+import { AllStartups, YourStartups } from "./startup-cards";
 
 const inputClass = "mt-2 min-h-11 w-full min-w-0 rounded-xl border-2 border-ink bg-white px-4 py-3 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ink";
 const messages = new Map([
   ["name-too-long", "Use up to 60 characters for your name."],
-  ["invalid-avatar", "Use a full https:// address for your avatar."],
+  ["invalid-avatar", "Upload your own avatar or use a full https:// image address."],
   ["saved", "Profile saved."],
 ]);
 
 async function MePage({ searchParams }: { searchParams: Promise<{ message?: string | string[] }> }) {
   const user = await requireUser("/me");
-  const [followedStartups, query] = await Promise.all([getFollowedStartups(user.id), searchParams]);
+  const [memberStartups, followedStartups, allStartups, query] = await Promise.all([
+    getMemberStartups(user.id), getFollowedStartups(user.id),
+    isAdmin(user) ? listAllStartups() : Promise.resolve(null), searchParams,
+  ]);
   const name = user.name?.trim() || user.email.split("@")[0];
   const message = typeof query.message === "string" ? messages.get(query.message) : undefined;
 
   return (
     <main className="mx-auto min-h-screen min-w-0 max-w-xl break-words px-5 py-10 sm:py-20">
       <TopNav signedIn next="/me" />
+      <YourStartups startups={memberStartups} />
       <section className="mt-10 rounded-3xl border-[3px] border-ink bg-sky p-6 shadow-sticker-lg sm:p-10">
         <div className="flex min-w-0 flex-col items-start gap-4 sm:flex-row sm:items-center">
           {user.avatarUrl ? (
@@ -36,10 +44,8 @@ async function MePage({ searchParams }: { searchParams: Promise<{ message?: stri
           <label htmlFor="name" className="block font-bold">Your name <span className="font-normal">(optional)</span>
             <input id="name" name="name" defaultValue={user.name ?? ""} maxLength={60} autoComplete="name" className={inputClass} />
           </label>
-          <label htmlFor="avatarUrl" className="block font-bold">Avatar URL <span className="font-normal">(optional)</span>
-            <input id="avatarUrl" name="avatarUrl" defaultValue={user.avatarUrl ?? ""} type="url" pattern="https://.*" maxLength={2048} placeholder="https://" className={inputClass} />
-          </label>
-          <button type="submit" className="min-h-11 w-full rounded-xl border-[3px] border-ink bg-lime px-5 py-3 font-bold shadow-sticker sm:w-auto">Save profile</button>
+          <AvatarUpload userId={user.id} initialUrl={user.avatarUrl ?? ""} initial={name.charAt(0).toUpperCase()}
+            uploadsEnabled={Boolean(process.env.BLOB_READ_WRITE_TOKEN)} />
         </form>
         <p className="mt-4 text-sm text-ink/70">Your name and avatar are public. Without a name, we show the first part of your email.</p>
         <SignOutButton action={signOut} />
@@ -59,6 +65,7 @@ async function MePage({ searchParams }: { searchParams: Promise<{ message?: stri
           </ul>
         )}
       </section>
+      {allStartups && <AllStartups list={allStartups} />}
       <SiteFooter />
     </main>
   );

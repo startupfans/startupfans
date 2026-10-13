@@ -4,7 +4,21 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireUser } from "@/lib/auth";
 import { isOptionalHttpsUrl, textField, updateProfile } from "@/lib/members";
+import { getMediaFormat, isMediaFilename } from "@/lib/media";
 import { captureServerEvent } from "@/lib/posthog-server";
+
+function isAvatarUrl(value: string, userId: string) {
+  if (!isOptionalHttpsUrl(value)) return false;
+  if (!value) return true;
+  const url = new URL(value);
+  const hostname = url.hostname.replace(/\.$/, "");
+  if (hostname !== "blob.vercel-storage.com" && !hostname.endsWith(".blob.vercel-storage.com")) return true;
+  const prefix = `/users/${userId}/avatar/`;
+  const filename = url.pathname.slice(prefix.length);
+  return /^[a-z0-9-]+\.public\.blob\.vercel-storage\.com$/i.test(url.hostname)
+    && !url.port && !url.search && !url.hash && url.pathname.startsWith(prefix)
+    && isMediaFilename(filename) && getMediaFormat(filename)?.type === "image";
+}
 
 export async function updateProfileAction(formData: FormData) {
   const user = await requireUser("/me");
@@ -13,7 +27,7 @@ export async function updateProfileAction(formData: FormData) {
   if (name.length > 60) {
     redirect("/me?message=name-too-long");
   }
-  if (!isOptionalHttpsUrl(avatarUrl)) {
+  if (!isAvatarUrl(avatarUrl, user.id)) {
     redirect("/me?message=invalid-avatar");
   }
   await updateProfile(user.id, name || null, avatarUrl || null);

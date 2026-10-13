@@ -6,11 +6,20 @@ import { db } from "@/db";
 import { posts, startups } from "@/db/schema";
 import { getCurrentUser, isValidSessionId } from "@/lib/auth";
 
+export function isAdminEmail(email: string, raw: string | undefined) {
+  const normalizedEmail = email.trim().toLowerCase();
+  const atIndex = normalizedEmail.indexOf("@");
+  const domain = atIndex > 0 ? normalizedEmail.slice(atIndex) : "";
+  const entries = (raw ?? "").split(",")
+    .map((entry) => entry.trim().toLowerCase()).filter(Boolean);
+  return entries.some((entry) => entry.startsWith("@")
+    ? entry.length > 1 && entry === domain
+    : entry === normalizedEmail);
+}
+
 export function isAdmin(user: { email: string } | null | undefined) {
   if (!user) return false;
-  const emails = (process.env.ADMIN_EMAILS ?? "").split(",")
-    .map((email) => email.trim().toLowerCase()).filter(Boolean);
-  return emails.includes(user.email.trim().toLowerCase());
+  return isAdminEmail(user.email, process.env.ADMIN_EMAILS);
 }
 
 export async function requireAdmin() {

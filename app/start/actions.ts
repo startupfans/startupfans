@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireUser } from "@/lib/auth";
 import { isValidSlug } from "@/lib/slug";
-import { createStartup } from "@/lib/startups";
+import { createStartup, isStartupProfileImageUrl } from "@/lib/startups";
 import { captureServerEvent } from "@/lib/posthog-server";
 import { emitPostHogLog } from "@/lib/posthog-logs";
 
@@ -36,6 +36,7 @@ export async function createStartupAction(
   const slug = textField(formData, "slug");
   const tagline = textField(formData, "tagline");
   const description = textField(formData, "description");
+  const bio = textField(formData, "bio");
   const logoUrl = textField(formData, "logoUrl");
   const website = textField(formData, "website");
   const stage = textField(formData, "stage");
@@ -48,14 +49,14 @@ export async function createStartupAction(
   if (!isValidSlug(slug)) {
     return { status: "error", message: "Choose an available address like your-startup: 3 to 40 lowercase letters, numbers or hyphens, starting and ending with a letter or number." };
   }
-  if (tagline.length > 120 || description.length > 2000) {
-    return { status: "error", message: "Use up to 120 characters for the tagline and 2,000 for the description." };
+  if (tagline.length > 120 || description.length > 2000 || bio.length > 280) {
+    return { status: "error", message: "Use up to 120 characters for the tagline, 280 for the bio and 2,000 for the description." };
   }
   if (logoUrl.length > 500 || website.length > 500) {
     return { status: "error", message: "Use up to 500 characters for your logo and website addresses." };
   }
-  if (!isHttpsUrl(logoUrl) || !isHttpsUrl(website)) {
-    return { status: "error", message: "Use a full https:// address for your logo and website." };
+  if (!isStartupProfileImageUrl(logoUrl, slug, user.id) || !isHttpsUrl(website)) {
+    return { status: "error", message: "Upload a logo for this page address or use a full https:// image URL. Your website also needs an https:// address." };
   }
   if (stage && !["idea", "pre-seed", "seed", "series-a", "growth", "bootstrapped"].includes(stage)) {
     return { status: "error", message: "Choose a stage from the list." };
@@ -68,6 +69,7 @@ export async function createStartupAction(
   try {
     startup = await createStartup({
       name, slug, tagline: tagline || null, description: description || null,
+      bio: bio || null,
       logoUrl: logoUrl || null, website: website || null, stage: stage || null,
       teamSize, createdBy: user.id,
     });

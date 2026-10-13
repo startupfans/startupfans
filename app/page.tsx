@@ -1,6 +1,9 @@
 import type { Metadata } from "next";
 import Image from "next/image";
+import { SessionLink } from "./components/session-link";
 import { WaitlistForm } from "./waitlist-form";
+
+export const dynamic = "force-static";
 
 export const metadata: Metadata = {
   alternates: { canonical: "/" },
@@ -102,29 +105,35 @@ export default function Home() {
 
 function Nav() {
   return (
-    <header className="mx-auto flex max-w-6xl items-center justify-between px-5 py-5 sm:px-8">
-      <a href="#">
+    <header className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-5 py-5 sm:px-8">
+      <a href="#" className="min-w-0">
         <Image
           src="/logo/startupfans-logo-on-light.svg"
           alt="StartupFans"
           width={LOGO_WIDTH}
           height={LOGO_HEIGHT}
           loading="eager"
-          className="h-8 w-auto sm:h-9"
+          className="h-auto w-24 sm:w-36 md:h-9 md:w-auto"
         />
       </a>
-      <nav className="flex items-center gap-5">
+      <nav className="flex shrink-0 items-center gap-3 whitespace-nowrap sm:gap-5">
         <a href="#startups" className="hidden font-bold hover:text-pink sm:inline">
           For startups
         </a>
         <a href="#fans" className="hidden font-bold hover:text-pink sm:inline">
           For fans
         </a>
+        <SessionLink
+          showAdmin
+          signedOut={{ href: "/login", label: "Sign in", className: "min-h-11 text-sm font-bold hover:text-pink sm:text-base" }}
+          signedIn={{ href: "/feed", label: "Your feed", className: "min-h-11 text-sm font-bold hover:text-pink sm:text-base" }}
+        />
         <a
           href="#join"
-          className="rounded-full border-2 border-ink bg-white px-4 py-2 text-sm font-bold shadow-sticker transition hover:-translate-y-0.5 hover:bg-sun active:translate-y-0 active:shadow-none"
+          className="rounded-full border-2 border-ink bg-white px-3 py-2 text-sm font-bold shadow-sticker transition hover:-translate-y-0.5 hover:bg-sun active:translate-y-0 active:shadow-none sm:px-4"
         >
-          Apply now
+          <span className="sm:hidden">Apply</span>
+          <span className="hidden sm:inline">Apply now</span>
         </a>
       </nav>
     </header>
@@ -291,6 +300,18 @@ function JoinSection() {
         </div>
 
         <WaitlistForm ctaLabel="Apply now →" />
+        <p className="mt-4 text-sm text-ink">
+          <SessionLink
+            signedOut={{
+              href: "/login",
+              label: <>Already have access? <span className="font-bold underline underline-offset-4">Sign in</span>.</>,
+            }}
+            signedIn={{
+              href: "/feed",
+              label: <>You&apos;re signed in. <span className="font-bold underline underline-offset-4">Go to your feed</span>.</>,
+            }}
+          />
+        </p>
       </div>
     </section>
   );
