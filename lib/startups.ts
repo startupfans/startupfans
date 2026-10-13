@@ -4,6 +4,7 @@ import { asc, count, desc, eq, and, sql } from "drizzle-orm";
 import { cache } from "react";
 import { db } from "@/db";
 import { follows, posts, startupMembers, startups, users } from "@/db/schema";
+import { requireAdmin } from "@/lib/admin";
 import { getMediaFormat, isMediaFilename } from "@/lib/media";
 
 export function isStartupProfileImageUrl(value: string, slug: string, creatorId?: string) {
@@ -98,4 +99,20 @@ export async function getStartupFanCount(startupId: string) {
   const [row] = await db.select({ count: count() }).from(follows)
     .where(eq(follows.startupId, startupId));
   return row?.count ?? 0;
+}
+
+export async function listAllStartups() {
+  await requireAdmin();
+  const rows = await db.select({
+    name: startups.name,
+    slug: startups.slug,
+    logoUrl: startups.logoUrl,
+    createdAt: startups.createdAt,
+    fanCount: sql`(select count(*) from ${follows} where ${follows.startupId} = ${startups.id})`.mapWith(Number),
+    memberCount: sql`(select count(*) from ${startupMembers} where ${startupMembers.startupId} = ${startups.id})`.mapWith(Number),
+    totalCount: sql`count(*) over ()`.mapWith(Number),
+  }).from(startups)
+    .orderBy(desc(startups.createdAt), desc(startups.id))
+    .limit(200);
+  return { startups: rows, capped: (rows[0]?.totalCount ?? 0) > 200 };
 }

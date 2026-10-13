@@ -1,6 +1,6 @@
 import "server-only";
 
-import { and, desc, eq } from "drizzle-orm";
+import { and, count, desc, eq } from "drizzle-orm";
 import { notFound } from "next/navigation";
 import { db } from "@/db";
 import { follows, startupMembers, startups, users } from "@/db/schema";
@@ -52,6 +52,22 @@ export async function getFollowedStartups(userId: string) {
   return db.select({ name: startups.name, slug: startups.slug, memberNo: follows.memberNo }).from(follows)
     .innerJoin(startups, eq(startups.id, follows.startupId))
     .where(eq(follows.userId, userId)).orderBy(desc(follows.createdAt), desc(startups.id));
+}
+
+export async function getMemberStartups(userId: string) {
+  return db.select({
+    name: startups.name,
+    slug: startups.slug,
+    tagline: startups.tagline,
+    logoUrl: startups.logoUrl,
+    role: startupMembers.role,
+    fanCount: count(follows.userId),
+  }).from(startupMembers)
+    .innerJoin(startups, eq(startups.id, startupMembers.startupId))
+    .leftJoin(follows, eq(follows.startupId, startups.id))
+    .where(eq(startupMembers.userId, userId))
+    .groupBy(startups.id, startupMembers.role, startupMembers.createdAt)
+    .orderBy(desc(startupMembers.createdAt), desc(startups.id));
 }
 
 export async function updateProfile(userId: string, name: string | null, avatarUrl: string | null) {

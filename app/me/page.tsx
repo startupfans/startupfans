@@ -3,9 +3,12 @@ import Link from "next/link";
 import { SiteFooter, TopNav } from "@/app/components/sticker";
 import { SignOutButton } from "@/app/login/dev-inbox";
 import { requireUser, signOut } from "@/lib/auth";
-import { getFollowedStartups } from "@/lib/members";
+import { isAdmin } from "@/lib/admin";
+import { getFollowedStartups, getMemberStartups } from "@/lib/members";
+import { listAllStartups } from "@/lib/startups";
 import { updateProfileAction } from "./actions";
 import { AvatarUpload } from "./avatar-upload";
+import { AllStartups, YourStartups } from "./startup-cards";
 
 const inputClass = "mt-2 min-h-11 w-full min-w-0 rounded-xl border-2 border-ink bg-white px-4 py-3 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ink";
 const messages = new Map([
@@ -16,13 +19,17 @@ const messages = new Map([
 
 async function MePage({ searchParams }: { searchParams: Promise<{ message?: string | string[] }> }) {
   const user = await requireUser("/me");
-  const [followedStartups, query] = await Promise.all([getFollowedStartups(user.id), searchParams]);
+  const [memberStartups, followedStartups, allStartups, query] = await Promise.all([
+    getMemberStartups(user.id), getFollowedStartups(user.id),
+    isAdmin(user) ? listAllStartups() : Promise.resolve(null), searchParams,
+  ]);
   const name = user.name?.trim() || user.email.split("@")[0];
   const message = typeof query.message === "string" ? messages.get(query.message) : undefined;
 
   return (
     <main className="mx-auto min-h-screen min-w-0 max-w-xl break-words px-5 py-10 sm:py-20">
       <TopNav signedIn next="/me" />
+      <YourStartups startups={memberStartups} />
       <section className="mt-10 rounded-3xl border-[3px] border-ink bg-sky p-6 shadow-sticker-lg sm:p-10">
         <div className="flex min-w-0 flex-col items-start gap-4 sm:flex-row sm:items-center">
           {user.avatarUrl ? (
@@ -58,6 +65,7 @@ async function MePage({ searchParams }: { searchParams: Promise<{ message?: stri
           </ul>
         )}
       </section>
+      {allStartups && <AllStartups list={allStartups} />}
       <SiteFooter />
     </main>
   );
