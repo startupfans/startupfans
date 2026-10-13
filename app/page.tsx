@@ -123,13 +123,18 @@ function Nav() {
         <a href="#fans" className="hidden font-bold hover:text-pink sm:inline">
           For fans
         </a>
-        <a
-          href="#join"
-          className="rounded-full border-2 border-ink bg-white px-3 py-2 text-sm font-bold shadow-sticker transition hover:-translate-y-0.5 hover:bg-sun active:translate-y-0 active:shadow-none sm:px-4"
-        >
-          <span className="sm:hidden">Apply</span>
-          <span className="hidden sm:inline">Apply now</span>
-        </a>
+        <SessionLink
+          signedOut={{
+            href: "#join",
+            label: <><span className="sm:hidden">Apply</span><span className="hidden sm:inline">Apply now</span></>,
+            className: "min-h-11 rounded-full border-2 border-ink bg-white px-3 py-2 text-sm font-bold shadow-sticker transition hover:-translate-y-0.5 hover:bg-sun active:translate-y-0 active:shadow-none sm:px-4",
+          }}
+          signedIn={{
+            href: "/start",
+            label: <><span className="sm:hidden">Start<span className="sr-only"> a startup</span></span><span className="hidden sm:inline">Start a startup</span></>,
+            className: "min-h-11 rounded-full border-2 border-ink bg-pink px-3 py-2 text-sm font-bold shadow-sticker transition hover:-translate-y-0.5 active:translate-y-0 active:shadow-none sm:px-4",
+          }}
+        />
         <SessionLink
           showAdmin
           signedOut={{ href: "/login", label: "Sign in", className: "min-h-11 text-sm font-bold hover:text-pink sm:text-base" }}
@@ -173,7 +178,15 @@ function HeroCopy() {
         want the inside track. Free for everyone.
       </p>
 
-      <WaitlistForm />
+      <SessionLink
+        signedOut={{ href: "#join", label: "Apply now" }}
+        signedOutContent={<WaitlistForm />}
+        signedIn={{
+          href: "/start",
+          label: "Start a startup",
+          className: "mt-10 min-h-11 rounded-2xl border-[3px] border-ink bg-pink px-7 py-4 font-display text-lg font-extrabold shadow-sticker transition hover:-translate-y-0.5 active:translate-y-0.5 active:shadow-none",
+        }}
+      />
 
       <p className="mt-2 max-w-xl text-sm font-semibold text-ink/60">
         just here as a fan?{" "}

@@ -13,6 +13,7 @@ interface LinkVariant {
 interface SessionLinkProps {
   signedOut: LinkVariant;
   signedIn: LinkVariant;
+  signedOutContent?: ReactNode;
   showAdmin?: boolean;
 }
 
@@ -34,7 +35,7 @@ async function fetchSession() {
   }
 }
 
-export function SessionLink({ signedOut, signedIn, showAdmin = false }: SessionLinkProps) {
+export function SessionLink({ signedOut, signedIn, signedOutContent, showAdmin = false }: SessionLinkProps) {
   const [session, setSession] = useState(signedOutSession);
   const sessionRequest = useRef<ReturnType<typeof fetchSession> | null>(null);
 
@@ -51,6 +52,21 @@ export function SessionLink({ signedOut, signedIn, showAdmin = false }: SessionL
 
   const isSignedIn = session.signedIn;
   const variant = isSignedIn ? signedIn : signedOut;
+
+  if (signedOutContent) {
+    return (
+      <div className="grid">
+        <div aria-hidden={isSignedIn} inert={isSignedIn} className={`col-start-1 row-start-1 ${isSignedIn ? "invisible" : ""}`}>
+          {signedOutContent}
+        </div>
+        <div aria-hidden={!isSignedIn} inert={!isSignedIn} className={`col-start-1 row-start-1 ${isSignedIn ? "" : "invisible"}`}>
+          <Link href={signedIn.href} className={`inline-flex max-w-full items-center justify-center ${signedIn.className ?? ""}`}>
+            {signedIn.label}
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <>
