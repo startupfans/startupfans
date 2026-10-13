@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Image from "next/image";
+import { LandingGate } from "./components/landing-gate";
 import { SessionLink } from "./components/session-link";
 import { WaitlistForm } from "./waitlist-form";
 
@@ -80,26 +81,28 @@ const TICKER_WORDS = [
 
 export default function Home() {
   return (
-    <main className="overflow-x-clip">
-      <Nav />
-      <Hero />
-      <Ticker />
-      <AudienceSection
-        id="startups"
-        eyebrow="For startups"
-        title="Apply. Get selected. Get in front of fans."
-        props={STARTUP_PROPS}
-        isDark
-      />
-      <AudienceSection
-        id="fans"
-        eyebrow="For fans"
-        title="The best seat in the house for what's next."
-        props={FAN_PROPS}
-      />
-      <JoinSection />
-      <Footer />
-    </main>
+    <LandingGate>
+      <main className="overflow-x-clip">
+        <Nav />
+        <Hero />
+        <Ticker />
+        <AudienceSection
+          id="startups"
+          eyebrow="For startups"
+          title="Apply. Get selected. Get in front of fans."
+          props={STARTUP_PROPS}
+          isDark
+        />
+        <AudienceSection
+          id="fans"
+          eyebrow="For fans"
+          title="The best seat in the house for what's next."
+          props={FAN_PROPS}
+        />
+        <JoinSection />
+        <Footer />
+      </main>
+    </LandingGate>
   );
 }
 

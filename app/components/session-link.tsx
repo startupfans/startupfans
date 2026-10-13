@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from "react";
 import { AdminLink } from "./admin-link";
 
 interface LinkVariant {
@@ -19,7 +19,9 @@ interface SessionLinkProps {
 
 const signedOutSession = { signedIn: false, admin: false };
 
-async function fetchSession() {
+export const LandingSessionContext = createContext<Awaited<ReturnType<typeof fetchSession>> | null>(null);
+
+export async function fetchSession() {
   try {
     const response = await fetch("/api/session", { cache: "no-store" });
     if (!response.ok) return signedOutSession;
@@ -36,10 +38,12 @@ async function fetchSession() {
 }
 
 export function SessionLink({ signedOut, signedIn, signedOutContent, showAdmin = false }: SessionLinkProps) {
+  const landingSession = useContext(LandingSessionContext);
   const [session, setSession] = useState(signedOutSession);
   const sessionRequest = useRef<ReturnType<typeof fetchSession> | null>(null);
 
   useEffect(() => {
+    if (landingSession !== null) return;
     let active = true;
     sessionRequest.current ??= fetchSession();
     sessionRequest.current.then((result) => {
@@ -48,9 +52,10 @@ export function SessionLink({ signedOut, signedIn, signedOutContent, showAdmin =
     return () => {
       active = false;
     };
-  }, []);
+  }, [landingSession]);
 
-  const isSignedIn = session.signedIn;
+  const currentSession = landingSession ?? session;
+  const isSignedIn = currentSession.signedIn;
   const variant = isSignedIn ? signedIn : signedOut;
 
   if (signedOutContent) {
@@ -78,7 +83,7 @@ export function SessionLink({ signedOut, signedIn, signedOutContent, showAdmin =
           {signedIn.label}
         </span>
       </Link>
-      {showAdmin && session.admin && <AdminLink />}
+      {showAdmin && currentSession.admin && <AdminLink />}
     </>
   );
 }
