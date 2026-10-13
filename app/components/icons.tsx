@@ -1,4 +1,4 @@
-import { Flag, Globe, Image as LucideImage, Link2, Loader2, MapPin, MessageCircle, Send, Trash2, Video, X } from "lucide-react";
+import { Flag, Globe, Heart, Image as LucideImage, Link2, Loader2, MapPin, MessageCircle, Send, Trash2, Video, X } from "lucide-react";
 import { siGithub, siInstagram, siLinkedin, siTiktok, siX, siYoutube } from "simple-icons";
 
 const uiIconProps = {
@@ -33,6 +33,10 @@ export function SpinnerIcon() {
 
 export function ReplyIcon() {
   return <MessageCircle {...uiIconProps} />;
+}
+
+export function HeartIcon({ filled = false }: { filled?: boolean }) {
+  return <Heart {...uiIconProps} fill={filled ? "currentColor" : "none"} />;
 }
 
 export function FlagIcon() {

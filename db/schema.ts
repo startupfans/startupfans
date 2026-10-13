@@ -143,6 +143,15 @@ export const postComments = pgTable(
   ],
 );
 
+export const commentLikes = pgTable("comment_likes", {
+  commentId: uuid("comment_id").notNull().references(() => postComments.id, { onDelete: "cascade" }),
+  userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [
+  primaryKey({ columns: [table.commentId, table.userId] }),
+  index("comment_likes_comment_id_idx").on(table.commentId),
+]);
+
 export const slackConnections = pgTable("slack_connections", {
   id: uuid("id").primaryKey().defaultRandom(),
   startupId: uuid("startup_id").notNull().unique().references(() => startups.id, { onDelete: "cascade" }),

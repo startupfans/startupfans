@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { isValidSessionId, getCurrentUser } from "@/lib/auth";
-import { createComment, deleteComment } from "@/lib/comments";
+import { createComment, deleteComment, setCommentLike } from "@/lib/comments";
 import { captureServerEvent } from "@/lib/posthog-server";
 
 export type CommentActionState =
@@ -64,4 +64,21 @@ export async function removeComment(slug: string, postId: string, commentId: str
   if (result.status === "error") return result;
   await commentChanged("comment_deleted", user.id, slug, postId, result.startupId);
   return { status: "success" };
+}
+
+export async function toggleCommentLike(commentId: string, desiredLiked?: boolean): Promise<{ liked: boolean; count: number }> {
+  if (typeof commentId !== "string" || !isValidSessionId(commentId)
+    || (desiredLiked !== undefined && typeof desiredLiked !== "boolean")) {
+    throw new Error("This reply couldn't be found.");
+  }
+  const user = await getCurrentUser();
+  if (!user) throw new Error("Sign in to like a reply.");
+  const result = await setCommentLike(commentId, user.id, desiredLiked);
+  if (result.status === "error") throw new Error(result.message);
+  revalidatePath(`/s/${result.slug}/p/${result.postId}`);
+  if (result.changed) {
+    await captureServerEvent({ distinctId: user.id, event: result.liked ? "comment_liked" : "comment_unliked",
+      properties: { post_id: result.postId, startup_id: result.startupId } });
+  }
+  return { liked: result.liked, count: result.count };
 }

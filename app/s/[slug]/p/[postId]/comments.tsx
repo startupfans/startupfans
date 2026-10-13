@@ -2,6 +2,7 @@
 
 import { useActionState, useId, useState } from "react";
 import { SubmitButton } from "@/app/components/submit-button";
+import { ConfirmSubmit } from "@/app/components/confirm-dialog";
 import { postIconButtonClass, TrashIcon } from "@/app/components/icons";
 import { removeComment, replyToPost, type CommentActionState } from "./comment-actions";
 
@@ -44,7 +45,7 @@ export function InlineReply({ slug, postId, commentId }: { slug: string; postId:
   const [open, setOpen] = useState(false);
   const composerId = useId();
   return (
-    <div className="mt-2 min-w-0">
+    <div className={`min-w-0 ${open ? "basis-full" : ""}`}>
       <button type="button" aria-expanded={open} aria-controls={composerId} onClick={() => setOpen(!open)}
         className="min-h-11 py-2 text-sm font-semibold underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink">
         {open ? "Cancel reply" : "Reply"}
@@ -59,13 +60,13 @@ export function InlineReply({ slug, postId, commentId }: { slug: string; postId:
 export function DeleteCommentButton({ slug, postId, commentId }: { slug: string; postId: string; commentId: string }) {
   const [state, action, pending] = useActionState(removeComment.bind(null, slug, postId, commentId), initialState);
   return (
-    <form action={action} onSubmit={(event) => {
-      if (pending || !window.confirm("Delete this reply?")) event.preventDefault();
-    }} className="min-w-0 max-w-full" aria-busy={pending}>
+    <form action={action} className="min-w-0 max-w-full" aria-busy={pending}>
       <input type="hidden" name="confirm" value="delete" />
-      <SubmitButton icon pending={pending} pendingLabel="Deleting…" title="Delete reply" aria-label="Delete reply" className={postIconButtonClass}>
+      <ConfirmSubmit icon pending={pending} pendingLabel="Deleting…" title="Delete reply" aria-label="Delete reply"
+        dialogTitle="Delete this reply?" description="This reply will be removed. Replies to it will stay visible."
+        confirmLabel="Delete reply" className={postIconButtonClass}>
         <TrashIcon />
-      </SubmitButton>
+      </ConfirmSubmit>
       {state.status === "error" && <p role="alert" className="mt-2 text-sm">{state.message}</p>}
     </form>
   );

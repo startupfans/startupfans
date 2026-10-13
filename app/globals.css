@@ -59,7 +59,32 @@
   }
 }
 
+.comment-like-heart {
+  animation: comment-like-burst 700ms ease-out both;
+}
+
+@keyframes comment-like-burst {
+  from {
+    translate: -50% -50%;
+    rotate: 0deg;
+    opacity: 0;
+  }
+  15% {
+    opacity: 1;
+  }
+  to {
+    translate: calc(-50% + var(--heart-x)) calc(-50% + var(--heart-y));
+    rotate: var(--heart-rotation);
+    opacity: 0;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
+  .comment-like-heart {
+    display: none;
+    animation: none;
+  }
+
   html {
     scroll-behavior: auto;
   }

@@ -11,6 +11,7 @@ import { getPostMembership, getPublicPost } from "@/lib/posts";
 import { PostCard, relativeDate } from "../../post-card";
 import { getCommentAccess, getPublicComments, type PublicComment } from "@/lib/comments";
 import { CommentComposer, DeleteCommentButton, InlineReply } from "./comments";
+import { LikeButton } from "./like-button";
 
 type PostPageProps = { params: Promise<{ slug: string; postId: string }> };
 
@@ -43,12 +44,13 @@ export async function generateMetadata({ params }: PostPageProps): Promise<Metad
   };
 }
 
-function CommentContent({ comment, slug, postId, canDelete, canReply }: {
+function CommentContent({ comment, slug, postId, canDelete, canReply, signedIn }: {
   comment: PublicComment;
   slug: string;
   postId: string;
   canDelete: boolean;
   canReply: boolean;
+  signedIn: boolean;
 }) {
   return (
     <article id={`comment-${comment.id}`} className="min-w-0">
@@ -66,7 +68,11 @@ function CommentContent({ comment, slug, postId, canDelete, canReply }: {
         </div>}
       </div>
       <p className="mt-3 whitespace-pre-wrap break-words text-sm leading-relaxed">{comment.body}</p>
-      {canReply && <InlineReply slug={slug} postId={postId} commentId={comment.id} />}
+      <div className="mt-2 flex flex-wrap items-center gap-3">
+        <LikeButton commentId={comment.id} count={comment.likeCount} liked={comment.liked}
+          signedIn={signedIn} postUrl={`/s/${slug}/p/${postId}`} />
+        {canReply && <InlineReply slug={slug} postId={postId} commentId={comment.id} />}
+      </div>
     </article>
   );
 }
@@ -80,7 +86,7 @@ export async function PostPage({ params, searchParams }: PostPageProps & {
   const member = user ? await getPostMembership(slug, user.id) : null;
   const canDelete = member !== null && (member.role === "owner" || user?.id === post.authorId);
   const [comments, access] = await Promise.all([
-    getPublicComments(postId),
+    getPublicComments(postId, user?.id ?? null),
     user ? getCommentAccess(post.startupId, user) : null,
   ]);
   const threads = new Map<string, { parent: PublicComment | null; replies: PublicComment[] }>();
@@ -115,13 +121,13 @@ export async function PostPage({ params, searchParams }: PostPageProps & {
             {Array.from(threads, ([threadId, thread]) => (
               <li key={threadId} className="min-w-0 rounded-2xl border-[3px] border-ink bg-white p-4 shadow-sticker">
                 {thread.parent && <CommentContent comment={thread.parent} slug={slug} postId={postId}
-                  canDelete={canDeleteComment(thread.parent)} canReply={Boolean(access?.canReply)} />}
+                  canDelete={canDeleteComment(thread.parent)} canReply={Boolean(access?.canReply)} signedIn={user !== null} />}
                 {thread.replies.length > 0 && <ol aria-label="Thread replies"
                   className={`${thread.parent ? "mt-4" : ""} ml-2 min-w-0 space-y-4 border-l-2 border-ink pl-3 sm:ml-4 sm:pl-4`}>
                   {thread.replies.map((reply) => (
                     <li key={reply.id} className="min-w-0">
                       <CommentContent comment={reply} slug={slug} postId={postId}
-                        canDelete={canDeleteComment(reply)} canReply={Boolean(thread.parent && access?.canReply)} />
+                        canDelete={canDeleteComment(reply)} canReply={Boolean(thread.parent && access?.canReply)} signedIn={user !== null} />
                     </li>
                   ))}
                 </ol>}
