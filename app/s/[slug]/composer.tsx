@@ -268,8 +268,8 @@ export function Composer({ slug, name, avatarUrl }: {
           </div>
           <div className="flex min-w-0 items-center gap-3">
             {body.length > 4000 && <span className="text-xs tabular-nums text-ink/60">{body.length.toLocaleString("en-GB")}/5,000</span>}
-            <SubmitButton pending={pending} pendingLabel="Posting…" disabled={disabled} title="Post (⌘ or Ctrl + Enter)"
-              aria-label="Post" className={`${postIconButtonBaseClass.replace("w-10", "min-w-10")} px-3 ${disabled ? "bg-white text-ink/40" : "bg-pink text-ink shadow-sticker"}`}>
+            <SubmitButton icon pending={pending} pendingLabel="Posting…" disabled={disabled} title="Post (⌘ or Ctrl + Enter)"
+              aria-label="Post" className={`${postIconButtonBaseClass} ${disabled ? "bg-white text-ink/40" : "bg-pink text-ink shadow-sticker"}`}>
               <SendIcon />
             </SubmitButton>
           </div>
@@ -298,8 +298,8 @@ export function DeletePostButton({ slug, postId, returnToStartup = false }: {
       if (pending) { event.preventDefault(); return; }
       if (!window.confirm("Delete this post? This can't be undone.")) event.preventDefault();
     }} className="min-w-0 max-w-full break-words" aria-busy={pending}>
-      <SubmitButton pending={pending} pendingLabel="Deleting…" title="Delete post" aria-label="Delete post"
-        className={`${postIconButtonClass.replace("w-10", "min-w-10")} px-3`}>
+      <SubmitButton icon pending={pending} pendingLabel="Deleting…" title="Delete post" aria-label="Delete post"
+        className={postIconButtonClass}>
         <TrashIcon />
       </SubmitButton>
       {state.status === "error" && <p role="alert" className="mt-2 text-sm">{state.message}</p>}
