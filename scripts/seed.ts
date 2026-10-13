@@ -30,7 +30,7 @@ export async function seedStartupFans() {
 
     const profile = {
       name: "startupfans",
-      tagline: "Be a fan before they're famous.",
+      tagline: "Be a fan before we're famous.",
       website: "https://www.startupfans.co",
       logoUrl: "/logo/startupfans-mark-on-light.svg",
       stage: "pre-seed",
