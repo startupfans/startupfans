@@ -8,7 +8,7 @@ export function PostMedia({ mediaUrl, mediaType, mediaPosterUrl }: {
   if (!mediaUrl || !mediaType) return null;
 
   return (
-    <div className="mt-5 min-w-0 max-w-full overflow-hidden rounded-2xl border-[3px] border-ink bg-cream shadow-sticker">
+    <div className="mt-3 min-w-0 max-w-full overflow-hidden rounded-2xl border-[3px] border-ink bg-cream shadow-sticker">
       {mediaType === "image" ? (
         <Image src={mediaUrl} alt="Post attachment" width={1200} height={1200}
           sizes="(max-width: 768px) calc(100vw - 86px), 680px"

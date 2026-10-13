@@ -101,7 +101,7 @@ async function StartupPage({ params }: StartupPageProps) {
       </section>
       <section className="mx-auto mt-14 max-w-3xl" aria-label="Startup updates">
         <SectionHeading eyebrow="From the team" title="The latest." />
-        {isMember && <Composer slug={slug} />}
+        {isMember && <Composer slug={slug} name={user?.name?.trim() || user?.email.split("@")[0] || "You"} avatarUrl={user?.avatarUrl ?? null} />}
         <div className="mt-7 space-y-6">
           {posts.length === 0 ? (
             <p className="rounded-2xl border-[3px] border-ink bg-sun p-6 shadow-sticker">No updates yet. Become a fan and follow along.</p>
