@@ -2,11 +2,9 @@ import { AppHeader } from "@/app/components/app-shell";
 import { SubmitButton } from "@/app/components/submit-button";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { and, eq } from "drizzle-orm";
-import { db } from "@/db";
-import { startupMembers } from "@/db/schema";
 import { getCurrentUser } from "@/lib/auth";
 import { getValidStartupInvite } from "@/lib/invites";
+import { isStartupMember } from "@/lib/members";
 import { acceptInviteAction } from "./actions";
 
 export const metadata = { title: "Join a team on startupfans", robots: { index: false, follow: false } };
@@ -23,8 +21,7 @@ async function JoinPage({ params, searchParams }: {
     redirect(`/login?${new URLSearchParams({ next, invite: token })}`);
   }
   const invite = invalid ? null : await getValidStartupInvite(token, user.email);
-  const [member] = invite ? await db.select({ userId: startupMembers.userId }).from(startupMembers)
-    .where(and(eq(startupMembers.startupId, invite.startupId), eq(startupMembers.userId, user.id))).limit(1) : [];
+  const member = invite ? await isStartupMember(invite.startupId, user.id) : false;
 
   return (
     <div className="min-h-screen min-w-0">

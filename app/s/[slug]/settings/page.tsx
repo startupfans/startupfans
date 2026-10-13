@@ -201,7 +201,7 @@ async function SettingsPage({ params, searchParams }: {
             <ul className="mt-5 space-y-4">
               {invites.map((invite) => (
                 <li key={invite.tokenHash} className="flex flex-wrap items-center justify-between gap-3 rounded-xl border-2 border-ink bg-cream p-4">
-                  <div className="min-w-0 max-w-full"><p className="font-bold">{invite.invitedEmail ? `Sent to ${invite.invitedEmail}` : `Link invite · used ${invite.uses} times · expires ${invite.expiresAt.toLocaleString("en-GB", { timeZone: "UTC" })} UTC`}</p>
+                  <div className="min-w-0 max-w-full"><p className="font-bold">{invite.invitedEmail ? `Sent to ${invite.invitedEmail}` : `Link invite · ${invite.uses === 1 ? "used once" : `used ${invite.uses} times`} · expires ${invite.expiresAt.toLocaleString("en-GB", { timeZone: "UTC" })} UTC`}</p>
                     <p className="text-sm text-ink/70">Created {invite.createdAt.toLocaleString("en-GB", { timeZone: "UTC" })} UTC</p>
                     {invite.invitedEmail && <p className="text-sm text-ink/70">Expires {invite.expiresAt.toLocaleString("en-GB", { timeZone: "UTC" })} UTC</p>}
                   </div>

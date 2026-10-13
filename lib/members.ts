@@ -11,6 +11,12 @@ import { startupFanCount } from "@/lib/startups";
 
 type Transaction = Parameters<Parameters<typeof db.transaction>[0]>[0];
 
+export async function isStartupMember(startupId: string, userId: string) {
+  const [member] = await db.select({ userId: startupMembers.userId }).from(startupMembers)
+    .where(and(eq(startupMembers.startupId, startupId), eq(startupMembers.userId, userId))).limit(1);
+  return member !== undefined;
+}
+
 export async function requireStartupOwner(slug: string, { allowSiteAdmin = true } = {}) {
   const user = await getCurrentUser();
   if (!user) notFound();

@@ -1,12 +1,22 @@
 import "server-only";
 
 import { createHash, randomBytes } from "node:crypto";
-import { and, asc, count, eq, gt, isNull, lte, or, sql } from "drizzle-orm";
+import { and, asc, count, eq, gt, isNotNull, isNull, lte, or, sql } from "drizzle-orm";
 import { db } from "@/db";
 import { follows, startupInvites, startupMembers, startups, users } from "@/db/schema";
 import { withOwnedStartup } from "@/lib/members";
 
 const inviteLifetimeMs = 7 * 24 * 60 * 60 * 1000;
+const usedEmailInviteRetentionMs = 30 * 24 * 60 * 60 * 1000;
+
+function startupInviteCleanupCondition(now = new Date()) {
+  return or(
+    and(isNull(startupInvites.usedAt), lte(startupInvites.expiresAt, now)),
+    and(isNull(startupInvites.invitedEmail), isNotNull(startupInvites.usedAt)),
+    and(isNotNull(startupInvites.invitedEmail),
+      lte(startupInvites.usedAt, new Date(now.getTime() - usedEmailInviteRetentionMs))),
+  );
+}
 
 function tokenHash(token: string) {
   return createHash("sha256").update(token).digest("hex");
@@ -42,7 +52,7 @@ export async function getUnusedStartupInvites(startupId: string) {
 
 export async function hasExpiredStartupInvites(startupId: string) {
   const [row] = await db.select({ count: count() }).from(startupInvites).where(and(
-    eq(startupInvites.startupId, startupId), isNull(startupInvites.usedAt), lte(startupInvites.expiresAt, new Date()),
+    eq(startupInvites.startupId, startupId), startupInviteCleanupCondition(),
   ));
   return row.count > 0;
 }
@@ -50,7 +60,7 @@ export async function hasExpiredStartupInvites(startupId: string) {
 export async function clearExpiredStartupInvites(slug: string, userId: string) {
   return withOwnedStartup(slug, userId, async (tx, startup) => {
     await tx.delete(startupInvites).where(and(
-      eq(startupInvites.startupId, startup.id), isNull(startupInvites.usedAt), lte(startupInvites.expiresAt, new Date()),
+      eq(startupInvites.startupId, startup.id), startupInviteCleanupCondition(),
     ));
   });
 }
