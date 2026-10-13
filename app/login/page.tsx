@@ -1,6 +1,5 @@
 import { AppHeader } from "@/app/components/app-shell";
 import { SubmitButton } from "@/app/components/submit-button";
-import Link from "next/link";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { getCurrentUser, getSafeNextPath } from "@/lib/auth";
@@ -48,9 +47,7 @@ export async function LoginPage({
   const devLink = sent && process.env.NODE_ENV !== "production"
     ? await getDevLink(query.dev_link)
     : null;
-  const error = query.error === "invite-only"
-    ? "startupfans is invite-only for now. Join the waitlist and we'll let you in."
-    : query.error === "rate-limit"
+  const error = query.error === "rate-limit"
     ? "Too many sign-in links requested. Try again in a few minutes."
     : query.error === "expired"
     ? "That link has expired or has already been used. Request a fresh one below."
@@ -74,7 +71,7 @@ export async function LoginPage({
           {sent ? (
             <p role="status" className="mt-5 break-words text-lg">We sent a sign-in link to <strong>{sent}</strong>. It expires in 15 minutes.</p>
           ) : (
-            <p className="mt-5 text-lg text-ink/80">Use the email your invite went to.</p>
+            <p className="mt-5 text-lg text-ink/80">We&apos;ll email you a sign-in link.</p>
           )}
           {devLink && (
             <aside className="mt-6 rounded-2xl border-[3px] border-ink bg-sun p-5 shadow-sticker">
@@ -98,11 +95,6 @@ export async function LoginPage({
             <p role="alert" className="mt-6 rounded-xl border-2 border-ink bg-sun p-4 font-semibold">
               {error}
             </p>
-          )}
-          {query.error === "invite-only" && (
-            <Link href="/#join" className="mt-6 inline-flex min-h-11 w-full items-center justify-center rounded-xl border-[3px] border-ink bg-lime px-5 py-3 font-bold shadow-sticker sm:w-auto">
-              Join the waitlist
-            </Link>
           )}
           <form action={requestMagicLink} className="mt-8 space-y-4">
             <input type="hidden" name="next" value={next} />

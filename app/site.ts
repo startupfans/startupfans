@@ -2,7 +2,7 @@ export const SITE_URL = "https://startupfans.co";
 export const SITE_NAME = "StartupFans";
 export const SITE_TAGLINE = "Get your startup in front of fans.";
 export const SITE_DESCRIPTION =
-  "A curated community of early startups. Apply to get selected and promoted to fans who want the inside track. Free to join.";
+  "Where early startups post what they're shipping. One team feed for fans who want the inside track. Free to join.";
 
 export const BRAND_COLORS = {
   cream: "#fff4e0",

@@ -33,18 +33,17 @@ export async function GET(request: Request) {
       .returning({ email: magicLinks.email });
     if (!link) return null;
 
-    if (!await canSignUp(link.email, { inviteToken })) return { status: "invite-only" } as const;
+    if (!await canSignUp(link.email)) return null;
     const email = link.email.trim().toLowerCase();
     const existing = await existingUser(email);
     const user = existing ?? await allocateHandle(tx, email);
 
     const id = randomUUID();
     await tx.insert(sessions).values({ id, userId: user.id, expiresAt });
-    return { status: "signed-in", id, userId: user.id } as const;
+    return { id, userId: user.id };
   });
 
   if (!sessionId) redirect(retryLoginUrl);
-  if (sessionId.status === "invite-only") redirect("/login?error=invite-only");
 
   await captureServerEvent({
     distinctId: sessionId.userId,

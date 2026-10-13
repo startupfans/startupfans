@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import Image from "next/image";
 import { SessionLink } from "./components/session-link";
-import { WaitlistForm } from "./waitlist-form";
 
 export const dynamic = "force-static";
 
@@ -11,6 +10,9 @@ export const metadata: Metadata = {
 
 const LOGO_WIDTH = 910;
 const LOGO_HEIGHT = 150;
+
+const signupCtaClass =
+  "mt-10 inline-flex min-h-11 items-center justify-center rounded-2xl border-[3px] border-ink bg-pink px-7 py-4 font-display text-lg font-extrabold shadow-sticker transition hover:-translate-y-0.5 active:translate-y-0.5 active:shadow-none";
 
 interface ValueProp {
   emoji: string;
@@ -23,8 +25,8 @@ interface ValueProp {
 const STARTUP_PROPS: ValueProp[] = [
   {
     emoji: "📣",
-    title: "Get selected, get promoted",
-    body: "We pick early startups and put them in front of fans who actually want the inside track. Free to join.",
+    title: "Get in front of fans",
+    body: "One place for people who actually want the inside track on your team. Free to join.",
     colorClass: "bg-sun",
     tiltClass: "md:rotate-1",
   },
@@ -48,7 +50,7 @@ const FAN_PROPS: ValueProp[] = [
   {
     emoji: "🤫",
     title: "Get the inside scoop",
-    body: "Exclusive posts straight from selected startups: what they're working on today, what they just shipped, and the photos from the team dinner.",
+    body: "Exclusive posts straight from the team: what they're working on today, what they just shipped, and the photos from the team dinner.",
     colorClass: "bg-sky",
     tiltClass: "md:-rotate-2",
   },
@@ -71,11 +73,11 @@ const FAN_PROPS: ValueProp[] = [
 const BARCODE_BARS = [2, 4, 1, 3, 2, 5, 1, 2, 4, 1, 3, 1, 5, 2, 1, 3, 4, 1, 2, 3];
 
 const TICKER_WORDS = [
-  "Curated early startups",
+  "Early startups",
   "Free to join",
-  "Get selected",
+  "Team feeds",
   "Launching today",
-  "Promoted to fans",
+  "Straight from the team",
 ];
 
 export default function Home() {
@@ -87,7 +89,7 @@ export default function Home() {
       <AudienceSection
         id="startups"
         eyebrow="For startups"
-        title="Apply. Get selected. Get in front of fans."
+        title="One feed. Your whole team. Fans who care."
         props={STARTUP_PROPS}
         isDark
       />
@@ -130,8 +132,8 @@ function Nav() {
         <SessionLink
           showAdmin
           signedOut={{
-            href: "#join",
-            label: <><span className="sm:hidden">Apply</span><span className="hidden sm:inline">Apply now</span></>,
+            href: "/login",
+            label: "Sign up",
             className: "min-h-11 rounded-full border-2 border-ink bg-white px-3 py-2 text-sm font-bold shadow-sticker transition hover:-translate-y-0.5 hover:bg-sun active:translate-y-0 active:shadow-none sm:px-4",
           }}
           signedIn={{
@@ -174,26 +176,29 @@ function HeroCopy() {
       <div aria-hidden className="mt-8 h-3 w-28 -rotate-2 rounded-full border-2 border-ink bg-pink sm:h-4 sm:w-40" />
 
       <p className="mt-8 max-w-2xl text-lg text-pretty text-ink/80 sm:text-xl">
-        StartupFans is a curated community of early startups. Apply to get selected, then we promote you to fans who
-        want the inside track. Free for everyone.
+        StartupFans is where early startups post what they&apos;re shipping. One feed for the team, free for everyone.
+        Sign up, create your page, and start posting.
       </p>
 
       <SessionLink
-        signedOut={{ href: "#join", label: "Apply now" }}
-        signedOutContent={<WaitlistForm />}
+        signedOut={{
+          href: "/login",
+          label: "Sign up",
+          className: signupCtaClass,
+        }}
         signedIn={{
           href: "/start",
           label: "Start a startup",
-          className: "mt-10 min-h-11 rounded-2xl border-[3px] border-ink bg-pink px-7 py-4 font-display text-lg font-extrabold shadow-sticker transition hover:-translate-y-0.5 active:translate-y-0.5 active:shadow-none",
+          className: signupCtaClass,
         }}
       />
 
       <p className="mt-2 max-w-xl text-sm font-semibold text-ink/60">
         just here as a fan?{" "}
-        <a href="#fans" className="underline decoration-2 underline-offset-2 hover:text-pink">
-          same list
+        <a href="/login" className="underline decoration-2 underline-offset-2 hover:text-pink">
+          sign up
         </a>
-        . we&apos;ll email when selected startups start posting.
+        {" "}and follow along.
       </p>
     </>
   );
@@ -207,15 +212,15 @@ function FanCard() {
 
       <div className="rotate-3 rounded-3xl border-[3px] border-ink bg-sun p-6 shadow-sticker-lg transition hover:rotate-0">
         <div className="flex items-center justify-between">
-          <span className="font-mono text-xs font-bold tracking-widest uppercase">Selected startup</span>
+          <span className="font-mono text-xs font-bold tracking-widest uppercase">Your startup</span>
           <Star className="size-9 text-pink" />
         </div>
-        <p className="mt-6 font-mono text-xs font-semibold tracking-wide text-ink/60 uppercase">Spot no.</p>
+        <p className="mt-6 font-mono text-xs font-semibold tracking-wide text-ink/60 uppercase">Fan no.</p>
         <p className="font-display text-7xl leading-none font-extrabold tabular-nums">#0001</p>
-        <p className="mt-2 font-display text-lg font-bold">Could be you.</p>
+        <p className="mt-2 font-display text-lg font-bold">Your first fan.</p>
 
         <ul className="mt-6 space-y-2 rounded-2xl border-2 border-ink bg-white p-4 text-sm font-semibold">
-          <li>📣 Get selected &amp; promoted</li>
+          <li>📣 Get in front of fans</li>
           <li>🚢 Show what you&apos;re shipping</li>
           <li>💌 Free for startups &amp; fans</li>
         </ul>
@@ -226,7 +231,7 @@ function FanCard() {
               <span key={index} className="h-full bg-ink" style={{ width }} />
             ))}
           </div>
-          <span className="font-mono text-[10px] font-bold tracking-wide uppercase">Apply today</span>
+          <span className="font-mono text-[10px] font-bold tracking-wide uppercase">Sign up today</span>
         </div>
       </div>
     </div>
@@ -304,20 +309,30 @@ function JoinSection() {
         <div className="relative max-w-2xl">
           <p className="font-mono text-xs font-bold tracking-widest uppercase">Launching today</p>
           <h2 className="mt-3 font-display text-4xl leading-none font-extrabold tracking-tight text-balance sm:text-6xl">
-            Apply to get your startup selected.
+            Start your startup page.
           </h2>
           <p className="mt-5 text-lg text-ink/80">
-            We&apos;re opening the first wave now. Drop your email, tell a friend, and move up the list. Fans welcome
-            too.
+            sign up with your email, create a page, and post what you&apos;re shipping. fans welcome too.
           </p>
         </div>
 
-        <WaitlistForm ctaLabel="Apply now →" />
+        <SessionLink
+          signedOut={{
+            href: "/login",
+            label: "Sign up →",
+            className: "mt-8 inline-flex min-h-11 items-center justify-center rounded-2xl border-[3px] border-ink bg-white px-7 py-4 font-display text-lg font-extrabold shadow-sticker transition hover:-translate-y-0.5 active:translate-y-0.5 active:shadow-none",
+          }}
+          signedIn={{
+            href: "/start",
+            label: "Start a startup →",
+            className: "mt-8 inline-flex min-h-11 items-center justify-center rounded-2xl border-[3px] border-ink bg-white px-7 py-4 font-display text-lg font-extrabold shadow-sticker transition hover:-translate-y-0.5 active:translate-y-0.5 active:shadow-none",
+          }}
+        />
         <p className="mt-4 text-sm text-ink">
           <SessionLink
             signedOut={{
               href: "/login",
-              label: <>Already have access? <span className="font-bold underline underline-offset-4">Sign in</span>.</>,
+              label: <>Already have an account? <span className="font-bold underline underline-offset-4">Sign in</span>.</>,
             }}
             signedIn={{
               href: "/feed",
