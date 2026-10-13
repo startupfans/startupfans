@@ -1,3 +1,4 @@
+import { SubmitButton } from "@/app/components/submit-button";
 import type { ReactNode } from "react";
 import Image from "next/image";
 import Link from "next/link";
@@ -46,7 +47,7 @@ export async function AdminDeleteStartup({ slug }: { slug: string }) {
           <input type="checkbox" name="confirm" value="delete" required className="mt-1" />
           I confirm this permanent deletion
         </label>
-        <button type="submit" className="min-h-11 w-full rounded-xl border-2 border-ink bg-pink px-4 py-2 font-bold sm:w-auto">Delete startup</button>
+        <SubmitButton pendingLabel="Deleting…" className="min-h-11 w-full rounded-xl border-2 border-ink bg-pink px-4 py-2 font-bold sm:w-auto">Delete startup</SubmitButton>
       </form>
     </details>
   );

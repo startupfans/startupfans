@@ -2,6 +2,7 @@
 
 import { useId, useState } from "react";
 import posthog from "posthog-js";
+import { SubmitButton } from "@/app/components/submit-button";
 
 function captureWaitlistEvent(
   event: "waitlist_joined" | "waitlist_referral_link_copied" | "waitlist_x_share_clicked",
@@ -65,6 +66,7 @@ export function WaitlistForm({ ctaLabel = "Get your startup selected →" }: Wai
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (state.status === "submitting") return;
     const email = new FormData(event.currentTarget).get("email");
     if (typeof email !== "string" || email.trim() === "") return;
 
@@ -85,7 +87,7 @@ export function WaitlistForm({ ctaLabel = "Get your startup selected →" }: Wai
   const isSubmitting = state.status === "submitting";
 
   return (
-    <form onSubmit={handleSubmit} className="relative mt-10 max-w-xl">
+    <form onSubmit={handleSubmit} className="relative mt-10 max-w-xl" aria-busy={isSubmitting}>
       <div className="flex flex-col gap-3 sm:flex-row">
         <label htmlFor={emailInputId} className="sr-only">
           Email address
@@ -100,13 +102,13 @@ export function WaitlistForm({ ctaLabel = "Get your startup selected →" }: Wai
           disabled={isSubmitting}
           className="min-w-0 flex-1 rounded-2xl border-[3px] border-ink bg-white px-5 py-4 text-lg font-semibold shadow-sticker outline-none placeholder:text-ink/40 focus-visible:bg-cream disabled:opacity-60"
         />
-        <button
-          type="submit"
-          disabled={isSubmitting}
+        <SubmitButton
+          pendingLabel="Sending…"
+          pending={isSubmitting}
           className="rounded-2xl border-[3px] border-ink bg-sun px-7 py-4 font-display text-lg font-extrabold shadow-sticker transition hover:-translate-y-0.5 active:translate-y-0.5 active:shadow-none disabled:translate-y-0 disabled:opacity-60"
         >
-          {isSubmitting ? "Sending…" : ctaLabel}
-        </button>
+          {ctaLabel}
+        </SubmitButton>
       </div>
       <p role="alert" className="mt-3 min-h-6 font-bold">
         {state.status === "error" ? state.message : null}

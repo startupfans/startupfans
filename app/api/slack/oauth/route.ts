@@ -14,7 +14,7 @@ export async function GET(request: Request) {
   const state = verifySlackState(cookieStore.get(SLACK_STATE_COOKIE)?.value, query.get("state"));
   cookieStore.set(SLACK_STATE_COOKIE, "", { path: "/api/slack", maxAge: 0 });
   if (!state) return new Response("Invalid Slack state", { status: 401 });
-  const { user } = await requireStartupOwner(state.slug);
+  const { user } = await requireStartupOwner(state.slug, { allowSiteAdmin: false });
   if (user.id !== state.userId) return new Response("Invalid Slack state", { status: 401 });
   const settings = new URL(`/s/${state.slug}/settings`, slackAppUrl());
   let message = "slack-connect-failed";
@@ -33,7 +33,7 @@ export async function GET(request: Request) {
       await withOwnedStartup(state.slug, user.id, async (tx, startup) => {
         await tx.insert(slackConnections).values({ startupId: startup.id, ...connection })
           .onConflictDoUpdate({ target: slackConnections.startupId, set: connection });
-      });
+      }, { allowSiteAdmin: false });
       message = "slack-connected";
     } catch {
       console.error("[startupfans Slack] Could not connect a workspace.");

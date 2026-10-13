@@ -1,3 +1,4 @@
+import { SubmitButton } from "@/app/components/submit-button";
 import Link from "next/link";
 import { SiteFooter, TopNav } from "@/app/components/sticker";
 import { requireAdmin } from "@/lib/admin";
@@ -50,12 +51,12 @@ export async function WaitlistPage({ searchParams }: {
             <div className="flex flex-wrap gap-3">
               <input id="waitlist-count" name="count" type="number" min={1} max={MAX_WAITLIST_BATCH}
                 step={1} defaultValue={10} required className="min-h-11 w-24 rounded-xl border-2 border-ink bg-cream px-3 py-2" />
-              <button type="submit" className={`${buttonClass} bg-lime`}>Let in</button>
+              <SubmitButton pendingLabel="Letting in…" className={`${buttonClass} bg-lime`}>Let in</SubmitButton>
             </div>
             <p className="text-sm">Up to {MAX_WAITLIST_BATCH} at a time, in signup order. Team members are marked as invited without an email.</p>
           </form>
           {syncConfigured ? <form action={syncWaitlistAction} className="flex flex-wrap items-center gap-3">
-            <button type="submit" className={`${buttonClass} bg-sun`}>Sync now</button>
+            <SubmitButton pendingLabel="Syncing…" className={`${buttonClass} bg-sun`}>Sync now</SubmitButton>
             <p className="text-sm">Last synced {sync.secondsAgo === null ? "never" :
               `${sync.secondsAgo} seconds ago`}</p>
           </form> : <p className="text-sm">GetWaitlist sync is not configured.</p>}
@@ -90,9 +91,9 @@ export async function WaitlistPage({ searchParams }: {
                 <td className="px-3 py-4 text-right">
                   <div className="flex justify-end gap-2">
                   <form action={entry.invitedAt ? resendEntryAction.bind(null, entry.id) : letInEntryAction.bind(null, entry.id)}>
-                    <button type="submit" className={`${buttonClass} ${entry.invitedAt ? "bg-cream" : "bg-lime"}`}>
+                    <SubmitButton pendingLabel={entry.invitedAt ? "Resending…" : "Letting in…"} className={`${buttonClass} ${entry.invitedAt ? "bg-cream" : "bg-lime"}`}>
                       {entry.invitedAt ? "Resend" : "Let in"}
-                    </button>
+                    </SubmitButton>
                   </form>
                   </div>
                 </td>
