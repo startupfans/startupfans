@@ -1,9 +1,8 @@
 import { SubmitButton } from "@/app/components/submit-button";
 import { ConfirmSubmit } from "@/app/components/confirm-dialog";
 import Link from "next/link";
-import { SiteFooter } from "@/app/components/sticker";
-import { AppHeader } from "@/app/components/app-shell";
-import { SubNav } from "@/app/components/sub-nav";
+import { PageHeader, SiteFooter } from "@/app/components/sticker";
+import { AppHeader, AppShell } from "@/app/components/app-shell";
 import { requireAdmin } from "@/lib/admin";
 import { listOpenReports } from "@/lib/reports";
 import { deleteReportedPostAction, resolveReportsAction } from "./actions";
@@ -13,14 +12,12 @@ export async function AdminPage() {
   const reports = await listOpenReports();
   return (
     <div className="min-h-screen min-w-0">
-      <AppHeader signedIn next="/admin" subNav={
-        <SubNav aria-label="Admin navigation" items={[
+      <AppHeader signedIn next="/admin" />
+      <AppShell className="max-w-4xl">
+        <PageHeader title="Post reports" tabs={{ label: "Admin navigation", items: [
           { href: "/admin", label: "Post reports", current: true },
           { href: "/admin/waitlist", label: "Waitlist" },
-        ]} />
-      } />
-      <main className="mx-auto min-w-0 max-w-4xl break-words px-5 pb-10 sm:pb-16">
-        <h1 className="font-display text-4xl font-extrabold">Post reports</h1>
+        ] }} />
         <section className="mt-8 space-y-6" aria-label="Open reports">
           {reports.length === 0 && <p>No open reports.</p>}
           {reports.map((report) => (
@@ -51,7 +48,7 @@ export async function AdminPage() {
           ))}
         </section>
         <SiteFooter />
-      </main>
+      </AppShell>
     </div>
   );
 }

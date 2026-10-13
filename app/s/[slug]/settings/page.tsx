@@ -1,5 +1,5 @@
 import { SubmitButton } from "@/app/components/submit-button";
-import { AppHeader } from "@/app/components/app-shell";
+import { AppHeader, AppShell } from "@/app/components/app-shell";
 import { SubNav } from "@/app/components/sub-nav";
 import { ConfirmSubmit } from "@/app/components/confirm-dialog";
 import Image from "next/image";
@@ -78,7 +78,7 @@ async function SettingsPage({ params, searchParams }: {
           { href: `/s/${slug}/settings`, label: "Settings", current: true },
         ]} />
       } />
-      <main className="mx-auto min-w-0 max-w-6xl break-words px-5 pb-10 sm:pb-16">
+      <AppShell className="max-w-6xl">
         <h1 className="font-display text-4xl font-extrabold">Your page settings.</h1>
         {isSiteAdmin && !isMember && <p className="mt-5 inline-block -rotate-1 rounded-xl border-2 border-ink bg-sun px-4 py-3 shadow-sticker">You&apos;re here as a site admin.</p>}
         {message && <p role="status" className="mt-5 rounded-xl border-2 border-ink bg-sun p-4">{message}</p>}
@@ -217,7 +217,7 @@ async function SettingsPage({ params, searchParams }: {
           )}
         </section>
         <DangerZone slug={slug} />
-      </main>
+      </AppShell>
     </div>
   );
 }

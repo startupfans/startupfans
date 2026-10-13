@@ -3,8 +3,8 @@ import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Handle } from "@/app/components/handle";
-import { SiteFooter } from "@/app/components/sticker";
-import { AppHeader } from "@/app/components/app-shell";
+import { PageHeader, SiteFooter } from "@/app/components/sticker";
+import { AppHeader, AppShell } from "@/app/components/app-shell";
 import { PostCard } from "@/app/s/[slug]/post-card";
 import { getCurrentUser } from "@/lib/auth";
 import { getPublicUser } from "@/lib/users";
@@ -31,16 +31,15 @@ export async function UserPage({ params }: UserPageProps) {
   return (
     <div className="min-h-screen min-w-0">
       <AppHeader signedIn={viewer !== null} next={`/u/${profile.handle}`} />
-      <main className="mx-auto min-w-0 max-w-3xl break-words px-5 pb-10 sm:pb-16">
-        <section className="mt-10 rounded-3xl border-[3px] border-ink bg-sky p-6 shadow-sticker-lg sm:p-10">
-          <div className="flex min-w-0 flex-wrap items-center gap-4">
+      <AppShell className="max-w-3xl">
+        <PageHeader title={<><span className="min-w-0 max-w-full">{name}</span><Handle handle={profile.handle} /></>} identity={
+          <>
             {profile.avatarUrl ? <Image src={profile.avatarUrl} alt="" width={80} height={80} unoptimized referrerPolicy="no-referrer"
               className="h-20 w-20 shrink-0 rounded-full border-[3px] border-ink object-cover" />
               : <span aria-hidden="true" className="flex h-20 w-20 shrink-0 items-center justify-center rounded-full border-[3px] border-ink bg-sun font-display text-3xl font-extrabold">{name.charAt(0).toUpperCase()}</span>}
-            <div className="min-w-0 flex-1"><h1 className="break-words font-display text-3xl font-extrabold sm:text-4xl">{name}</h1><Handle handle={profile.handle} /></div>
-          </div>
-          <p className="mt-5 text-sm text-ink/70">Joined <time dateTime={profile.createdAt.toISOString()}>{joined}</time></p>
-        </section>
+          </>
+        } />
+        <p className="text-sm text-ink/70">Joined <time dateTime={profile.createdAt.toISOString()}>{joined}</time></p>
         <div className="mt-8 grid min-w-0 gap-8 md:grid-cols-2">
           <section aria-labelledby="startups-heading" className="min-w-0 rounded-3xl border-[3px] border-ink bg-lime p-5 shadow-sticker">
             <h2 id="startups-heading" className="font-display text-2xl font-extrabold">Startups</h2>
@@ -72,7 +71,7 @@ export async function UserPage({ params }: UserPageProps) {
           </div>}
         </section>
         <SiteFooter />
-      </main>
+      </AppShell>
     </div>
   );
 }

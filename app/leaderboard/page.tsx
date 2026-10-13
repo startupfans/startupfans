@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
-import { SectionHeading, Sticker } from "@/app/components/sticker";
-import { AppHeader } from "@/app/components/app-shell";
+import { PageHeader } from "@/app/components/sticker";
+import { AppHeader, AppShell } from "@/app/components/app-shell";
 import { getCurrentUser } from "@/lib/auth";
 import { getMostActive, getMostFollowed, type LeaderboardStartup } from "@/lib/leaderboard";
 
@@ -68,25 +68,21 @@ export default async function LeaderboardPage() {
   return (
     <div className="min-h-screen min-w-0">
       <AppHeader signedIn={user !== null} next="/leaderboard" />
-      <main className="mx-auto min-w-0 max-w-6xl break-words px-5 pb-10 sm:pb-16">
-        <header className="mt-10">
-          <Sticker className="inline-block -rotate-3 bg-pink normal-case">Fan favourites</Sticker>
-          <h1 className="mt-7 font-display text-4xl font-extrabold tracking-tight sm:text-5xl">Leaderboard</h1>
-          <p className="mt-4 text-lg text-ink/80">See who fans follow and who&apos;s sharing this week.</p>
-        </header>
+      <AppShell className="max-w-6xl">
+        <PageHeader title="Leaderboard" />
         <div className="mt-10 grid gap-10 lg:grid-cols-2">
           <section className="min-w-0" aria-label="Most followed startups">
-            <SectionHeading eyebrow="The fan clubs" title="Most followed" />
+            <h2 className="font-display text-2xl font-extrabold">Most followed</h2>
             <LeaderboardList startups={mostFollowed} singular="fan" plural="fans"
               emptyMessage="No fans yet. Follow a startup to help its fan club grow." />
           </section>
           <section className="min-w-0" aria-label="Most active startups this week">
-            <SectionHeading eyebrow="The last 7 days" title="Most active this week" />
+            <h2 className="font-display text-2xl font-extrabold">Most active this week</h2>
             <LeaderboardList startups={mostActive} singular="post" plural="posts" suffix=" this week"
               emptyMessage="No posts this week. Fresh updates will appear here as teams share." />
           </section>
         </div>
-      </main>
+      </AppShell>
     </div>
   );
 }

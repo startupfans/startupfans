@@ -1,9 +1,8 @@
 import type { Metadata } from "next";
 import Image from "next/image";
 import { notFound } from "next/navigation";
-import { SiteFooter, Star } from "@/app/components/sticker";
-import { AppHeader } from "@/app/components/app-shell";
-import { SubNav } from "@/app/components/sub-nav";
+import { PageHeader, SiteFooter } from "@/app/components/sticker";
+import { AppHeader, AppShell } from "@/app/components/app-shell";
 import { isAdmin } from "@/lib/admin";
 import { getCurrentUser } from "@/lib/auth";
 import { getStartupBySlug, getTeam } from "@/lib/startups";
@@ -32,39 +31,31 @@ async function TeamPage({ params }: TeamPageProps) {
 
   return (
     <div className="min-h-screen min-w-0">
-      <AppHeader signedIn={user !== null} next={`/s/${slug}/team`} subNav={
-        <SubNav aria-label="Startup navigation" items={[
+      <AppHeader signedIn={user !== null} next={`/s/${slug}/team`} />
+      <AppShell className="max-w-6xl">
+        <PageHeader title={<span className="min-w-0 max-w-full">{startup.name} team</span>} metadata={
+          <span className="font-mono text-sm font-bold">{members.length.toLocaleString("en-GB")} {members.length === 1 ? "member" : "members"}</span>
+        } tabs={{ label: "Startup navigation", items: [
           { href: `/s/${slug}`, label: "Page" },
           { href: `/s/${slug}/team`, label: "Team", current: true },
           ...(isOwner || isAdmin(user) ? [{ href: `/s/${slug}/settings`, label: "Settings" }] : []),
-        ]} />
-      } />
-      <main className="mx-auto min-w-0 max-w-6xl break-words px-5 pb-10 sm:pb-16">
-        <header className="relative rounded-3xl border-[3px] border-ink bg-white p-6 shadow-sticker-lg sm:p-10">
-          <Star className="pointer-events-none absolute -top-6 right-5 h-12 w-12 rotate-12 text-sun" />
-          <div className="flex min-w-0 flex-col gap-6 sm:flex-row sm:items-center">
+        ] }} identity={
+          <div className="hidden shrink-0 sm:block">
             {startup.logoUrl ? (
-              <Image src={startup.logoUrl} alt={`${startup.name} logo`} width={96} height={96} unoptimized
-                className="h-24 w-24 shrink-0 -rotate-3 rounded-2xl border-[3px] border-ink bg-cream object-contain p-2 shadow-sticker" />
+              <Image src={startup.logoUrl} alt={`${startup.name} logo`} width={48} height={48} unoptimized
+                className="h-12 w-12 shrink-0 -rotate-3 rounded-xl border-[3px] border-ink bg-cream object-contain p-1 shadow-sticker" />
             ) : (
-              <span aria-hidden="true" className="flex h-24 w-24 shrink-0 -rotate-3 items-center justify-center rounded-2xl border-[3px] border-ink bg-sky font-display text-5xl font-extrabold shadow-sticker">
+              <span role="img" aria-label={startup.name} className="flex h-12 w-12 shrink-0 -rotate-3 items-center justify-center rounded-xl border-[3px] border-ink bg-sky font-display text-2xl font-extrabold shadow-sticker">
                 {startup.name.charAt(0).toUpperCase()}
               </span>
             )}
-            <div className="min-w-0">
-              <p className="font-display text-xl font-bold">{startup.name}</p>
-              <h1 className="mt-2 font-display text-4xl font-extrabold tracking-tight sm:text-5xl">The team</h1>
-              <p className="mt-4 inline-block -rotate-2 rounded-xl border-[3px] border-ink bg-pink px-4 py-2 font-bold shadow-sticker">
-                {members.length.toLocaleString("en-GB")} {members.length === 1 ? "member" : "members"}
-              </p>
-            </div>
           </div>
-        </header>
+        } />
         <section aria-label="Team members" className="mt-10 grid min-w-0 grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
           {members.map((member) => <MemberCard key={member.id} member={member} />)}
         </section>
         <SiteFooter />
-      </main>
+      </AppShell>
     </div>
   );
 }

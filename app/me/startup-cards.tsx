@@ -21,7 +21,7 @@ function StartupLogo({ startup }: { startup: { name: string; logoUrl: string | n
 
 export function YourStartups({ startups }: { startups: MemberStartup[] }) {
   return (
-    <section className="mt-10 rounded-3xl border-[3px] border-ink bg-lime p-6 shadow-sticker-lg sm:p-10" aria-labelledby="startups-heading">
+    <section className="mt-10" aria-labelledby="startups-heading">
       <h2 id="startups-heading" className="font-display text-2xl font-extrabold">Your startups</h2>
       {startups.length === 0 ? (
         <>

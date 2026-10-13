@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { SectionHeading, SiteFooter } from "@/app/components/sticker";
-import { AppHeader } from "@/app/components/app-shell";
+import { SiteFooter } from "@/app/components/sticker";
+import { AppHeader, AppShell } from "@/app/components/app-shell";
 import { SubNav } from "@/app/components/sub-nav";
 import { isAdmin } from "@/lib/admin";
 import { getCurrentUser } from "@/lib/auth";
@@ -48,7 +48,7 @@ async function StartupPage({ params }: StartupPageProps) {
           ...(isOwner || isAdmin(user) ? [{ href: `/s/${slug}/settings`, label: "Settings" }] : []),
         ]} />
       } />
-      <main className="mx-auto min-w-0 max-w-6xl break-words px-5 pb-10 sm:pb-16">
+      <AppShell className="max-w-6xl">
         <ProfileHeader startup={startup} fanCount={fanCount} isOwner={isOwner} followPanel={
           <>
             {isMember ? (
@@ -84,8 +84,8 @@ async function StartupPage({ params }: StartupPageProps) {
             <Link href={`/s/${slug}/team`} className="mt-2 inline-flex min-h-11 items-center py-2 font-bold underline underline-offset-4">Meet the team</Link>
           </div>
         </ProfileHeader>
-        <section className="mx-auto mt-14 max-w-3xl" aria-label="Startup updates">
-          <SectionHeading eyebrow="From the team" title="The latest." />
+        <section className="mt-14 max-w-3xl" aria-label="Startup updates">
+          <h2 className="font-display text-2xl font-extrabold">Latest</h2>
           {isMember && <Composer slug={slug} name={user?.name?.trim() || user?.handle || "You"} avatarUrl={user?.avatarUrl ?? null} />}
           <div className="mt-7 space-y-6">
             {posts.length === 0 ? (
@@ -96,7 +96,7 @@ async function StartupPage({ params }: StartupPageProps) {
           </div>
         </section>
         <SiteFooter />
-      </main>
+      </AppShell>
     </div>
   );
 }

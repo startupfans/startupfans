@@ -1,8 +1,7 @@
 import { SubmitButton } from "@/app/components/submit-button";
 import { ConfirmSubmit } from "@/app/components/confirm-dialog";
-import { SiteFooter } from "@/app/components/sticker";
-import { AppHeader } from "@/app/components/app-shell";
-import { SubNav } from "@/app/components/sub-nav";
+import { PageHeader, SiteFooter } from "@/app/components/sticker";
+import { AppHeader, AppShell } from "@/app/components/app-shell";
 import { requireAdmin } from "@/lib/admin";
 import { getWaitlistSyncState, listWaitlist, MAX_WAITLIST_BATCH, syncGetWaitlistIfStale } from "@/lib/waitlist";
 import { letInEntryAction, letInFirstAction, resendEntryAction, syncWaitlistAction } from "./actions";
@@ -31,14 +30,12 @@ export async function WaitlistPage({ searchParams }: {
   const message = typeof query.message === "string" ? query.message.slice(0, 1000) : null;
   return (
     <div className="min-h-screen min-w-0">
-      <AppHeader signedIn next="/admin/waitlist" subNav={
-        <SubNav aria-label="Admin navigation" items={[
+      <AppHeader signedIn next="/admin/waitlist" />
+      <AppShell className="max-w-6xl">
+        <PageHeader title="Waitlist" tabs={{ label: "Admin navigation", items: [
           { href: "/admin", label: "Post reports" },
           { href: "/admin/waitlist", label: "Waitlist", current: true },
-        ]} />
-      } />
-      <main className="mx-auto min-w-0 max-w-6xl break-words px-5 pb-10 sm:pb-16">
-        <h1 className="font-display text-4xl font-extrabold">Waitlist</h1>
+        ] }} />
         <dl className="mt-6 flex flex-wrap gap-4">
           {(["waiting", "invited", "joined"] as const).map((status) => (
             <div key={status} className="rounded-xl border-[3px] border-ink bg-sun px-5 py-3 shadow-sticker">
@@ -113,7 +110,7 @@ export async function WaitlistPage({ searchParams }: {
           </table>
         </div>
         <SiteFooter />
-      </main>
+      </AppShell>
     </div>
   );
 }

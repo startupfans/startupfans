@@ -4,12 +4,41 @@ import Link from "next/link";
 import { AdminLink } from "./admin-link";
 import { isAdmin } from "@/lib/admin";
 import { getCurrentUser } from "@/lib/auth";
+import { SubNav, type SubNavItem } from "./sub-nav";
+
+export function PageHeader({ title, identity, metadata, actions, tabs }: {
+  title: ReactNode;
+  identity?: ReactNode;
+  metadata?: ReactNode;
+  actions?: ReactNode;
+  tabs?: { items: readonly SubNavItem[]; label: string };
+}) {
+  const inlineTabs = tabs && tabs.items.length >= 2 && tabs.items.length <= 3;
+  return (
+    <header className="mt-6! mb-6 flex flex-wrap items-end justify-between gap-4 [&+*]:mt-0">
+      <div className="flex min-w-0 max-w-full items-center gap-3">
+        {identity}
+        <div className="flex min-w-0 max-w-full flex-wrap items-center gap-x-2 gap-y-1">
+          <h1 className="flex min-w-0 max-w-full flex-wrap items-baseline gap-x-2 gap-y-1 break-words font-display text-3xl font-extrabold sm:text-4xl">{title}</h1>
+          {metadata}
+        </div>
+      </div>
+      {(actions || inlineTabs) && <div className="flex min-w-0 max-w-full flex-wrap items-end gap-4 max-sm:w-full">
+        {actions}
+        {inlineTabs && <SubNav inline aria-label={tabs.label} items={tabs.items} />}
+      </div>}
+      {tabs && !inlineTabs && <div className="w-full min-w-0">
+        <SubNav inline aria-label={tabs.label} items={tabs.items} />
+      </div>}
+    </header>
+  );
+}
 
 export async function TopNav({ signedIn, next }: { signedIn: boolean; next: string }) {
   const admin = signedIn && isAdmin(await getCurrentUser());
   return (
     <nav className="flex flex-nowrap items-center justify-between gap-x-2 lg:gap-x-4" aria-label="Main navigation">
-      <Link href="/" aria-label="startupfans home" className="inline-flex min-h-11 min-w-11 shrink-0 items-center justify-center">
+      <Link href="/" aria-label="startupfans home" className="inline-flex min-h-11 min-w-11 shrink-0 items-center justify-start">
         <Image src="/logo/startupfans-mark-on-light.svg" alt="startupfans" width={196} height={196} className="h-9 w-9 sm:hidden" />
         <Image src="/logo/startupfans-logo-on-light.svg" alt="startupfans" width={910} height={150} className="hidden h-auto w-32 sm:block lg:w-44" />
       </Link>

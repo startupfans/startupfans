@@ -2,9 +2,10 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { SiteFooter } from "@/app/components/sticker";
-import { AppHeader } from "@/app/components/app-shell";
-import { SubNav } from "@/app/components/sub-nav";
+import { PageHeader, SiteFooter } from "@/app/components/sticker";
+import { AppHeader, AppShell } from "@/app/components/app-shell";
+import { isAdmin } from "@/lib/admin";
+import { getPostMembership } from "@/lib/posts";
 import { getCurrentUser } from "@/lib/auth";
 import { getStartupBySlug, listStartupFans } from "@/lib/startups";
 
@@ -23,19 +24,22 @@ async function FansPage({ params, searchParams }: FansPageProps) {
   const { slug } = await params;
   const startup = await getStartupBySlug(slug);
   if (!startup) notFound();
-  const [user, query] = await Promise.all([getCurrentUser(), searchParams]);
-  const { fans, nextCursor } = await listStartupFans(startup.id, typeof query.before === "string" ? query.before : undefined);
+  const userPromise = getCurrentUser();
+  const [user, { fans, nextCursor }, member] = await Promise.all([
+    userPromise,
+    searchParams.then((query) => listStartupFans(startup.id, typeof query.before === "string" ? query.before : undefined)),
+    userPromise.then((viewer) => viewer ? getPostMembership(slug, viewer.id) : null),
+  ]);
 
   return (
     <div className="min-h-screen min-w-0">
-      <AppHeader signedIn={user !== null} next={`/s/${slug}/fans`} subNav={
-        <SubNav aria-label="Startup navigation" items={[
+      <AppHeader signedIn={user !== null} next={`/s/${slug}/fans`} />
+      <AppShell className="max-w-3xl">
+        <PageHeader title={<>Fans of {startup.name}</>} tabs={{ label: "Startup navigation", items: [
           { href: `/s/${slug}`, label: "Page" },
           { href: `/s/${slug}/team`, label: "Team" },
-        ]} />
-      } />
-      <main className="mx-auto min-w-0 max-w-3xl break-words px-5 pb-10 sm:pb-16">
-        <h1 className="font-display text-4xl font-extrabold tracking-tight sm:text-5xl">Fans of {startup.name}</h1>
+          ...(member?.role === "owner" || isAdmin(user) ? [{ href: `/s/${slug}/settings`, label: "Settings" }] : []),
+        ] }} />
         {fans.length === 0 ? (
           <p className="mt-8 rounded-2xl border-[3px] border-ink bg-sun p-6 shadow-sticker">No fans yet.</p>
         ) : (
@@ -67,7 +71,7 @@ async function FansPage({ params, searchParams }: FansPageProps) {
             className="inline-flex min-h-11 items-center justify-center rounded-xl border-[3px] border-ink bg-lime px-5 py-3 font-display font-extrabold shadow-sticker focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ink">Load more</Link>
         </div>}
         <SiteFooter />
-      </main>
+      </AppShell>
     </div>
   );
 }

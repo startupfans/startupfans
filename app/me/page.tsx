@@ -1,8 +1,8 @@
 import Image from "next/image";
 import Link from "next/link";
 import { Handle } from "@/app/components/handle";
-import { SiteFooter } from "@/app/components/sticker";
-import { AppHeader } from "@/app/components/app-shell";
+import { PageHeader, SiteFooter } from "@/app/components/sticker";
+import { AppHeader, AppShell } from "@/app/components/app-shell";
 import { SignOutButton } from "@/app/login/dev-inbox";
 import { requireUser, signOut } from "@/lib/auth";
 import { isAdmin } from "@/lib/admin";
@@ -32,20 +32,22 @@ async function MePage({ searchParams }: { searchParams: Promise<{ message?: stri
   return (
     <div className="min-h-screen min-w-0">
       <AppHeader signedIn next="/me" />
-      <main className="mx-auto min-w-0 max-w-xl break-words px-5 pb-10 sm:pb-16">
-        <YourStartups startups={memberStartups} />
-        <section className="mt-10 rounded-3xl border-[3px] border-ink bg-sky p-6 shadow-sticker-lg sm:p-10">
-          <div className="flex min-w-0 flex-col items-start gap-4 sm:flex-row sm:items-center">
+      <AppShell className="max-w-xl">
+        <PageHeader title={<span className="min-w-0 max-w-full">Hi, {name}</span>} metadata={
+          <div className="min-w-0 max-w-full">
+            <Handle handle={user.handle} />
+            <p className="text-xs text-ink/70">Handles are permanent.</p>
+          </div>
+        } identity={
+          <>
             {user.avatarUrl ? (
               <Image src={user.avatarUrl} alt={`${name}'s avatar`} width={64} height={64} unoptimized referrerPolicy="no-referrer"
                 className="h-16 w-16 shrink-0 rounded-full border-[3px] border-ink object-cover" />
             ) : <span aria-hidden="true" className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full border-[3px] border-ink bg-sun font-display text-2xl font-extrabold">{name.charAt(0).toUpperCase()}</span>}
-            <div className="flex min-w-0 max-w-full flex-wrap items-baseline gap-x-2 gap-y-1">
-              <h1 className="min-w-0 max-w-full break-words font-display text-4xl font-extrabold tracking-tight">Hi, {name}.</h1>
-              <Handle handle={user.handle} />
-            </div>
-          </div>
-          <p className="mt-3 text-sm text-ink/70">Handles are permanent.</p>
+          </>
+        } />
+        <YourStartups startups={memberStartups} />
+        <section className="mt-10 rounded-3xl border-[3px] border-ink bg-sky p-6 shadow-sticker-lg sm:p-10">
           <p className="mt-5 break-words text-lg">Signed in as <strong>{user.email}</strong></p>
           {message && <p role="status" className="mt-5 rounded-xl border-2 border-ink bg-sun p-4">{message}</p>}
           <form action={updateProfileAction} className="mt-8 space-y-5">
@@ -58,7 +60,7 @@ async function MePage({ searchParams }: { searchParams: Promise<{ message?: stri
           <p className="mt-4 text-sm text-ink/70">Your name, handle and avatar are public. Without a name, we show your handle.</p>
           <SignOutButton action={signOut} />
         </section>
-        <section className="mt-10 rounded-3xl border-[3px] border-ink bg-cream p-6 shadow-sticker-lg sm:p-10" aria-labelledby="following-heading">
+        <section className="mt-10" aria-labelledby="following-heading">
           <h2 id="following-heading" className="font-display text-2xl font-extrabold">Your fan clubs</h2>
           {followedStartups.length === 0 ? <p className="mt-4 text-ink/70">Follow a startup to join its fan club.</p> : (
             <ul className="mt-5 space-y-3">
@@ -75,7 +77,7 @@ async function MePage({ searchParams }: { searchParams: Promise<{ message?: stri
         </section>
         {allStartups && <AllStartups list={allStartups} />}
         <SiteFooter />
-      </main>
+      </AppShell>
     </div>
   );
 }

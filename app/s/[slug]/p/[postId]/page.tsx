@@ -2,9 +2,9 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { Children, isValidElement, type ReactNode } from "react";
 import ReactMarkdown from "react-markdown";
-import { SiteFooter } from "@/app/components/sticker";
-import { AppHeader } from "@/app/components/app-shell";
-import { SubNav } from "@/app/components/sub-nav";
+import { PageHeader, SiteFooter } from "@/app/components/sticker";
+import { AppHeader, AppShell } from "@/app/components/app-shell";
+import { isAdmin } from "@/lib/admin";
 import { getCurrentUser } from "@/lib/auth";
 import { getPostMembership, getPublicPost } from "@/lib/posts";
 import { PostCard } from "../../post-card";
@@ -61,14 +61,13 @@ export async function PostPage({ params, searchParams }: PostPageProps & {
 
   return (
     <div className="min-h-screen min-w-0">
-      <AppHeader signedIn={user !== null} next={`/s/${slug}/p/${postId}`} subNav={
-        <SubNav aria-label="Startup navigation" items={[
+      <AppHeader signedIn={user !== null} next={`/s/${slug}/p/${postId}`} />
+      <AppShell className="max-w-3xl">
+        <PageHeader title={<><span className="sr-only">An update from </span><span className="min-w-0 max-w-full">{post.startupName}</span></>} tabs={{ label: "Startup navigation", items: [
           { href: `/s/${slug}`, label: "Page" },
           { href: `/s/${slug}/team`, label: "Team" },
-        ]} />
-      } />
-      <main className="mx-auto min-w-0 max-w-3xl break-words px-5 pb-10 sm:pb-16">
-        <h1 className="sr-only">An update from {post.startupName}</h1>
+          ...(member?.role === "owner" || isAdmin(user) ? [{ href: `/s/${slug}/settings`, label: "Settings" }] : []),
+        ] }} />
         {reportMessage && <p role={query.report === "thanks" ? "status" : "alert"}
           className="mb-6 rounded-xl border-2 border-ink bg-sun p-4">{reportMessage}</p>}
         <PostCard post={post} showStartup canDelete={canDelete} onPostPage />
@@ -79,7 +78,7 @@ export async function PostPage({ params, searchParams }: PostPageProps & {
           <ReplyComposer slug={slug} postId={postId} canReply={Boolean(access?.canReply)} signedIn={user !== null} />
         </section>
         <SiteFooter />
-      </main>
+      </AppShell>
     </div>
   );
 }
