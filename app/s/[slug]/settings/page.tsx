@@ -4,11 +4,11 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import { IconField } from "@/app/components/icon-field";
 import { GitHubIcon, GlobeIcon, InstagramIcon, LinkedInIcon, PinIcon, TikTokIcon, XIcon, YouTubeIcon } from "@/app/components/icons";
-import { getUnusedStartupInvites } from "@/lib/invites";
+import { getUnusedStartupInvites, hasExpiredStartupInvites } from "@/lib/invites";
 import { requireStartupOwner } from "@/lib/members";
 import { getStartupMembers } from "@/lib/startups";
 import { getSlackConnection, isSlackConfigured } from "@/lib/slack";
-import { disconnectSlackAction, removeMemberAction, revokeInviteAction, updateStartupAction } from "./actions";
+import { clearExpiredInvitesAction, disconnectSlackAction, removeMemberAction, revokeInviteAction, setMemberRoleAction, updateStartupAction } from "./actions";
 import { InviteByEmail, InviteLink } from "./invite-link";
 import { BioField, ImageUpload } from "./image-upload";
 import { socialNetworks, type SocialNetwork } from "@/lib/socials";
@@ -41,8 +41,11 @@ const messages = new Map([
   ["last-owner", "Keep at least one owner on your page."],
   ["missing-member", "This person is already out of the team."],
   ["member-removed", "Member removed."],
+  ["invalid-role", "Choose owner or editor."],
+  ["role-changed", "Member role updated."],
   ["invalid-invite", "Choose an invite from the list."],
   ["invite-revoked", "Invite revoked."],
+  ["expired-invites-cleared", "Expired invites cleared."],
   ["invalid-email", "Enter a valid email address for your teammate."],
   ["invite-sent", "Invite sent."],
   ["invite-send-failed", "We couldn't send the email. Try again or create a link to share."],
@@ -55,9 +58,10 @@ async function SettingsPage({ params, searchParams }: {
   const { slug } = await params;
   const { startup, user, isSiteAdmin, isOwner, isMember } = await requireStartupOwner(slug);
   const slackConfigured = isSlackConfigured();
-  const [members, invites, query, slackConnection] = await Promise.all([
+  const [members, invites, query, slackConnection, hasExpiredInvites] = await Promise.all([
     getStartupMembers(startup.id), getUnusedStartupInvites(startup.id), searchParams,
     isOwner && slackConfigured ? getSlackConnection(startup.id) : Promise.resolve(null),
+    hasExpiredStartupInvites(startup.id),
   ]);
   const ownerCount = members.filter((member) => member.role === "owner").length;
   const message = typeof query.message === "string" ? messages.get(query.message) : undefined;
@@ -147,11 +151,23 @@ async function SettingsPage({ params, searchParams }: {
                     <Image src={member.avatarUrl} alt={`${name}'s avatar`} width={40} height={40} unoptimized referrerPolicy="no-referrer"
                       className="h-10 w-10 shrink-0 rounded-full border-2 border-ink object-cover" />
                   ) : <span aria-hidden="true" className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border-2 border-ink bg-sun font-bold">{name.charAt(0).toUpperCase()}</span>}
-                  <div className="min-w-0 flex-1 break-words"><p className="font-bold">{name}</p><p className="text-sm text-ink/70">{member.role}</p></div>
-                  <form action={removeMemberAction.bind(null, slug)} className="w-full sm:w-auto">
-                    <input type="hidden" name="memberId" value={member.id} />
-                    <SubmitButton pendingLabel="Removing…" disabled={lastOwner} title={lastOwner ? "Keep at least one owner on your page." : undefined} className={buttonClass} aria-label={`Remove ${name}`}>Remove</SubmitButton>
-                  </form>
+                  <div className="min-w-0 flex-1 break-words"><p className="font-bold">{name}</p>
+                    <span className="mt-1 inline-block rounded-full border-2 border-ink bg-sun px-2 py-0.5 text-sm">{member.role === "owner" ? "Owner" : "Editor"}</span>
+                  </div>
+                  <div className="flex w-full flex-wrap gap-3">
+                    <form action={setMemberRoleAction.bind(null, slug)} className="w-full sm:w-auto">
+                      <input type="hidden" name="memberId" value={member.id} />
+                      <input type="hidden" name="role" value={member.role === "owner" ? "editor" : "owner"} />
+                      <SubmitButton pendingLabel="Updating…" disabled={lastOwner} title={lastOwner ? "Keep at least one owner on your page." : undefined} className={buttonClass}
+                        aria-label={`Make ${name} ${member.role === "owner" ? "editor" : "owner"}`}>
+                        {member.role === "owner" ? "Make editor" : "Make owner"}
+                      </SubmitButton>
+                    </form>
+                    <form action={removeMemberAction.bind(null, slug)} className="w-full sm:w-auto">
+                      <input type="hidden" name="memberId" value={member.id} />
+                      <SubmitButton pendingLabel="Removing…" disabled={lastOwner} title={lastOwner ? "Keep at least one owner on your page." : undefined} className={buttonClass} aria-label={`Remove ${name}`}>Remove</SubmitButton>
+                    </form>
+                  </div>
                 </li>
               );
             })}
@@ -168,16 +184,20 @@ async function SettingsPage({ params, searchParams }: {
       </div>
       <section className="mt-10 rounded-3xl border-[3px] border-ink bg-white p-6 shadow-sticker-lg sm:p-8" aria-labelledby="invites-heading">
         <h2 id="invites-heading" className="font-display text-2xl font-extrabold">Unused invites</h2>
-        {invites.length === 0 ? <p className="mt-4 text-ink/70">No unused invites.</p> : (
+        {hasExpiredInvites && <form action={clearExpiredInvitesAction.bind(null, slug)} className="mt-4">
+          <SubmitButton pendingLabel="Clearing…" className={buttonClass}>Clear expired</SubmitButton>
+        </form>}
+        {invites.length === 0 ? <p className="mt-4 text-ink/70">No pending invites.</p> : (
           <ul className="mt-5 space-y-4">
-            {invites.map((invite, index) => (
+            {invites.map((invite) => (
               <li key={invite.tokenHash} className="flex flex-wrap items-center justify-between gap-3 rounded-xl border-2 border-ink bg-cream p-4">
-                <div className="min-w-0 max-w-full"><p className="font-bold">Invite {index + 1}</p>
-                  <p className="text-sm text-ink/70">{invite.expired ? "Expired" : "Expires"} {invite.expiresAt.toLocaleString("en-GB", { timeZone: "UTC" })} UTC</p>
+                <div className="min-w-0 max-w-full"><p className="font-bold">{invite.invitedEmail ? `Sent to ${invite.invitedEmail}` : "Link invite"}</p>
+                  <p className="text-sm text-ink/70">Created {invite.createdAt.toLocaleString("en-GB", { timeZone: "UTC" })} UTC</p>
+                  <p className="text-sm text-ink/70">Expires {invite.expiresAt.toLocaleString("en-GB", { timeZone: "UTC" })} UTC</p>
                 </div>
                 <form action={revokeInviteAction.bind(null, slug)} className="w-full sm:w-auto">
                   <input type="hidden" name="tokenHash" value={invite.tokenHash} />
-                  <SubmitButton pendingLabel="Revoking…" className={buttonClass} aria-label={`Revoke invite ${index + 1}`}>Revoke</SubmitButton>
+                  <SubmitButton pendingLabel="Revoking…" className={buttonClass} aria-label={invite.invitedEmail ? `Revoke invite to ${invite.invitedEmail}` : "Revoke link invite"}>Revoke</SubmitButton>
                 </form>
               </li>
             ))}

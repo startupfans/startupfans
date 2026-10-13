@@ -7,8 +7,8 @@ import { slackConnections, startups } from "@/db/schema";
 import { isValidSessionId } from "@/lib/auth";
 import { sendEmail } from "@/lib/email";
 import { inviteEmail } from "@/lib/emails/invite";
-import { createStartupInvite, revokeStartupInvite } from "@/lib/invites";
-import { isOptionalHttpsUrl, removeStartupMember, requireStartupOwner, textField, withOwnedStartup } from "@/lib/members";
+import { clearExpiredStartupInvites, createStartupInvite, revokeStartupInvite } from "@/lib/invites";
+import { isOptionalHttpsUrl, removeStartupMember, requireStartupOwner, setStartupMemberRole, textField, withOwnedStartup } from "@/lib/members";
 import { captureServerEvent } from "@/lib/posthog-server";
 import { isStartupProfileImageUrl } from "@/lib/startups";
 import { normalizeSocial, socialNetworks, type SocialField } from "@/lib/socials";
@@ -116,6 +116,37 @@ export async function createInviteAction(slug: string) {
   await captureServerEvent({ distinctId: user.id, event: "startup_invite_created" });
   revalidatePath(`/s/${slug}/settings`);
   return url;
+}
+
+export async function setMemberRoleAction(slug: string, formData: FormData) {
+  const { user, isSiteAdmin } = await requireStartupOwner(slug);
+  const memberId = textField(formData, "memberId");
+  if (!isValidSessionId(memberId)) settingsMessage(slug, "invalid-member");
+  const result = await setStartupMemberRole(slug, user.id, memberId, textField(formData, "role"));
+  switch (result.status) {
+    case "invalid-role":
+      settingsMessage(slug, "invalid-role");
+    case "last-owner":
+      settingsMessage(slug, "last-owner");
+    case "missing":
+      settingsMessage(slug, "missing-member");
+    case "unchanged":
+    case "changed":
+      refreshStartup(slug);
+      if (memberId === user.id && result.status === "changed" && result.role === "editor" && !isSiteAdmin) {
+        redirect(`/s/${slug}`);
+      }
+      settingsMessage(slug, "role-changed");
+    default:
+      result satisfies never;
+  }
+}
+
+export async function clearExpiredInvitesAction(slug: string) {
+  const { user } = await requireStartupOwner(slug);
+  await clearExpiredStartupInvites(slug, user.id);
+  revalidatePath(`/s/${slug}/settings`);
+  settingsMessage(slug, "expired-invites-cleared");
 }
 
 export async function sendInviteAction(slug: string, formData: FormData) {

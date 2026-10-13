@@ -6,6 +6,7 @@ import { db } from "@/db";
 import { follows, startupMembers, startups, users } from "@/db/schema";
 import { getCurrentUser } from "@/lib/auth";
 import { isAdmin } from "@/lib/admin";
+import { captureServerEvent } from "@/lib/posthog-server";
 
 type Transaction = Parameters<Parameters<typeof db.transaction>[0]>[0];
 
@@ -55,6 +56,30 @@ export async function removeStartupMember(slug: string, actorId: string, memberI
     await tx.delete(startupMembers).where(and(eq(startupMembers.startupId, startup.id), eq(startupMembers.userId, memberId)));
     return { status: "removed" } as const;
   });
+}
+
+export async function setStartupMemberRole(slug: string, actorId: string, memberId: string, role: string) {
+  const result = await withOwnedStartup(slug, actorId, async (tx, startup) => {
+    if (role !== "owner" && role !== "editor") return { status: "invalid-role" } as const;
+    const members = await tx.select().from(startupMembers).where(eq(startupMembers.startupId, startup.id));
+    const member = members.find((entry) => entry.userId === memberId);
+    if (!member) return { status: "missing" } as const;
+    if (member.role === role) return { status: "unchanged" } as const;
+    if (member.role === "owner" && members.filter((entry) => entry.role === "owner").length <= 1) {
+      return { status: "last-owner" } as const;
+    }
+    await tx.update(startupMembers).set({ role })
+      .where(and(eq(startupMembers.startupId, startup.id), eq(startupMembers.userId, memberId)));
+    return { status: "changed", startupId: startup.id, previousRole: member.role, role } as const;
+  });
+  if (result.status === "changed") {
+    await captureServerEvent({
+      distinctId: actorId,
+      event: "team_role_changed",
+      properties: { startup_id: result.startupId, member_id: memberId, previous_role: result.previousRole, role: result.role },
+    });
+  }
+  return result;
 }
 
 export async function getFollowedStartups(userId: string) {

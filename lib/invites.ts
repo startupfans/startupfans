@@ -1,10 +1,12 @@
 import "server-only";
 
 import { createHash, randomBytes } from "node:crypto";
-import { and, asc, eq, gt, isNull } from "drizzle-orm";
+import { and, asc, count, eq, gt, isNull, lte } from "drizzle-orm";
 import { db } from "@/db";
 import { follows, startupInvites, startupMembers, startups } from "@/db/schema";
 import { withOwnedStartup } from "@/lib/members";
+
+const inviteLifetimeMs = 7 * 24 * 60 * 60 * 1000;
 
 function tokenHash(token: string) {
   return createHash("sha256").update(token).digest("hex");
@@ -16,7 +18,7 @@ export function isInviteToken(token: string) {
 
 export async function createStartupInvite(slug: string, userId: string, invitedEmail?: string) {
   const token = randomBytes(32).toString("hex");
-  const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+  const expiresAt = new Date(Date.now() + inviteLifetimeMs);
   await withOwnedStartup(slug, userId, async (tx, startup) => {
     await tx.insert(startupInvites).values({
       tokenHash: tokenHash(token), startupId: startup.id, createdBy: userId, expiresAt,
@@ -27,11 +29,29 @@ export async function createStartupInvite(slug: string, userId: string, invitedE
 }
 
 export async function getUnusedStartupInvites(startupId: string) {
-  const invites = await db.select({ tokenHash: startupInvites.tokenHash, expiresAt: startupInvites.expiresAt })
-    .from(startupInvites).where(and(eq(startupInvites.startupId, startupId), isNull(startupInvites.usedAt)))
+  const invites = await db.select({
+    tokenHash: startupInvites.tokenHash, invitedEmail: startupInvites.invitedEmail, expiresAt: startupInvites.expiresAt,
+  }).from(startupInvites).where(and(
+    eq(startupInvites.startupId, startupId), isNull(startupInvites.usedAt), gt(startupInvites.expiresAt, new Date()),
+  ))
     .orderBy(asc(startupInvites.expiresAt));
-  const now = Date.now();
-  return invites.map((invite) => ({ ...invite, expired: invite.expiresAt.getTime() <= now }));
+  // Invites have a fixed lifetime and no stored creation timestamp.
+  return invites.map((invite) => ({ ...invite, createdAt: new Date(invite.expiresAt.getTime() - inviteLifetimeMs) }));
+}
+
+export async function hasExpiredStartupInvites(startupId: string) {
+  const [row] = await db.select({ count: count() }).from(startupInvites).where(and(
+    eq(startupInvites.startupId, startupId), isNull(startupInvites.usedAt), lte(startupInvites.expiresAt, new Date()),
+  ));
+  return row.count > 0;
+}
+
+export async function clearExpiredStartupInvites(slug: string, userId: string) {
+  return withOwnedStartup(slug, userId, async (tx, startup) => {
+    await tx.delete(startupInvites).where(and(
+      eq(startupInvites.startupId, startup.id), isNull(startupInvites.usedAt), lte(startupInvites.expiresAt, new Date()),
+    ));
+  });
 }
 
 export async function revokeStartupInvite(slug: string, userId: string, hash: string) {
