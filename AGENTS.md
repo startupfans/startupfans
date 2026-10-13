@@ -281,8 +281,8 @@ Picked from a shortlist of about 50 ideas from Ian's notes, scored on launch spe
 
 Built:
 - Slack publishing: owners connect a workspace in settings; a 📣 reaction publishes a human message and its first supported image, with email-matched team attribution, encrypted tokens, deduplication and a thread confirmation.
-- Landing page (`app/page.tsx`): static hero "Get the inside track on startups." with waitlist form, a "For fans" section and a "For startups" section (three value props each), and a second waitlist form at the bottom. Client `SessionLink` checks `/api/session` once on mount to offer signed-in visitors their feed in the nav and join card, reserving space for both labels.
-- Waitlist: email only, via GetWaitlist (`app/waitlist-form.tsx`).
+- Landing page (`app/page.tsx`): static, startup-first hero ("Get your startup in front of fans.") with waitlist CTA to apply for selection, honest "launching today · free to join" badge, fan path link, startups section before fans, and a second apply form at the bottom. Positioning: curated community of early startups, free to join, selected startups get promoted to fans. Client `SessionLink` checks `/api/session` once on mount to offer signed-in visitors their feed in the nav and join card, reserving space for both labels.
+- Waitlist: email only, via GetWaitlist (`app/waitlist-form.tsx`). Post-signup shows queue position, copy-link, and a one-click X share with prefilled text + referral URL. PostHog events: `waitlist_joined`, `waitlist_referral_link_copied`, `waitlist_x_share_clicked`.
 - Invite-only sign-up: existing accounts can sign in; new accounts need an admin waitlist admission, an active email or link team invite, or an `ADMIN_EMAILS` entry. Unknown emails see an invite-only message and a waitlist link. Link eligibility is rechecked before account creation.
 - Manual seed: `pnpm seed` upserts startupfans with owners from `SEED_OWNER_EMAILS` and its first post.
 - Waitlist admissions (`/admin/waitlist`): automatically syncs GetWaitlist on page load when the last successful server-instance sync is older than 60 seconds, with a 10-second timeout, stored-list fallback and manual sync. Admins see waiting, invited and joined counts, and send individual or ordered batches of up to 25 welcome emails after the admission transaction commits, spaced 600 ms apart. Failed deliveries remain invited for resend; seven-day single-use sign-in links and repeat sends preserve existing fan numbers. Unverified signups are flagged and team members are marked invited without email. Sessions expiring after the invitation or follows created after it mark entries as joined on page load.
@@ -307,7 +307,7 @@ Not built yet (from MVP must-haves):
 
 Parked for now: founding spot payment (£99/year Stripe link). It's free for everyone at the moment.
 
-Site copy only promises what exists. No pricing on the site (for fans or startups), and no paywalls, job posts or verified metrics until they exist.
+Site copy only promises what exists. No pricing on the site (for fans or startups), and no paywalls, job posts or verified metrics until they exist. No fake startup counts or social proof numbers.
 
 ## Stack
 
@@ -341,7 +341,7 @@ Site copy only promises what exists. No pricing on the site (for fans or startup
 - `app/components/sticker.tsx`: shared `Star`, `Sticker`, `SectionHeading` and `TopNav` components, plus confirmed admin startup deletion and `SiteFooter` for app pages. The footer uses `PRICING_CONTACT_EMAIL` or `hello@startupfans.co` for takedowns.
 - Navigation: admins get the shared sun-yellow `AdminLink` sticker pill linking to `/admin` in `TopNav` and the static landing nav. Landing `SessionLink` appends it after the private `/api/session` check without reserving space for non-admins; the endpoint returns only signed-in status, name and admin status. `/admin` has Post reports and Waitlist sticker tabs.
 - `app/leaderboard/page.tsx` and `lib/leaderboard.ts`: public sticker-style rankings with logos, taglines, fan and weekly post counts, and empty states; each list uses one aggregate query and excludes zero counts. The page renders on demand with queries cached for 300 seconds.
-- `app/opengraph-image.tsx`: site-wide 1200 by 630 share preview (logo, hero headline, fan-club card), prerendered at build time from local fonts in `assets/fonts/`. Inherited by every route without its own image.
+- `app/opengraph-image.tsx`: site-wide 1200 by 630 share preview (logo, `SITE_TAGLINE` headline, "Selected startup" card mirroring the hero), prerendered at build time from local fonts in `assets/fonts/`. Inherited by every route without its own image.
 - `app/share-image.tsx`: `createShareImage`, the startup share renderer with a cached Bricolage Grotesque font fetch and a default font fallback. Kept separate from `app/opengraph-image.tsx` so dynamic routes don't load the homepage image's local font files.
 - `app/s/[slug]/opengraph-image.tsx`: dynamic startup share preview using the current follower count, with the generic `createShareImage()` card for unknown slugs.
 - `app/s/[slug]/team/`: public team page and server-rendered member cards, with one, two and three columns on phones, tablets and desktop. `getTeam` in `lib/startups.ts` queries membership join dates and public post activity for the current startup; owners get a settings link.

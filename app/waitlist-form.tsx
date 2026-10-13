@@ -4,7 +4,9 @@ import { useId, useState } from "react";
 import posthog from "posthog-js";
 import { SubmitButton } from "@/app/components/submit-button";
 
-function captureWaitlistEvent(event: "waitlist_joined" | "waitlist_referral_link_copied") {
+function captureWaitlistEvent(
+  event: "waitlist_joined" | "waitlist_referral_link_copied" | "waitlist_x_share_clicked",
+) {
   if (process.env.NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN && process.env.NEXT_PUBLIC_POSTHOG_HOST) {
     posthog.capture(event);
   }
@@ -12,10 +14,16 @@ function captureWaitlistEvent(event: "waitlist_joined" | "waitlist_referral_link
 
 const WAITLIST_ID = 33121;
 const SIGNUP_ENDPOINT = "https://api.getwaitlist.com/api/v1/signup";
+const SHARE_TEXT =
+  "just applied to startupfans, a curated community of early startups. free to join, launching today. apply with my link:";
 
 interface Signup {
   priority: number;
   referral_link: string;
+}
+
+interface WaitlistFormProps {
+  ctaLabel?: string;
 }
 
 type FormState =
@@ -44,7 +52,15 @@ async function createSignup(email: string): Promise<Signup> {
   return data;
 }
 
-export function WaitlistForm() {
+function buildXShareUrl(referralLink: string): string {
+  const params = new URLSearchParams({
+    text: SHARE_TEXT,
+    url: referralLink,
+  });
+  return `https://twitter.com/intent/tweet?${params.toString()}`;
+}
+
+export function WaitlistForm({ ctaLabel = "Get your startup selected →" }: WaitlistFormProps) {
   const [state, setState] = useState<FormState>({ status: "idle" });
   const emailInputId = useId();
 
@@ -82,16 +98,16 @@ export function WaitlistForm() {
           type="email"
           required
           autoComplete="email"
-          placeholder="you@company.com"
+          placeholder="you@startup.com"
           disabled={isSubmitting}
           className="min-w-0 flex-1 rounded-2xl border-[3px] border-ink bg-white px-5 py-4 text-lg font-semibold shadow-sticker outline-none placeholder:text-ink/40 focus-visible:bg-cream disabled:opacity-60"
         />
         <SubmitButton
-          pendingLabel="Joining…"
+          pendingLabel="Sending…"
           pending={isSubmitting}
           className="rounded-2xl border-[3px] border-ink bg-sun px-7 py-4 font-display text-lg font-extrabold shadow-sticker transition hover:-translate-y-0.5 active:translate-y-0.5 active:shadow-none disabled:translate-y-0 disabled:opacity-60"
         >
-          Become a fan →
+          {ctaLabel}
         </SubmitButton>
       </div>
       <p role="alert" className="mt-3 min-h-6 font-bold">
@@ -103,6 +119,7 @@ export function WaitlistForm() {
 
 function SuccessCard({ signup }: { signup: Signup }) {
   const [isCopied, setIsCopied] = useState(false);
+  const xShareUrl = buildXShareUrl(signup.referral_link);
 
   async function handleCopy() {
     try {
@@ -117,13 +134,27 @@ function SuccessCard({ signup }: { signup: Signup }) {
   return (
     <div
       role="status"
-      className="relative mt-10 max-w-xl rounded-2xl border-[3px] border-ink bg-white p-6 shadow-sticker"
+      className="relative mt-10 max-w-xl rounded-2xl border-[3px] border-ink bg-white p-6 shadow-sticker sm:p-8"
     >
-      <p className="font-mono text-xs font-bold tracking-widest uppercase">You&apos;re on the fan list</p>
+      <p className="font-mono text-xs font-bold tracking-widest uppercase">You&apos;re on the list</p>
       <p className="mt-2 font-display text-5xl leading-none font-extrabold tabular-nums">
         #{signup.priority.toLocaleString("en-GB")} in line
       </p>
-      <p className="mt-4 font-semibold text-ink/80">Share your link. Every fan you bring in moves you up the queue.</p>
+      <p className="mt-4 text-lg font-semibold text-ink/80">
+        Want to move up? Share your link. Every signup through it bumps your spot.
+      </p>
+
+      <a
+        href={xShareUrl}
+        target="_blank"
+        rel="noopener noreferrer"
+        onClick={() => captureWaitlistEvent("waitlist_x_share_clicked")}
+        className="mt-6 flex w-full items-center justify-center gap-2 rounded-2xl border-[3px] border-ink bg-ink px-5 py-4 font-display text-lg font-extrabold text-cream shadow-sticker transition hover:-translate-y-0.5 active:translate-y-0.5 active:shadow-none"
+      >
+        <XLogo className="size-5" />
+        Share on X
+      </a>
+
       <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center">
         <code className="min-w-0 flex-1 truncate rounded-xl border-2 border-ink bg-cream px-3 py-2 font-mono text-sm">
           {signup.referral_link}
@@ -137,5 +168,13 @@ function SuccessCard({ signup }: { signup: Signup }) {
         </button>
       </div>
     </div>
+  );
+}
+
+function XLogo({ className = "" }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden className={className} fill="currentColor">
+      <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.744l7.727-8.835L1.254 2.25H8.08l4.259 5.622zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+    </svg>
   );
 }
