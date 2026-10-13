@@ -30,7 +30,6 @@ notes: one slack workspace per startup page. the first jpeg, png, webp or gif on
 ## housekeeping
 
 - [ ] vercel: add `DATABASE_URL` for preview deployments if branch previews should work against the real database
-- [ ] rotate the database password after launch week and update `.env` and the vercel vars
 - [ ] add more site admins to `ADMIN_EMAILS` on vercel when needed (comma separated)
 - [ ] resend: watch the first real sign-in emails for spam placement
 
