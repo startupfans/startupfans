@@ -43,8 +43,6 @@ export async function updateStartupAction(slug: string, formData: FormData) {
   const coverUrl = textField(formData, "coverUrl");
   const website = textField(formData, "website");
   const stage = textField(formData, "stage");
-  const rawTeamSize = textField(formData, "teamSize");
-  const teamSize = rawTeamSize ? Number(rawTeamSize) : null;
 
   if (name.length < 2 || name.length > 60) settingsMessage(slug, "invalid-name");
   if (tagline.length > 120 || description.length > 2000 || bio.length > 280 || location.length > 120) {
@@ -59,9 +57,6 @@ export async function updateStartupAction(slug: string, formData: FormData) {
   if (stage && !["idea", "pre-seed", "seed", "series-a", "growth", "bootstrapped"].includes(stage)) {
     settingsMessage(slug, "invalid-stage");
   }
-  if (teamSize !== null && (!/^\d+$/.test(rawTeamSize) || !Number.isInteger(teamSize) || teamSize < 1 || teamSize > 10000)) {
-    settingsMessage(slug, "invalid-team-size");
-  }
   const socials: Record<SocialField, string | null> = {
     xHandle: null, linkedinUrl: null, githubUrl: null,
     instagramHandle: null, youtubeUrl: null, tiktokHandle: null,
@@ -75,7 +70,7 @@ export async function updateStartupAction(slug: string, formData: FormData) {
     await tx.update(startups).set({
       name, tagline: tagline || null, description: description || null, logoUrl: logoUrl || null,
       coverUrl: coverUrl || null, bio: bio || null, location: location || null, ...socials,
-      website: website || null, stage: stage || null, teamSize,
+      website: website || null, stage: stage || null,
     }).where(eq(startups.id, startup.id));
   });
   await captureServerEvent({
@@ -84,7 +79,6 @@ export async function updateStartupAction(slug: string, formData: FormData) {
     properties: {
       has_website: Boolean(website),
       stage: stage || "unspecified",
-      team_size_provided: teamSize !== null,
     },
   });
   refreshStartup(slug);

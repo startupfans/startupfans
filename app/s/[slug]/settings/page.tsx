@@ -36,7 +36,6 @@ const messages = new Map([
   ["invalid-social-youtube", "Use an https://www.youtube.com/ channel URL."],
   ["invalid-social-tiktok", "Use a TikTok handle or an https://www.tiktok.com/@ profile URL."],
   ["invalid-stage", "Choose a stage from the list."],
-  ["invalid-team-size", "Team size must be a whole number from 1 to 10,000."],
   ["saved", "Page saved."],
   ["invalid-member", "Choose a member from the list."],
   ["last-owner", "Keep at least one owner on your page."],
@@ -119,19 +118,14 @@ async function SettingsPage({ params, searchParams }: {
             <label htmlFor="website" className="block font-bold">Website
               <IconField icon={<GlobeIcon />} id="website" name="website" defaultValue={startup.website ?? ""} type="url" pattern="https://.*" maxLength={500} placeholder="https://" autoComplete="url" />
             </label>
-            <div className="grid gap-5 sm:grid-cols-2">
-              <label htmlFor="stage" className="block min-w-0 font-bold">Stage
-                <select id="stage" name="stage" defaultValue={startup.stage ?? ""} className={inputClass}>
-                  <option value="">Choose a stage</option>
-                  <option value="idea">Idea</option><option value="pre-seed">Pre-seed</option>
-                  <option value="seed">Seed</option><option value="series-a">Series A</option>
-                  <option value="growth">Growth</option><option value="bootstrapped">Bootstrapped</option>
-                </select>
-              </label>
-              <label htmlFor="teamSize" className="block min-w-0 font-bold">Team size
-                <input id="teamSize" name="teamSize" defaultValue={startup.teamSize ?? ""} type="number" min={1} max={10000} step={1} className={inputClass} />
-              </label>
-            </div>
+            <label htmlFor="stage" className="block min-w-0 font-bold">Stage
+              <select id="stage" name="stage" defaultValue={startup.stage ?? ""} className={inputClass}>
+                <option value="">Choose a stage</option>
+                <option value="idea">Idea</option><option value="pre-seed">Pre-seed</option>
+                <option value="seed">Seed</option><option value="series-a">Series A</option>
+                <option value="growth">Growth</option><option value="bootstrapped">Bootstrapped</option>
+              </select>
+            </label>
             <fieldset className="min-w-0 space-y-5">
               <legend className="mb-3 font-display text-xl font-extrabold">Social profiles</legend>
               {socialNetworks.map(({ network, field, label, placeholder }) => {

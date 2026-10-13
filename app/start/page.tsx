@@ -35,22 +35,17 @@ async function StartPage() {
           <label htmlFor="website" className="block font-bold">Website <span className="font-normal">(optional)</span>
             <input id="website" name="website" type="url" pattern="https://.*" maxLength={500} placeholder="https://" autoComplete="url" className={inputClass} />
           </label>
-          <div className="grid gap-5 sm:grid-cols-2">
-            <label htmlFor="stage" className="block font-bold">Stage <span className="font-normal">(optional)</span>
-              <select id="stage" name="stage" defaultValue="" className={inputClass}>
-                <option value="">Choose a stage</option>
-                <option value="idea">Idea</option>
-                <option value="pre-seed">Pre-seed</option>
-                <option value="seed">Seed</option>
-                <option value="series-a">Series A</option>
-                <option value="growth">Growth</option>
-                <option value="bootstrapped">Bootstrapped</option>
-              </select>
-            </label>
-            <label htmlFor="teamSize" className="block font-bold">Team size <span className="font-normal">(optional)</span>
-              <input id="teamSize" name="teamSize" type="number" min={1} max={10000} step={1} className={inputClass} />
-            </label>
-          </div>
+          <label htmlFor="stage" className="block font-bold">Stage <span className="font-normal">(optional)</span>
+            <select id="stage" name="stage" defaultValue="" className={inputClass}>
+              <option value="">Choose a stage</option>
+              <option value="idea">Idea</option>
+              <option value="pre-seed">Pre-seed</option>
+              <option value="seed">Seed</option>
+              <option value="series-a">Series A</option>
+              <option value="growth">Growth</option>
+              <option value="bootstrapped">Bootstrapped</option>
+            </select>
+          </label>
         </StartupForm>
       </section>
     </main>

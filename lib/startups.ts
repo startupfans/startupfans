@@ -1,6 +1,6 @@
 import "server-only";
 
-import { asc, count, desc, eq, and, sql } from "drizzle-orm";
+import { asc, count, desc, eq, and, getTableColumns, sql } from "drizzle-orm";
 import { cache } from "react";
 import { db } from "@/db";
 import { follows, posts, startupMembers, startups, users } from "@/db/schema";
@@ -26,7 +26,10 @@ export function isStartupProfileImageUrl(value: string, slug: string, creatorId?
 }
 
 export const getStartupBySlug = cache(async (slug: string) => {
-  const [startup] = await db.select().from(startups).where(eq(startups.slug, slug)).limit(1);
+  const [startup] = await db.select({
+    ...getTableColumns(startups),
+    memberCount: sql`(select count(*) from ${startupMembers} where ${startupMembers.startupId} = ${startups.id})`.mapWith(Number),
+  }).from(startups).where(eq(startups.slug, slug)).limit(1);
   return startup ?? null;
 });
 

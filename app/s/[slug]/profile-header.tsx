@@ -1,7 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import type { ReactNode } from "react";
-import type { startups } from "@/db/schema";
+import type { getStartupBySlug } from "@/lib/startups";
 import { GitHubIcon, GlobeIcon, InstagramIcon, LinkedInIcon, PinIcon, TikTokIcon, XIcon, YouTubeIcon } from "@/app/components/icons";
 import { Star } from "@/app/components/sticker";
 import { getSocialUrl, socialNetworks, type SocialNetwork } from "@/lib/socials";
@@ -17,7 +17,7 @@ function websiteDomain(website: string) {
 }
 
 export function ProfileHeader({ startup, followPanel, isOwner, children }: {
-  startup: typeof startups.$inferSelect;
+  startup: NonNullable<Awaited<ReturnType<typeof getStartupBySlug>>>;
   followPanel: ReactNode;
   isOwner: boolean;
   children: ReactNode;
@@ -55,7 +55,7 @@ export function ProfileHeader({ startup, followPanel, isOwner, children }: {
               {startup.website && <a href={startup.website} target="_blank" rel="noopener noreferrer"
                 className="inline-flex min-h-11 min-w-0 max-w-full items-center gap-2 underline underline-offset-4"><GlobeIcon /><span className="break-all">{websiteDomain(startup.website)}</span></a>}
               {stageLabel && <span className="rounded-full border-2 border-ink bg-sun px-3 py-1 text-ink">{stageLabel}</span>}
-              {startup.teamSize !== null && <span className="rounded-full border-2 border-ink bg-cream px-3 py-1 text-ink">{startup.teamSize.toLocaleString("en-GB")} {startup.teamSize === 1 ? "person" : "people"}</span>}
+              <span className="rounded-full border-2 border-ink bg-cream px-3 py-1 text-ink">{startup.memberCount.toLocaleString("en-GB")} {startup.memberCount === 1 ? "person" : "people"}</span>
             </div>
             {socials.length > 0 && <nav aria-label="Social profiles" className="mt-4 flex flex-wrap gap-3">
               {socials.map(({ network, href, label }) => {

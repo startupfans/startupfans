@@ -132,7 +132,7 @@ Out of scope for the 3 days
 
 ## Data model sketch
 
-- companies: id, name, slug, logo_url, website, description, stage, team_size, is_founding, created_at
+- companies: id, name, slug, logo_url, website, description, stage, is_founding, created_at. The legacy team_size column remains unused; member counts come from startup_members.
 - users: id, name, email, avatar_url
 - memberships: user_id, company_id, role (owner, member)
 - posts: id, company_id, author_id, body, image_url, created_at, source (web, slack)
@@ -286,8 +286,8 @@ Built:
 - Invite-only sign-up: existing accounts can sign in; new accounts need an admin waitlist admission, an active email or link team invite, or an `ADMIN_EMAILS` entry. Unknown emails see an invite-only message and a waitlist link. Link eligibility is rechecked before account creation.
 - Manual seed: `pnpm seed` upserts startupfans with owners from `SEED_OWNER_EMAILS` and its first post.
 - Waitlist admissions (`/admin/waitlist`): automatically syncs GetWaitlist on page load when the last successful server-instance sync is older than 60 seconds, with a 10-second timeout, stored-list fallback and manual sync. Admins see waiting, invited and joined counts, and send individual or ordered batches of up to 25 welcome emails after the admission transaction commits, spaced 600 ms apart. Failed deliveries remain invited for resend; seven-day single-use sign-in links and repeat sends preserve existing fan numbers. Unverified signups are flagged and team members are marked invited without email. Sessions expiring after the invitation or follows created after it mark entries as joined on page load.
-- Startup creation (`app/start/`): signed-in users create a public page and become its owner, with optional stage and team size.
-- Public startup pages (`app/s/[slug]/`): profile, team members, current fan count and a markdown feed, plus member settings links.
+- Startup creation (`app/start/`): signed-in users create a public page and become its owner, with an optional stage.
+- Public startup pages (`app/s/[slug]/`): profile, team members, current fan count and a markdown feed, plus member settings links. The people pill counts startup_members rows and updates as members join or leave; creation and settings have no manual team-size field.
 - Company profiles: a 3:1 cover and overlapping logo, a short bio, location and social icon links. Owners upload logo and cover images, edit social profiles and keep a longer description in settings; creators upload a logo and add a bio at `/start`. Logo and cover uploads share `ImageDrop` with avatars: picker, drag and drop, focused paste, previews, progress, removal, HEIC/HEIF conversion and an HTTPS URL disclosure. Logos use a 96px square preview and covers use 3:1; page-address changes cancel and clear scoped uploads.
 - Public team pages (`app/s/[slug]/team`): member cards with roles, join dates, public post counts and latest post quotes; startup profiles link there through a compact avatar row.
 - Posting: team members publish markdown updates with one optional image or video uploaded directly to Vercel Blob, selected by picker, drag and drop or image paste. JPEG, PNG, WebP, GIF, AVIF, HEIC and HEIF photos are accepted up to 10 MB; HEIC and HEIF convert to JPEG in the browser. MP4, WebM, MOV and M4V videos are accepted up to 200 MB. Public post pages have share metadata; authors and owners can delete posts.

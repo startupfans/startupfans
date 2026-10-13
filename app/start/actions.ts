@@ -40,8 +40,6 @@ export async function createStartupAction(
   const logoUrl = textField(formData, "logoUrl");
   const website = textField(formData, "website");
   const stage = textField(formData, "stage");
-  const rawTeamSize = textField(formData, "teamSize");
-  const teamSize = rawTeamSize ? Number(rawTeamSize) : null;
 
   if (name.length < 2 || name.length > 60) {
     return { status: "error", message: "Choose a name between 2 and 60 characters." };
@@ -61,9 +59,6 @@ export async function createStartupAction(
   if (stage && !["idea", "pre-seed", "seed", "series-a", "growth", "bootstrapped"].includes(stage)) {
     return { status: "error", message: "Choose a stage from the list." };
   }
-  if (teamSize !== null && (!/^\d+$/.test(rawTeamSize) || !Number.isInteger(teamSize) || teamSize < 1 || teamSize > 10000)) {
-    return { status: "error", message: "Team size must be a whole number from 1 to 10,000." };
-  }
 
   let startup;
   try {
@@ -71,7 +66,7 @@ export async function createStartupAction(
       name, slug, tagline: tagline || null, description: description || null,
       bio: bio || null,
       logoUrl: logoUrl || null, website: website || null, stage: stage || null,
-      teamSize, createdBy: user.id,
+      createdBy: user.id,
     });
   } catch (error) {
     console.error("[startupfans] Could not create startup.", error);
@@ -86,7 +81,6 @@ export async function createStartupAction(
     properties: {
       has_website: Boolean(website),
       stage: stage || "unspecified",
-      team_size_provided: teamSize !== null,
     },
   });
   await emitPostHogLog("startup_created");
