@@ -53,11 +53,11 @@ async function SettingsPage({ params, searchParams }: {
   searchParams: Promise<{ message?: string | string[] }>;
 }) {
   const { slug } = await params;
-  const { startup, user } = await requireStartupOwner(slug);
+  const { startup, user, isSiteAdmin, isOwner, isMember } = await requireStartupOwner(slug);
   const slackConfigured = isSlackConfigured();
   const [members, invites, query, slackConnection] = await Promise.all([
     getStartupMembers(startup.id), getUnusedStartupInvites(startup.id), searchParams,
-    slackConfigured ? getSlackConnection(startup.id) : Promise.resolve(null),
+    isOwner && slackConfigured ? getSlackConnection(startup.id) : Promise.resolve(null),
   ]);
   const ownerCount = members.filter((member) => member.role === "owner").length;
   const message = typeof query.message === "string" ? messages.get(query.message) : undefined;
@@ -66,8 +66,9 @@ async function SettingsPage({ params, searchParams }: {
     <main className="mx-auto min-h-screen min-w-0 max-w-6xl break-words px-5 py-10 sm:py-16">
       <Link href={`/s/${slug}`} className="inline-block min-h-11 max-w-full py-2 font-bold underline underline-offset-4">← Back to {startup.name}</Link>
       <h1 className="mt-8 font-display text-4xl font-extrabold">Your page settings.</h1>
+      {isSiteAdmin && !isMember && <p className="mt-5 inline-block -rotate-1 rounded-xl border-2 border-ink bg-sun px-4 py-3 shadow-sticker">You&apos;re here as a site admin.</p>}
       {message && <p role="status" className="mt-5 rounded-xl border-2 border-ink bg-sun p-4">{message}</p>}
-      <section className="mt-8 rounded-3xl border-[3px] border-ink bg-lime p-6 shadow-sticker-lg sm:p-8" aria-labelledby="slack-heading">
+      {isOwner && <section className="mt-8 rounded-3xl border-[3px] border-ink bg-lime p-6 shadow-sticker-lg sm:p-8" aria-labelledby="slack-heading">
         <h2 id="slack-heading" className="font-display text-2xl font-extrabold">Slack</h2>
         {!slackConfigured ? <p className="mt-4">Slack isn&apos;t configured</p> : slackConnection ? (
           <>
@@ -84,7 +85,7 @@ async function SettingsPage({ params, searchParams }: {
             <a href={`/api/slack/install?${new URLSearchParams({ slug })}`} className={`${buttonClass} mt-5`}>Connect Slack</a>
           </>
         )}
-      </section>
+      </section>}
       <div className="mt-8 grid min-w-0 gap-10 lg:grid-cols-2 lg:items-start">
         <section className="min-w-0 rounded-3xl border-[3px] border-ink bg-cream p-6 shadow-sticker-lg sm:p-8" aria-labelledby="page-details">
           <h2 id="page-details" className="font-display text-2xl font-extrabold">Page details</h2>

@@ -24,10 +24,10 @@ function settingsMessage(slug: string, message: string): never {
 }
 
 export async function disconnectSlackAction(slug: string) {
-  const { user } = await requireStartupOwner(slug);
+  const { user } = await requireStartupOwner(slug, { allowSiteAdmin: false });
   await withOwnedStartup(slug, user.id, async (tx, startup) => {
     await tx.delete(slackConnections).where(eq(slackConnections.startupId, startup.id));
-  });
+  }, { allowSiteAdmin: false });
   revalidatePath(`/s/${slug}/settings`);
   settingsMessage(slug, "slack-disconnected");
 }

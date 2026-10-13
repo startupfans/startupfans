@@ -5,18 +5,22 @@ import { notFound } from "next/navigation";
 import { db } from "@/db";
 import { follows, startupMembers, startups, users } from "@/db/schema";
 import { getCurrentUser } from "@/lib/auth";
+import { isAdmin } from "@/lib/admin";
 
 type Transaction = Parameters<Parameters<typeof db.transaction>[0]>[0];
 
-export async function requireStartupOwner(slug: string) {
+export async function requireStartupOwner(slug: string, { allowSiteAdmin = true } = {}) {
   const user = await getCurrentUser();
   if (!user) notFound();
-  const [row] = await db.select({ startup: startups }).from(startups)
-    .innerJoin(startupMembers, eq(startupMembers.startupId, startups.id))
-    .where(and(eq(startups.slug, slug), eq(startupMembers.userId, user.id), eq(startupMembers.role, "owner")))
+  const [row] = await db.select({ startup: startups, role: startupMembers.role }).from(startups)
+    .leftJoin(startupMembers, and(eq(startupMembers.startupId, startups.id), eq(startupMembers.userId, user.id)))
+    .where(eq(startups.slug, slug))
     .limit(1);
   if (!row) notFound();
-  return { user, startup: row.startup };
+  const isSiteAdmin = isAdmin(user);
+  const isOwner = row.role === "owner";
+  if (!isOwner && !(allowSiteAdmin && isSiteAdmin)) notFound();
+  return { user, startup: row.startup, isSiteAdmin, isOwner, isMember: row.role !== null };
 }
 
 // All team changes share the startup lock, including invite acceptance.
@@ -24,13 +28,18 @@ export async function withOwnedStartup<T>(
   slug: string,
   userId: string,
   operation: (tx: Transaction, startup: typeof startups.$inferSelect) => Promise<T>,
+  { allowSiteAdmin = true } = {},
 ) {
   return db.transaction(async (tx) => {
     const [startup] = await tx.select().from(startups).where(eq(startups.slug, slug)).for("update");
     if (!startup) notFound();
     const [member] = await tx.select().from(startupMembers)
       .where(and(eq(startupMembers.startupId, startup.id), eq(startupMembers.userId, userId)));
-    if (member?.role !== "owner") notFound();
+    if (member?.role !== "owner") {
+      if (!allowSiteAdmin) notFound();
+      const [user] = await tx.select({ email: users.email }).from(users).where(eq(users.id, userId));
+      if (!isAdmin(user)) notFound();
+    }
     return operation(tx, startup);
   });
 }

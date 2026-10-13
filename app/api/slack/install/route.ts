@@ -9,7 +9,7 @@ export async function GET(request: Request) {
   if (!isSlackConfigured()) return new Response("Slack isn't configured", { status: 503 });
   const slug = new URL(request.url).searchParams.get("slug");
   if (!slug || !/^[a-z0-9-]{1,40}$/.test(slug)) return new Response("Invalid startup", { status: 400 });
-  const { user } = await requireStartupOwner(slug);
+  const { user } = await requireStartupOwner(slug, { allowSiteAdmin: false });
   const state = createSlackState(slug, user.id);
   (await cookies()).set(SLACK_STATE_COOKIE, state.cookie, {
     httpOnly: true, secure: slackAppUrl().protocol === "https:", sameSite: "lax", path: "/api/slack", maxAge: 600,
