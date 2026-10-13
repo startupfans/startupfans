@@ -169,6 +169,10 @@ Day 3
 - Friendly startups in the Lightdash customer and partner network
 - Also floated: launch on tinylaunch
 
+### GTM drafts (`gtm/`)
+
+Full social and outreach drafts live in [`gtm/`](gtm/README.md) (Grok bot pack + edits). Use those files for X, Reddit, outreach, newsletters, launch directories, team kit and investor DMs. For Reddit, use **`gtm/reddit-v2.md` only** (older reddit drafts were discarded).
+
 ## Success metrics (priority order)
 
 1. Paid founding spots
@@ -251,6 +255,31 @@ first startups get in this week. waitlist: [link]
 ```
 
 Irakli's live launch post (fan-side framing: open up the kitchen, fans get it first): linkedin.com/feed/update/urn:li:activity:7515469992105213952
+
+## LinkedIn announcement (whiteboard / launch)
+
+Origin story angle: joke idea on the offsite whiteboard that became the product. Put the waitlist or site link in the first comment.
+
+```text
+at the Lightdash offsite in Lisbon, we're doing a launch-a-thon.
+launch any product and get as much traction as possible in 48 hours.
+
+at the beginning, we wrote up our ideas on a whiteboard.
+mostly as a joke, I submitted: "OnlyFans for startups"
+
+it turned some heads and we actually made something valuable out of it.
+today we're launching StartupFans (link in comments)
+
+and no, there are no nudes on this one...
+it's one for those that build in public
+and for those that want to follow them
+without the modern social media slop.
+
+if you're a startup, this helps you with your brand
+if you're a fan, or investor, you get the inside track on your favourite early stage startups
+
+seriously, no nudes pls
+```
 
 ## Posting tips
 
@@ -341,7 +370,7 @@ Site copy only promises what exists. No pricing on the site (for fans or startup
 - `app/admin/waitlist/` and `lib/waitlist.ts`: admin-gated automatic GetWaitlist sync via `GETWAITLIST_API_KEY`, last-sync status and manual sync, ordered admission batches and resends using the follow allocator, and persisted join detection. Missing configuration or sync failures keep the stored list available. Dates are shown in UTC; signup verification and detected join timestamps live alongside waitlist entries.
 - `lib/emails/`: pure sign-in, invite and welcome templates using a shared inline-styled, table-based sticker layout and matching plain text. `welcome.ts` sends "You're in" with a fan number and seven-day sign-in link.
 - `app/dev/emails/`: development-only template index and HTML previews, with `?text=1` for plain text; all routes return 404 in production.
-- `lib/startups.ts`: startup creation with owner membership, profile lookup, team members, public posts and current fan counts. `lib/follows.ts` serializes follow changes with a startup row lock and keeps the member-number counter increasing. `lib/slug.ts` holds shared slug suggestions and validation.
+- `lib/startups.ts`: startup creation with owner membership, profile lookup, team members, public posts and current fan counts. `normalizeWebsiteUrl` accepts bare domains, `http://` or `https://` on create and settings (no https-only requirement). `lib/follows.ts` serializes follow changes with a startup row lock and keeps the member-number counter increasing. `lib/slug.ts` holds shared slug suggestions and validation.
 - `lib/socials.ts`: validates social profile hosts and paths, normalizes handles or pasted profile URLs, and builds canonical links for X, LinkedIn, GitHub, Instagram, YouTube and TikTok.
 - `app/s/[slug]/profile-header.tsx`: server-rendered company cover, overlapping logo, bio, facts and social links, with follow controls alongside on wide screens. `settings/image-upload.tsx` shares image uploads and the live bio counter between settings and startup creation. Profile images use `startups/<slug>/profile/`; the upload route authorizes owners or signed-in creators using an unused slug, with creator-prefixed filenames, image-only content types and a 10 MB limit. `isStartupProfileImageUrl` validates stored profile images and HTTPS fallbacks.
 - `app/components/sticker.tsx`: shared `Star`, `Sticker`, `SectionHeading` and `TopNav` components, plus `SiteFooter` for app pages. The footer uses `PRICING_CONTACT_EMAIL` or `hello@startupfans.co` for takedowns.

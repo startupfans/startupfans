@@ -8,9 +8,9 @@ import { isValidSessionId } from "@/lib/auth";
 import { sendEmail } from "@/lib/email";
 import { inviteEmail } from "@/lib/emails/invite";
 import { clearExpiredStartupInvites, createStartupInvite, revokeStartupInvite } from "@/lib/invites";
-import { isOptionalHttpsUrl, removeStartupMember, requireStartupOwner, setStartupMemberRole, textField, withOwnedStartup } from "@/lib/members";
+import { removeStartupMember, requireStartupOwner, setStartupMemberRole, textField, withOwnedStartup } from "@/lib/members";
 import { captureServerEvent } from "@/lib/posthog-server";
-import { isStartupProfileImageUrl } from "@/lib/startups";
+import { isStartupProfileImageUrl, normalizeWebsiteUrl } from "@/lib/startups";
 import { normalizeSocial, socialNetworks, type SocialField } from "@/lib/socials";
 
 function refreshStartup(slug: string) {
@@ -41,22 +41,24 @@ export async function updateStartupAction(slug: string, formData: FormData) {
   const location = textField(formData, "location");
   const logoUrl = textField(formData, "logoUrl");
   const coverUrl = textField(formData, "coverUrl");
-  const website = textField(formData, "website");
+  const websiteResult = normalizeWebsiteUrl(textField(formData, "website"));
   const stage = textField(formData, "stage");
 
   if (name.length < 2 || name.length > 60) settingsMessage(slug, "invalid-name");
   if (tagline.length > 120 || description.length > 2000 || bio.length > 280 || location.length > 120) {
     settingsMessage(slug, "text-too-long");
   }
-  if (logoUrl.length > 500 || coverUrl.length > 500 || website.length > 500) {
+  if (logoUrl.length > 500 || coverUrl.length > 500) {
     settingsMessage(slug, "url-too-long");
   }
-  if (!isStartupProfileImageUrl(logoUrl, slug) || !isStartupProfileImageUrl(coverUrl, slug) || !isOptionalHttpsUrl(website)) {
+  if (!isStartupProfileImageUrl(logoUrl, slug) || !isStartupProfileImageUrl(coverUrl, slug)) {
     settingsMessage(slug, "invalid-url");
   }
+  if (websiteResult.status === "invalid") settingsMessage(slug, "invalid-website");
   if (stage && !["idea", "pre-seed", "seed", "series-a", "growth", "bootstrapped"].includes(stage)) {
     settingsMessage(slug, "invalid-stage");
   }
+  const website = websiteResult.value;
   const socials: Record<SocialField, string | null> = {
     xHandle: null, linkedinUrl: null, githubUrl: null,
     instagramHandle: null, youtubeUrl: null, tiktokHandle: null,
@@ -70,7 +72,7 @@ export async function updateStartupAction(slug: string, formData: FormData) {
     await tx.update(startups).set({
       name, tagline: tagline || null, description: description || null, logoUrl: logoUrl || null,
       coverUrl: coverUrl || null, bio: bio || null, location: location || null, ...socials,
-      website: website || null, stage: stage || null,
+      website, stage: stage || null,
     }).where(eq(startups.id, startup.id));
   });
   await captureServerEvent({
