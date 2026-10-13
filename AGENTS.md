@@ -140,6 +140,7 @@ Out of scope for the 3 days
 - follows: user_id, company_id, member_no, created_at
 - startup_follows: follower_startup_id, startup_id, member_no, created_at; shared per-startup fan-number counter with follows, no self-follow
 - comment_likes: comment_id, user_id (composite primary key), created_at; cascading comment and user references
+- post_reactions: post_id, user_id (composite primary key), kind (like, heart or tomato), created_at; cascading post and user references and an index on post_id/kind
 - waitlist_entries: company_name, website, contact_name, role, email, team_size, stage, main_reason, first_post_idea, wants_founding_spot, created_at
 - payments: company_id, stripe_session_id, amount, status, created_at
 
@@ -312,6 +313,7 @@ Picked from a shortlist of about 50 ideas from Ian's notes, scored on launch spe
 ## What's built vs the brief
 
 Built:
+- Post reactions: signed-in people can like, heart or tomato a public post, switch their reaction or clear it. Counts and the viewer's choice load with posts in one query across feeds, startup pages, public profiles and single posts. Round sticker buttons update optimistically with the existing burst animation and suppress bursts for reduced motion; signed-out visitors return through sign-in. The shared database rate limit allows 60 requests per person per 15 minutes. PostHog captures `post_reacted` and `post_unreacted` with post, startup and kind. Replies keep their single heart. Apply the generated `post_reactions` migration before serving these queries.
 - Handle mentions: posts and replies link existing `@handle` tokens to public `/u/<handle>` profiles, excluding code and existing links. Server queries resolve handles in batches per render. Both composers offer keyboard and pointer autocomplete ranked by team, fans and the writer's circle, through a signed-in, rate-limited endpoint that returns no emails. Public profiles show join month, startups, fan clubs and the latest 20 public posts.
 - Slack publishing: owners connect a workspace in settings; a 📣 reaction publishes a human message and its first supported image, with email-matched team attribution, encrypted tokens, deduplication and a thread confirmation.
 - Landing page (`app/page.tsx`): static, startup-first hero ("Get your startup in front of fans.") with open sign-up CTAs to `/login`, honest "launching today · free to join" badge, fan path to sign-in, startups section before fans, and a second sign-up CTA at the bottom. Positioning: early startups post what they're shipping; free for everyone. Client `SessionLink` checks `/api/session` once on mount to offer signed-in visitors `/start` and their feed, reserving space for both labels.

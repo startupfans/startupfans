@@ -6,25 +6,30 @@ import { db } from "@/db";
 import { follows, postComments, posts, startupMembers, startups, users } from "@/db/schema";
 import { resolveMentions } from "@/lib/mentions";
 import { isMediaFilename } from "@/lib/media";
+import { getCurrentUser } from "@/lib/auth";
+import { postReactionFields } from "@/lib/reactions";
 
-const publicPostFields = {
-  id: posts.id,
-  startupId: posts.startupId,
-  replyCount: sql<number>`(select count(*)::integer from ${postComments} where ${postComments.postId} = ${posts.id} and ${postComments.deletedAt} is null)`,
-  authorId: posts.authorId,
-  body: posts.bodyMd,
-  publishedAt: posts.publishedAt,
-  mediaUrl: posts.mediaUrl,
-  mediaType: posts.mediaType,
-  mediaPosterUrl: posts.mediaPosterUrl,
-  authorName: users.name,
-  authorHandle: users.handle,
-  authorAvatarUrl: users.avatarUrl,
-  authorEmail: users.email,
-  startupName: startups.name,
-  startupSlug: startups.slug,
-  startupLogoUrl: startups.logoUrl,
-};
+function publicPostFields(viewerId: string | null) {
+  return {
+    ...postReactionFields(viewerId),
+    id: posts.id,
+    startupId: posts.startupId,
+    replyCount: sql<number>`(select count(*)::integer from ${postComments} where ${postComments.postId} = ${posts.id} and ${postComments.deletedAt} is null)`,
+    authorId: posts.authorId,
+    body: posts.bodyMd,
+    publishedAt: posts.publishedAt,
+    mediaUrl: posts.mediaUrl,
+    mediaType: posts.mediaType,
+    mediaPosterUrl: posts.mediaPosterUrl,
+    authorName: users.name,
+    authorHandle: users.handle,
+    authorAvatarUrl: users.avatarUrl,
+    authorEmail: users.email,
+    startupName: startups.name,
+    startupSlug: startups.slug,
+    startupLogoUrl: startups.logoUrl,
+  };
+}
 
 type PostTransaction = Parameters<Parameters<typeof db.transaction>[0]>[0];
 
@@ -51,7 +56,7 @@ export async function createPostForStartup({ startupId, authorId, body, media, s
 }
 
 export async function getPublicStartupPosts(startupId: string) {
-  const rows = await db.select(publicPostFields).from(posts)
+  const rows = await db.select(publicPostFields((await getCurrentUser())?.id ?? null)).from(posts)
     .innerJoin(users, eq(users.id, posts.authorId))
     .innerJoin(startups, eq(startups.id, posts.startupId))
     .where(and(eq(posts.startupId, startupId), eq(posts.visibility, "public")))
@@ -81,7 +86,7 @@ export async function listFeed({ userId, following = false, cursor }: {
   if (following && !userId) return { posts: [], nextCursor: null };
   const before = parseFeedCursor(cursor);
   const rows = await db.select({
-    ...publicPostFields,
+    ...publicPostFields((await getCurrentUser())?.id ?? null),
     cursorTimestamp: sql<string>`to_char(${posts.publishedAt} at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"')`,
   }).from(posts)
     .innerJoin(users, eq(users.id, posts.authorId))
@@ -106,7 +111,7 @@ export async function listFeed({ userId, following = false, cursor }: {
 
 export const getPublicPost = cache(async (slug: string, postId: string) => {
   if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(postId)) return null;
-  const [post] = await db.select(publicPostFields).from(posts)
+  const [post] = await db.select(publicPostFields((await getCurrentUser())?.id ?? null)).from(posts)
     .innerJoin(users, eq(users.id, posts.authorId))
     .innerJoin(startups, eq(startups.id, posts.startupId))
     .where(and(eq(posts.id, postId), eq(startups.slug, slug), eq(posts.visibility, "public")))
@@ -136,7 +141,7 @@ export function isStartupMediaUrl(value: string, slug: string) {
 }
 
 export async function getPublicUserPosts(userId: string) {
-  const rows = await db.select(publicPostFields).from(posts)
+  const rows = await db.select(publicPostFields((await getCurrentUser())?.id ?? null)).from(posts)
     .innerJoin(users, eq(users.id, posts.authorId))
     .innerJoin(startups, eq(startups.id, posts.startupId))
     .where(and(eq(posts.authorId, userId), eq(posts.visibility, "public")))
