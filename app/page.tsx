@@ -107,7 +107,7 @@ function Nav() {
           width={LOGO_WIDTH}
           height={LOGO_HEIGHT}
           loading="eager"
-          className="h-auto w-32 sm:w-36 md:h-9 md:w-auto"
+          className="h-auto w-24 sm:w-36 md:h-9 md:w-auto"
         />
       </a>
       <nav className="flex shrink-0 items-center gap-3 whitespace-nowrap sm:gap-5">
@@ -118,6 +118,7 @@ function Nav() {
           For startups
         </a>
         <SessionLink
+          showAdmin
           signedOut={{ href: "/login", label: "Sign in", className: "min-h-11 text-sm font-bold hover:text-pink sm:text-base" }}
           signedIn={{ href: "/feed", label: "Your feed", className: "min-h-11 text-sm font-bold hover:text-pink sm:text-base" }}
         />
@@ -125,7 +126,8 @@ function Nav() {
           href="#join"
           className="rounded-full border-2 border-ink bg-white px-3 py-2 text-sm font-bold shadow-sticker transition hover:-translate-y-0.5 hover:bg-sun active:translate-y-0 active:shadow-none sm:px-4"
         >
-          Join the waitlist
+          <span className="sm:hidden">Join</span>
+          <span className="hidden sm:inline">Join the waitlist</span>
         </a>
       </nav>
     </header>
