@@ -1,5 +1,7 @@
 "use client";
 
+import { SubmitButton } from "@/app/components/submit-button";
+
 import { useEffect, useRef, useState } from "react";
 import posthog from "posthog-js";
 
@@ -47,12 +49,12 @@ export function SignOutButton({ action }: SignOutButtonProps) {
         }
       }}
     >
-      <button
-        type="submit"
+      <SubmitButton
+        pendingLabel="Signing out…"
         className="min-h-11 w-full rounded-xl border-[3px] border-ink bg-white px-5 py-3 font-display font-extrabold shadow-sticker transition hover:-translate-y-0.5 active:translate-y-0 active:shadow-none sm:w-auto"
       >
         Sign out
-      </button>
+      </SubmitButton>
     </form>
   );
 }

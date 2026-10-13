@@ -1,3 +1,4 @@
+import { SubmitButton } from "@/app/components/submit-button";
 import Image from "next/image";
 import Link from "next/link";
 import { FlagIcon, LinkIcon, postIconButtonClass } from "@/app/components/icons";
@@ -70,7 +71,7 @@ export async function PostCard({ post, showStartup = false, canDelete = false, o
             <label htmlFor={`report-${post.id}`} className="block">Reason (optional)</label>
             <textarea id={`report-${post.id}`} name="reason" maxLength={500} rows={3}
               className="block w-full min-w-0 resize-y rounded-lg border-2 border-ink bg-white p-3" />
-            <button type="submit" className="min-h-10 rounded-lg border-2 border-ink bg-white px-3 py-2 font-semibold">Send report</button>
+            <SubmitButton pendingLabel="Sending…" className="min-h-10 rounded-lg border-2 border-ink bg-white px-3 py-2 font-semibold">Send report</SubmitButton>
           </form>
         </details>
         {(canDelete || admin) && <DeletePostButton slug={post.startupSlug} postId={post.id} returnToStartup={onPostPage} />}

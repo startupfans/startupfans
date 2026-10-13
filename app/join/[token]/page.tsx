@@ -1,3 +1,4 @@
+import { SubmitButton } from "@/app/components/submit-button";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth";
@@ -27,7 +28,7 @@ async function JoinPage({ params, searchParams }: {
             <h1 className="font-display text-4xl font-extrabold">Join {invite.name}.</h1>
             <p className="mt-5 text-lg">You&apos;re invited to share updates as part of the team.</p>
             <form action={acceptInviteAction.bind(null, token)} className="mt-8">
-              <button type="submit" className="min-h-11 w-full rounded-xl border-[3px] border-ink bg-lime px-5 py-3 font-bold shadow-sticker">Join the team</button>
+              <SubmitButton pendingLabel="Joining…" className="min-h-11 w-full rounded-xl border-[3px] border-ink bg-lime px-5 py-3 font-bold shadow-sticker">Join the team</SubmitButton>
             </form>
           </>
         ) : (

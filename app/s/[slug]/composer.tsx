@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { useActionState, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { CloseIcon, ImageIcon, SendIcon, TrashIcon, VideoIcon, postIconButtonBaseClass, postIconButtonClass } from "@/app/components/icons";
+import { SubmitButton } from "@/app/components/submit-button";
 import { getFileMediaFormat, getMediaAccept, mediaLimits, type MediaType } from "@/lib/media";
 import { createPost, deletePost, type PostActionState } from "./post-actions";
 
@@ -267,10 +268,10 @@ export function Composer({ slug, name, avatarUrl }: {
           </div>
           <div className="flex min-w-0 items-center gap-3">
             {body.length > 4000 && <span className="text-xs tabular-nums text-ink/60">{body.length.toLocaleString("en-GB")}/5,000</span>}
-            <button type="submit" disabled={disabled} title={pending ? "Posting…" : "Post (⌘ or Ctrl + Enter)"}
-              aria-label={pending ? "Posting…" : "Post"} className={`${postIconButtonBaseClass} ${disabled ? "bg-white text-ink/40" : "bg-pink text-ink shadow-sticker"}`}>
-              {pending ? <span aria-hidden="true" className="h-5 w-5 animate-spin rounded-full border-2 border-ink/30 border-t-ink" /> : <SendIcon />}
-            </button>
+            <SubmitButton pending={pending} pendingLabel="Posting…" disabled={disabled} title="Post (⌘ or Ctrl + Enter)"
+              aria-label="Post" className={`${postIconButtonBaseClass.replace("w-10", "min-w-10")} px-3 ${disabled ? "bg-white text-ink/40" : "bg-pink text-ink shadow-sticker"}`}>
+              <SendIcon />
+            </SubmitButton>
           </div>
         </div>
       </div>
@@ -294,12 +295,13 @@ export function DeletePostButton({ slug, postId, returnToStartup = false }: {
 
   return (
     <form action={action} onSubmit={(event) => {
+      if (pending) { event.preventDefault(); return; }
       if (!window.confirm("Delete this post? This can't be undone.")) event.preventDefault();
     }} className="min-w-0 max-w-full break-words" aria-busy={pending}>
-      <button type="submit" disabled={pending} title={pending ? "Deleting…" : "Delete post"} aria-label={pending ? "Deleting…" : "Delete post"}
-        className={postIconButtonClass}>
+      <SubmitButton pending={pending} pendingLabel="Deleting…" title="Delete post" aria-label="Delete post"
+        className={`${postIconButtonClass.replace("w-10", "min-w-10")} px-3`}>
         <TrashIcon />
-      </button>
+      </SubmitButton>
       {state.status === "error" && <p role="alert" className="mt-2 text-sm">{state.message}</p>}
     </form>
   );

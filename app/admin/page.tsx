@@ -1,3 +1,4 @@
+import { SubmitButton } from "@/app/components/submit-button";
 import Link from "next/link";
 import { SiteFooter, TopNav } from "@/app/components/sticker";
 import { requireAdmin } from "@/lib/admin";
@@ -32,14 +33,14 @@ export async function AdminPage() {
             ) : null}
             <div className="mt-5 flex flex-wrap items-start gap-6">
               <form action={resolveReportsAction.bind(null, report.postId)} className="w-full sm:w-auto">
-                <button type="submit" className="min-h-11 w-full rounded-xl border-2 border-ink bg-lime px-4 py-2 font-bold">Resolve reports</button>
+                <SubmitButton pendingLabel="Resolving…" className="min-h-11 w-full rounded-xl border-2 border-ink bg-lime px-4 py-2 font-bold">Resolve reports</SubmitButton>
               </form>
               <form action={deleteReportedPostAction.bind(null, report.postId)} className="w-full min-w-0 space-y-3 sm:w-auto">
                 <label className="flex min-h-11 items-start gap-2 py-2 text-sm">
                   <input type="checkbox" name="confirm" value="delete" required className="mt-1" />
                   Delete this post permanently
                 </label>
-                <button type="submit" className="min-h-11 w-full rounded-xl border-2 border-ink bg-pink px-4 py-2 font-bold">Delete post</button>
+                <SubmitButton pendingLabel="Deleting…" className="min-h-11 w-full rounded-xl border-2 border-ink bg-pink px-4 py-2 font-bold">Delete post</SubmitButton>
               </form>
             </div>
           </article>

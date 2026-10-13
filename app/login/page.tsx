@@ -1,3 +1,4 @@
+import { SubmitButton } from "@/app/components/submit-button";
 import Link from "next/link";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
@@ -118,12 +119,12 @@ export async function LoginPage({
             defaultValue={sent ?? ""}
             className="min-h-11 w-full min-w-0 rounded-xl border-2 border-ink bg-white px-4 py-3 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ink"
           />
-          <button
-            type="submit"
+          <SubmitButton
+            pendingLabel="Sending…"
             className="min-h-11 w-full min-w-0 rounded-xl border-[3px] border-ink bg-pink px-5 py-4 font-display text-lg font-extrabold shadow-sticker transition hover:-translate-y-0.5 active:translate-y-0 active:shadow-none"
           >
             Send me a sign-in link
-          </button>
+          </SubmitButton>
         </form>
       </section>
     </main>

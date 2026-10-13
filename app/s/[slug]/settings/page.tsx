@@ -1,3 +1,4 @@
+import { SubmitButton } from "@/app/components/submit-button";
 import Image from "next/image";
 import Link from "next/link";
 import type { ReactNode } from "react";
@@ -74,7 +75,7 @@ async function SettingsPage({ params, searchParams }: {
             <p className="mt-2">React with 📣 to post. Messages become public on your startup page.</p>
             <p className="mt-2 text-sm text-ink/70">Invite startupfans to the channels you want to publish from.</p>
             <form action={disconnectSlackAction.bind(null, slug)} className="mt-5">
-              <button type="submit" className={buttonClass}>Disconnect</button>
+              <SubmitButton pendingLabel="Disconnecting…" className={buttonClass}>Disconnect</SubmitButton>
             </form>
           </>
         ) : (
@@ -130,7 +131,7 @@ async function SettingsPage({ params, searchParams }: {
                 </label>;
               })}
             </fieldset>
-            <button type="submit" className={`${buttonClass} bg-lime`}>Save page</button>
+            <SubmitButton pendingLabel="Saving…" className={`${buttonClass} bg-lime`}>Save page</SubmitButton>
           </form>
         </section>
         <section className="min-w-0 rounded-3xl border-[3px] border-ink bg-sky p-6 shadow-sticker-lg sm:p-8" aria-labelledby="team-heading">
@@ -148,7 +149,7 @@ async function SettingsPage({ params, searchParams }: {
                   <div className="min-w-0 flex-1 break-words"><p className="font-bold">{name}</p><p className="text-sm text-ink/70">{member.role}</p></div>
                   <form action={removeMemberAction.bind(null, slug)} className="w-full sm:w-auto">
                     <input type="hidden" name="memberId" value={member.id} />
-                    <button type="submit" disabled={lastOwner} title={lastOwner ? "Keep at least one owner on your page." : undefined} className={buttonClass} aria-label={`Remove ${name}`}>Remove</button>
+                    <SubmitButton pendingLabel="Removing…" disabled={lastOwner} title={lastOwner ? "Keep at least one owner on your page." : undefined} className={buttonClass} aria-label={`Remove ${name}`}>Remove</SubmitButton>
                   </form>
                 </li>
               );
@@ -175,7 +176,7 @@ async function SettingsPage({ params, searchParams }: {
                 </div>
                 <form action={revokeInviteAction.bind(null, slug)} className="w-full sm:w-auto">
                   <input type="hidden" name="tokenHash" value={invite.tokenHash} />
-                  <button type="submit" className={buttonClass} aria-label={`Revoke invite ${index + 1}`}>Revoke</button>
+                  <SubmitButton pendingLabel="Revoking…" className={buttonClass} aria-label={`Revoke invite ${index + 1}`}>Revoke</SubmitButton>
                 </form>
               </li>
             ))}

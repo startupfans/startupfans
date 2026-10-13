@@ -1,8 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { useFormStatus } from "react-dom";
 import { ImageDrop } from "@/app/components/image-drop";
+import { SubmitButton } from "@/app/components/submit-button";
 
 export function AvatarUpload({ userId, initialUrl, initial, uploadsEnabled }: {
   userId: string;
@@ -10,7 +10,6 @@ export function AvatarUpload({ userId, initialUrl, initial, uploadsEnabled }: {
   initial: string;
   uploadsEnabled: boolean;
 }) {
-  const { pending } = useFormStatus();
   const [uploading, setUploading] = useState(false);
   return (
     <>
@@ -18,7 +17,10 @@ export function AvatarUpload({ userId, initialUrl, initial, uploadsEnabled }: {
         uploadsEnabled={uploadsEnabled} hint="Images up to 10 MB. A square image fits best."
         buildUploadPath={(extension) => ({ pathname: `users/${userId}/avatar/${crypto.randomUUID()}.${extension}` })}
         onUploadingChange={setUploading} />
-      <button type="submit" disabled={pending || uploading} className="min-h-11 w-full rounded-xl border-[3px] border-ink bg-lime px-5 py-3 font-bold shadow-sticker disabled:opacity-50 sm:w-auto">{pending ? "Saving profile" : "Save profile"}</button>
+      <SubmitButton pendingLabel="Saving…" disabled={uploading}
+        className="min-h-11 w-full rounded-xl border-[3px] border-ink bg-lime px-5 py-3 font-bold shadow-sticker disabled:opacity-50 sm:w-auto">
+        Save profile
+      </SubmitButton>
     </>
   );
 }
