@@ -345,7 +345,7 @@ Site copy only promises what exists. No pricing on the site (for fans or startup
 - `app/s/[slug]/`: public startup profile, team list, member composer and markdown post cards, startup metadata, and follow actions with pending and error states. `post-actions.ts` checks membership for creation and author/owner deletion; `/p/[postId]` renders individual public posts.
 - `app/feed/`: public global feed with Everyone and Following filters, sign-in and discovery empty states, and server-rendered load-more links.
 - `lib/media.ts`: shared image/video MIME types, case-insensitive extensions, picker accept lists and size limits for the composer, upload authorization and server-side media URL checks. HEIC and HEIF are picker-only formats converted to JPEG; raw uploads and media URLs are rejected by the server.
-- `app/api/upload/route.ts`: Vercel Blob client upload authorization restricted to startup members, with shared image/video type and size limits; text posting works without a Blob store token.
+- `app/api/upload/route.ts`: Vercel Blob client upload authorization for startup media and owner/creator profile images, plus image-only avatars under the signed-in user's `users/<userId>/avatar/` path, with shared type and size limits; text posting works without a Blob store token.
 - `lib/posts.ts`: public post queries with author and startup details, cursor-paginated global and following feeds, membership lookup, and startup media URL validation.
 - `lib/members.ts` and `lib/invites.ts`: owner authorization, serialized team changes, profiles and followed startups, plus hashed single-use invite creation, revocation and acceptance.
 - `app/s/[slug]/settings/`: owner-only page editing, member management and unused invites; `invite-link.tsx` creates and copies invite links and offers email invites through the settings action.
@@ -353,7 +353,7 @@ Site copy only promises what exists. No pricing on the site (for fans or startup
 - `app/components/markdown.tsx` and `post-media.tsx`: safe markdown rendering and sticker-framed images and videos.
 - `app/login/`: sign-in link request form, development inbox and server action with shared invite-only eligibility checks and a waitlist link for unknown emails.
 - `app/auth/`: magic-link verification route that creates a session and sets the `sf_session` cookie.
-- `app/me/`: profile name and avatar editing, followed startups with member numbers, and sign out, protected by `requireUser`.
+- `app/me/`: profile name and avatar editing with picker, drop and paste uploads, browser HEIC/HEIF conversion, progress, removal and an HTTPS URL fallback (open when Blob uploads are off), followed startups with member numbers, and sign out, protected by `requireUser`. Blob avatars must use the user's own image path on a public Blob host.
 - `app/page.tsx`: the landing page (server components; the only client component is the waitlist form). Copy and data are typed arrays at the top (`FAN_PROPS`, `STARTUP_PROPS`, `TICKER_WORDS`); edit those to change content. Both audience sections render through `AudienceSection` (`#fans` light, `#startups` dark), linked from the nav.
 - `app/globals.css`: design tokens in `@theme` (colors `cream/ink/pink/sun/lime/sky/tangerine`, `shadow-sticker`, marquee/wobble animations). Reduced motion disables animations.
 - `app/layout.tsx`: fonts (Bricolage Grotesque display, Geist sans/mono via `next/font`) and metadata.

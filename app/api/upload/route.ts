@@ -47,12 +47,24 @@ export async function POST(request: Request) {
       body,
       request,
       onBeforeGenerateToken: async (pathname, clientPayload) => {
+        const user = await getCurrentUser();
+        if (!user) throw new Error("Sign in before uploading.");
+        if (pathname.startsWith("users/")) {
+          const prefix = `users/${user.id}/avatar/`;
+          const filename = pathname.slice(prefix.length);
+          if (!pathname.startsWith(prefix) || !isMediaFilename(filename) || getMediaFormat(filename)?.type !== "image") {
+            throw new Error("Upload an image to your own avatar folder.");
+          }
+          return {
+            allowedContentTypes: getMediaContentTypes("image"),
+            maximumSizeInBytes: mediaLimits.image,
+            addRandomSuffix: true,
+          };
+        }
         const payload: unknown = JSON.parse(clientPayload ?? "null");
         if (!isRecord(payload) || typeof payload.slug !== "string" || !/^[a-z0-9-]{1,40}$/.test(payload.slug)) {
           throw new Error("Choose a startup before uploading.");
         }
-        const user = await getCurrentUser();
-        if (!user) throw new Error("Sign in before uploading.");
         const profilePrefix = `startups/${payload.slug}/profile/`;
         const isProfile = pathname.startsWith(profilePrefix);
         const member = await getPostMembership(payload.slug, user.id);
