@@ -1,6 +1,6 @@
 import "server-only";
 
-import { asc, count, desc, eq, and, getTableColumns, sql } from "drizzle-orm";
+import { asc, count, desc, eq, and, getTableColumns, gt, sql } from "drizzle-orm";
 import { unionAll } from "drizzle-orm/pg-core";
 import { cache } from "react";
 import { db } from "@/db";
@@ -166,7 +166,9 @@ function parseListCursor(cursor?: string) {
 }
 
 export async function listStartupFans(startupId: string, cursor?: string) {
-  const before = parseListCursor(cursor);
+  const memberNo = Number(cursor);
+  const after = cursor && /^[1-9]\d{0,9}$/.test(cursor) && memberNo <= 2_147_483_647
+    ? memberNo : null;
   const fans = unionAll(
     db.select({
       kind: sql<"startup" | "person">`'startup'`.as("kind"),
@@ -175,8 +177,6 @@ export async function listStartupFans(startupId: string, cursor?: string) {
       slug: sql<string | null>`${startups.slug}`.as("slug"),
       imageUrl: startups.logoUrl,
       memberNo: startupFollows.memberNo,
-      createdAt: startupFollows.createdAt,
-      cursorTimestamp: sql<string>`to_char(${startupFollows.createdAt} at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"')`.as("cursor_timestamp"),
     }).from(startupFollows).innerJoin(startups, eq(startups.id, startupFollows.followerStartupId))
       .where(eq(startupFollows.startupId, startupId)),
     db.select({
@@ -186,20 +186,18 @@ export async function listStartupFans(startupId: string, cursor?: string) {
       slug: sql<string | null>`null::text`,
       imageUrl: users.avatarUrl,
       memberNo: follows.memberNo,
-      createdAt: follows.createdAt,
-      cursorTimestamp: sql<string>`to_char(${follows.createdAt} at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"')`.as("cursor_timestamp"),
     }).from(follows).innerJoin(users, eq(users.id, follows.userId))
       .where(eq(follows.startupId, startupId)),
   ).as("fans");
   const rows = await db.select().from(fans)
-    .where(before ? sql`(${fans.kind}, ${fans.createdAt}, ${fans.id}) < (${before.kind}, ${before.timestamp}::timestamptz, ${before.id}::uuid)` : undefined)
-    .orderBy(desc(fans.kind), desc(fans.createdAt), desc(fans.id)).limit(101);
+    .where(after !== null ? gt(fans.memberNo, after) : undefined)
+    .orderBy(asc(fans.memberNo)).limit(101);
   const page = rows.slice(0, 100);
   const last = page.at(-1);
   return {
     fans: page,
     nextCursor: rows.length > 100 && last
-      ? Buffer.from(`${last.kind}|${last.cursorTimestamp}|${last.id}`).toString("base64url") : null,
+      ? String(last.memberNo) : null,
   };
 }
 
