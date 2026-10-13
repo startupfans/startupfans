@@ -24,7 +24,7 @@ notes: one slack workspace per startup page. the first jpeg, png, webp or gif on
 - [ ] sign in on www.startupfans.co, post the first real update with a photo
 - [ ] invite the team from `/s/startupfans/settings` (link or email)
 - [ ] landing page: point "for startups" at `/start` and add a nav link to `/feed` (ian)
-- [ ] import the waitlist once the csv is exported: `pnpm import:waitlist <file.csv>` from the repo with the shared `.env`
+- [ ] set `GETWAITLIST_API_KEY` on vercel, then open `/admin/waitlist` for automatic getwaitlist sync and let people in
 - [ ] dm the first 50 startups
 
 ## housekeeping

@@ -27,14 +27,13 @@ Vercel project. Builds do not need a database connection.
 After editing `db/schema.ts`, run `pnpm db:generate` and then
 `pnpm db:migrate`. Use `pnpm db:studio` to inspect the database.
 
-## Seed and import
+## Seed and waitlist
 
-These manual commands use Node 24, load `.env` if present, and use the same
+The manual seed command uses Node 24, loads `.env` if present, and uses the same
 `DATABASE_URL` as the app. Apply migrations first.
 
 ```bash
 SEED_OWNER_EMAILS=ian@example.com,tori@example.com pnpm seed
-pnpm import:waitlist /path/to/getwaitlist.csv
 ```
 
 The seed creates or updates `/s/startupfans`, makes every supplied email an
@@ -42,18 +41,14 @@ owner, and adds the first post only if the startup has no posts. The first email
 is its creator and first-post author. Existing users and owners are preserved.
 `SEED_OWNER_EMAILS` is required; use the team's actual emails.
 
-Import requires the seed and a case-insensitive `email` column. Quoted commas,
-escaped quotes, multiline fields, and UTF-8 BOMs are supported. Rows are sorted
-ascending by the first available column in this order: `created_at`, `createdAt`,
-`timestamp`, `date`, `priority`; otherwise file order is used. Use ISO dates or
-Unix timestamps for date columns; priority is numeric. Missing or invalid sort
-values go last, and ties keep file order. Import into a startup with no fans to
-assign signup numbers starting at 1. Existing fans keep their numbers on reruns.
+The seed exits non-zero on failure and can be rerun after fixing the cause.
 
-Emails are trimmed and lowercased. Invalid emails, rows with the wrong number of
-fields, duplicates, and existing follows are skipped. The import reports created
-users, new follows, skipped rows, and the first three invalid emails. Both
-commands exit non-zero on failure and can be rerun after fixing the cause.
+Set `GETWAITLIST_API_KEY` and visit `/admin/waitlist` as a site admin to sync
+GetWaitlist signups automatically on page load when the last successful sync
+is older than 60 seconds. Manual sync is also available; missing configuration
+or sync failures keep the stored list available. Run the seed before letting
+people in. Admissions send welcome emails after the transaction commits, and
+resends preserve existing fan numbers.
 
 ## Auth
 

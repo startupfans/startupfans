@@ -245,41 +245,36 @@ export async function letInWaitlist(selection: AdmissionSelection) {
         result.skipped++;
         continue;
       }
-      try {
-        const [user] = await db.insert(users).values({ email: entry.email })
-          .onConflictDoUpdate({ target: users.email, set: { email: entry.email } }).returning();
-        if (!user) throw new Error("Could not create a user.");
-        const [member] = await db.select({ userId: startupMembers.userId }).from(startupMembers)
-          .where(and(eq(startupMembers.userId, user.id), eq(startupMembers.startupId, startup.id))).limit(1);
-        if (member) {
-          await markInvited(entry.id);
-          result.alreadyOnTeam++;
-          continue;
-        }
-        const existingFollow = await getStartupFollow(user.id, startup.id);
-        if (entry.invitedAt && !existingFollow) {
-          throw new Error("This person no longer follows startupfans. Their previous fan number cannot be reassigned.");
-        }
-        const follow = await followStartup(user.id, startup.id);
-        if (follow.status === "member") {
-          await markInvited(entry.id);
-          result.alreadyOnTeam++;
-          continue;
-        }
-        const token = randomBytes(32).toString("hex");
-        const link = new URL("/auth/verify", process.env.APP_URL || "http://localhost:3000");
-        link.search = new URLSearchParams({ token, next: "/me" }).toString();
-        await lock.insert(magicLinks).values({
-          tokenHash: createHash("sha256").update(token).digest("hex"),
-          email: entry.email,
-          expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
-        });
+      const [user] = await db.insert(users).values({ email: entry.email })
+        .onConflictDoUpdate({ target: users.email, set: { email: entry.email } }).returning();
+      if (!user) throw new Error("Could not create a user.");
+      const [member] = await db.select({ userId: startupMembers.userId }).from(startupMembers)
+        .where(and(eq(startupMembers.userId, user.id), eq(startupMembers.startupId, startup.id))).limit(1);
+      if (member) {
         await markInvited(entry.id);
-        emails.push({ to: entry.email, ...welcomeEmail(link.toString(), follow.follow.memberNo) });
-      } catch (error) {
-        result.failed++;
-        result.errors.push(error instanceof Error ? error.message : "Could not prepare a welcome email.");
+        result.alreadyOnTeam++;
+        continue;
       }
+      const existingFollow = await getStartupFollow(user.id, startup.id);
+      if (entry.invitedAt && !existingFollow) {
+        throw new Error("This person no longer follows startupfans. Their previous fan number cannot be reassigned.");
+      }
+      const follow = await followStartup(user.id, startup.id);
+      if (follow.status === "member") {
+        await markInvited(entry.id);
+        result.alreadyOnTeam++;
+        continue;
+      }
+      const token = randomBytes(32).toString("hex");
+      const link = new URL("/auth/verify", process.env.APP_URL || "http://localhost:3000");
+      link.search = new URLSearchParams({ token, next: "/me" }).toString();
+      await lock.insert(magicLinks).values({
+        tokenHash: createHash("sha256").update(token).digest("hex"),
+        email: entry.email,
+        expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+      });
+      await markInvited(entry.id);
+      emails.push({ to: entry.email, ...welcomeEmail(link.toString(), follow.follow.memberNo) });
     }
     return { result, emails };
   });
