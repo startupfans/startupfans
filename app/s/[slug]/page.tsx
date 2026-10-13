@@ -60,13 +60,14 @@ async function StartupPage({ params }: StartupPageProps) {
           <h2 className="font-display text-xl font-extrabold">The team</h2>
           <ul className="mt-3 flex -space-x-3" aria-label="Team members">
             {members.slice(0, 5).map((member) => {
-              const name = member.name?.trim() || member.email.split("@")[0];
+              const name = member.name?.trim() || member.handle;
+              const label = `${name} (@${member.handle})`;
               return (
-                <li key={member.id} className="shrink-0" title={name}>
+                <li key={member.id} className="shrink-0" title={label}>
                   {member.avatarUrl ? (
-                    <Image src={member.avatarUrl} alt={name} width={44} height={44} unoptimized referrerPolicy="no-referrer"
+                    <Image src={member.avatarUrl} alt={label} width={44} height={44} unoptimized referrerPolicy="no-referrer"
                       className="h-11 w-11 rounded-full border-[3px] border-ink bg-cream object-cover" />
-                  ) : <span aria-label={name} className="flex h-11 w-11 items-center justify-center rounded-full border-[3px] border-ink bg-sun font-bold">{name.charAt(0).toUpperCase()}</span>}
+                  ) : <span aria-label={label} className="flex h-11 w-11 items-center justify-center rounded-full border-[3px] border-ink bg-sun font-bold">{name.charAt(0).toUpperCase()}</span>}
                 </li>
               );
             })}
@@ -82,7 +83,7 @@ async function StartupPage({ params }: StartupPageProps) {
       </ProfileHeader>
       <section className="mx-auto mt-14 max-w-3xl" aria-label="Startup updates">
         <SectionHeading eyebrow="From the team" title="The latest." />
-        {isMember && <Composer slug={slug} name={user?.name?.trim() || user?.email.split("@")[0] || "You"} avatarUrl={user?.avatarUrl ?? null} />}
+        {isMember && <Composer slug={slug} name={user?.name?.trim() || user?.handle || "You"} avatarUrl={user?.avatarUrl ?? null} />}
         <div className="mt-7 space-y-6">
           {posts.length === 0 ? (
             <p className="rounded-2xl border-[3px] border-ink bg-sun p-6 shadow-sticker">No updates yet. Become a fan and follow along.</p>

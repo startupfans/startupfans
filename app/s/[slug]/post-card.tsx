@@ -1,4 +1,5 @@
 import { SubmitButton } from "@/app/components/submit-button";
+import { Handle } from "@/app/components/handle";
 import Image from "next/image";
 import Link from "next/link";
 import { FlagIcon, LinkIcon, ReplyIcon, postIconButtonClass } from "@/app/components/icons";
@@ -29,7 +30,7 @@ export async function PostCard({ post, showStartup = false, canDelete = false, o
 }) {
   const admin = isAdmin(await getCurrentUser());
   const postPath = `/s/${post.startupSlug}/p/${post.id}`;
-  const authorName = post.authorName?.trim() || post.authorEmail.split("@")[0];
+  const authorName = post.authorName?.trim() || post.authorHandle;
   return (
     <article className="min-w-0 rounded-2xl border-[3px] border-ink bg-white p-5 shadow-sticker">
       <header className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-sm text-ink/60">
@@ -42,6 +43,7 @@ export async function PostCard({ post, showStartup = false, canDelete = false, o
           </span>
         )}
         <span className="min-w-0 max-w-full break-words font-bold text-ink">{authorName}</span>
+        {post.authorName?.trim() ? <Handle handle={post.authorHandle} /> : null}
         <span aria-hidden="true">·</span>
         {showStartup && <>
           <Link href={`/s/${post.startupSlug}`} className="inline-flex min-w-0 max-w-full items-center gap-1.5 font-semibold text-ink hover:underline">

@@ -17,6 +17,7 @@ const publicPostFields = {
   mediaType: posts.mediaType,
   mediaPosterUrl: posts.mediaPosterUrl,
   authorName: users.name,
+  authorHandle: users.handle,
   authorAvatarUrl: users.avatarUrl,
   authorEmail: users.email,
   startupName: startups.name,

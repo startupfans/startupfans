@@ -11,6 +11,7 @@ import {
   text,
   timestamp,
   unique,
+  uniqueIndex,
   uuid,
 } from "drizzle-orm/pg-core";
 
@@ -23,10 +24,14 @@ export const postSource = pgEnum("post_source", ["web", "slack"]);
 export const users = pgTable("users", {
   id: uuid("id").primaryKey().defaultRandom(),
   email: text("email").notNull().unique(),
+  handle: text("handle").notNull(),
   name: text("name"),
   avatarUrl: text("avatar_url"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-});
+}, (table) => [
+  uniqueIndex("users_handle_unique").on(sql`lower(${table.handle})`),
+  check("users_handle_check", sql`char_length(${table.handle}) between 3 and 24 and ${table.handle} ~ '^[a-z0-9_]+$' and ${table.handle} = lower(${table.handle})`),
+]);
 
 export const sessions = pgTable(
   "sessions",

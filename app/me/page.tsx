@@ -1,5 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
+import { Handle } from "@/app/components/handle";
 import { SiteFooter, TopNav } from "@/app/components/sticker";
 import { SignOutButton } from "@/app/login/dev-inbox";
 import { requireUser, signOut } from "@/lib/auth";
@@ -24,7 +25,7 @@ async function MePage({ searchParams }: { searchParams: Promise<{ message?: stri
     getMemberStartups(user.id), getFollowedStartups(user.id),
     isAdmin(user) ? listAllStartups() : Promise.resolve(null), searchParams,
   ]);
-  const name = user.name?.trim() || user.email.split("@")[0];
+  const name = user.name?.trim() || user.handle;
   const message = typeof query.message === "string" ? messages.get(query.message) : undefined;
 
   return (
@@ -37,8 +38,12 @@ async function MePage({ searchParams }: { searchParams: Promise<{ message?: stri
             <Image src={user.avatarUrl} alt={`${name}'s avatar`} width={64} height={64} unoptimized referrerPolicy="no-referrer"
               className="h-16 w-16 shrink-0 rounded-full border-[3px] border-ink object-cover" />
           ) : <span aria-hidden="true" className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full border-[3px] border-ink bg-sun font-display text-2xl font-extrabold">{name.charAt(0).toUpperCase()}</span>}
-          <h1 className="min-w-0 max-w-full break-words font-display text-4xl font-extrabold tracking-tight">Hi, {name}.</h1>
+          <div className="flex min-w-0 max-w-full flex-wrap items-baseline gap-x-2 gap-y-1">
+            <h1 className="min-w-0 max-w-full break-words font-display text-4xl font-extrabold tracking-tight">Hi, {name}.</h1>
+            <Handle handle={user.handle} />
+          </div>
         </div>
+        <p className="mt-3 text-sm text-ink/70">Handles are permanent.</p>
         <p className="mt-5 break-words text-lg">Signed in as <strong>{user.email}</strong></p>
         {message && <p role="status" className="mt-5 rounded-xl border-2 border-ink bg-sun p-4">{message}</p>}
         <form action={updateProfileAction} className="mt-8 space-y-5">
@@ -48,7 +53,7 @@ async function MePage({ searchParams }: { searchParams: Promise<{ message?: stri
           <AvatarUpload userId={user.id} initialUrl={user.avatarUrl ?? ""} initial={name.charAt(0).toUpperCase()}
             uploadsEnabled={Boolean(process.env.BLOB_READ_WRITE_TOKEN)} />
         </form>
-        <p className="mt-4 text-sm text-ink/70">Your name and avatar are public. Without a name, we show the first part of your email.</p>
+        <p className="mt-4 text-sm text-ink/70">Your name, handle and avatar are public. Without a name, we show your handle.</p>
         <SignOutButton action={signOut} />
       </section>
       <section className="mt-10 rounded-3xl border-[3px] border-ink bg-cream p-6 shadow-sticker-lg sm:p-10" aria-labelledby="following-heading">

@@ -15,7 +15,7 @@ export async function generateMetadata({ params }: TeamPageProps): Promise<Metad
   const startup = await getStartupBySlug(slug);
   if (!startup) notFound();
   const members = await getTeam(startup.id);
-  const names = members.slice(0, 3).map((member) => member.name?.trim() || member.email.split("@")[0]);
+  const names = members.slice(0, 3).map((member) => member.name?.trim() || member.handle);
   return {
     title: `${startup.name} team on startupfans`,
     description: names.length ? `Meet the people behind ${startup.name}: ${names.join(", ")}.` : `Meet the team behind ${startup.name}.`,

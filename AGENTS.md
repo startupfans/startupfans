@@ -133,7 +133,7 @@ Out of scope for the 3 days
 ## Data model sketch
 
 - companies: id, name, slug, logo_url, website, description, stage, is_founding, created_at. The legacy team_size column remains unused; member counts come from startup_members.
-- users: id, name, email, avatar_url
+- users: id, name, email, handle (required, unique, permanent), avatar_url
 - memberships: user_id, company_id, role (owner, member)
 - posts: id, company_id, author_id, body, image_url, created_at, source (web, slack)
 - post_comments: id, post_id, parent_id (nullable top-level comment), user_id, body (1 to 1000 characters), created_at, deleted_at (soft delete)
@@ -302,7 +302,7 @@ Built:
 - Leaderboard (`app/leaderboard/`): most followed startups and most active teams by public posts in the last seven days, refreshed every five minutes and linked from the shared top nav.
 - Team settings: owners edit page details, change member roles and remove members while keeping at least one owner, and create, email or revoke single-use invite links that expire after 7 days. Pending invites show the recipient or link label, creation and expiry dates; expired unused invites can be cleared. Signed-in teammates accept links to join as editors.
 - Sticker-style sign-in and team invite emails share a table-based HTML shell and plain-text content, with a console fallback without a Resend key. Dev-only previews live at `/dev/emails`.
-- Profiles: optional names and avatar URLs, avatars or initial badges on member lists and `/me`, plus followed startups and fan numbers on `/me`.
+- Profiles: optional names and avatar URLs, avatars or initial badges on member lists and `/me`, plus followed startups and fan numbers on `/me`. Every user has a permanent, unique lowercase handle assigned from their email at creation; existing users are backfilled from their email local parts. Handles appear beside names on post cards, team cards, team avatar labels and `/me`, and replace email-based name fallbacks in those displays, team metadata and the composer label. Handles have no editable field or update action.
 - Share previews: a default site image and dynamic startup images with the tagline and current fan count; unknown slugs use the default image.
 - Moderation: database-backed sign-in limits (5 requests per email and 30 per IP per 15-minute window), public post reports, and an admin report queue. Site admins configured in `ADMIN_EMAILS` can delete any post or startup; startup deletion requires confirmation and cascades to its content. App pages include a content policy and takedown contact.
 

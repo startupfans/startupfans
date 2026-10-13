@@ -8,6 +8,7 @@ import { follows, magicLinks, sessions, startupMembers, startups, users, waitlis
 import { sendEmail } from "@/lib/email";
 import { welcomeEmail } from "@/lib/emails/welcome";
 import { followStartup, getStartupFollow } from "@/lib/follows";
+import { allocateHandle } from "@/lib/handles";
 
 export const MAX_WAITLIST_BATCH = 25;
 
@@ -245,9 +246,7 @@ export async function letInWaitlist(selection: AdmissionSelection) {
         result.skipped++;
         continue;
       }
-      const [user] = await db.insert(users).values({ email: entry.email })
-        .onConflictDoUpdate({ target: users.email, set: { email: entry.email } }).returning();
-      if (!user) throw new Error("Could not create a user.");
+      const user = await db.transaction((tx) => allocateHandle(tx, entry.email));
       const [member] = await db.select({ userId: startupMembers.userId }).from(startupMembers)
         .where(and(eq(startupMembers.userId, user.id), eq(startupMembers.startupId, startup.id))).limit(1);
       if (member) {

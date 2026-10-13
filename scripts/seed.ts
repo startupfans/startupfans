@@ -2,6 +2,7 @@ import { and, eq } from "drizzle-orm";
 import type postgres from "postgres";
 import { db } from "../db/index";
 import { posts, startupMembers, startups, users } from "../db/schema";
+import { allocateHandle } from "../lib/handles";
 
 export async function seedStartupFans() {
   const emails = [...new Set((process.env.SEED_OWNER_EMAILS ?? "")
@@ -17,13 +18,11 @@ export async function seedStartupFans() {
     const messages: string[] = [];
     const owners: (typeof users.$inferSelect)[] = [];
     for (const email of emails) {
-      const [created] = await tx.insert(users).values({ email })
-        .onConflictDoNothing({ target: users.email }).returning();
-      const [owner] = created ? [created] : await tx.select().from(users)
+      const [existing] = await tx.select().from(users)
         .where(eq(users.email, email)).limit(1);
-      if (!owner) throw new Error(`Could not upsert owner ${email}`);
+      const owner = await allocateHandle(tx, email);
       owners.push(owner);
-      messages.push(`${created ? "Created" : "Skipped existing"} user: ${email}`);
+      messages.push(`${existing ? "Skipped existing" : "Created"} user: ${email}`);
     }
     const firstOwner = owners[0];
     if (!firstOwner) throw new Error("At least one owner is required.");

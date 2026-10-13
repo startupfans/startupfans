@@ -3,11 +3,12 @@ import { and, eq, gt, isNull } from "drizzle-orm";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { db } from "@/db";
-import { magicLinks, sessions, users } from "@/db/schema";
+import { magicLinks, sessions } from "@/db/schema";
 import { getSafeNextPath, SESSION_COOKIE_NAME } from "@/lib/auth";
 import { captureServerEvent } from "@/lib/posthog-server";
 import { emitPostHogLog } from "@/lib/posthog-logs";
 import { canSignUp, existingUser } from "@/lib/signup";
+import { allocateHandle } from "@/lib/handles";
 
 export async function GET(request: Request) {
   const url = new URL(request.url);
@@ -35,13 +36,7 @@ export async function GET(request: Request) {
     if (!await canSignUp(link.email, { inviteToken })) return { status: "invite-only" } as const;
     const email = link.email.trim().toLowerCase();
     const existing = await existingUser(email);
-    const [created] = existing ? [] : await tx
-      .insert(users)
-      .values({ email })
-      .onConflictDoUpdate({ target: users.email, set: { email } })
-      .returning({ id: users.id });
-    const user = existing ?? created;
-    if (!user) throw new Error("Could not create a user.");
+    const user = existing ?? await allocateHandle(tx, email);
 
     const id = randomUUID();
     await tx.insert(sessions).values({ id, userId: user.id, expiresAt });

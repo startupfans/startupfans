@@ -61,7 +61,7 @@ export async function createStartup(input: typeof startups.$inferInsert) {
 }
 
 export async function getStartupMembers(startupId: string) {
-  return db.select({ id: users.id, name: users.name, avatarUrl: users.avatarUrl, email: users.email, role: startupMembers.role })
+  return db.select({ id: users.id, name: users.name, handle: users.handle, avatarUrl: users.avatarUrl, email: users.email, role: startupMembers.role })
     .from(startupMembers).innerJoin(users, eq(users.id, startupMembers.userId))
     .where(eq(startupMembers.startupId, startupId)).orderBy(asc(users.createdAt), asc(users.id));
 }
@@ -80,6 +80,7 @@ export const getTeam = cache(async (startupId: string) => {
   return db.select({
     id: users.id,
     name: users.name,
+    handle: users.handle,
     email: users.email,
     avatarUrl: users.avatarUrl,
     role: startupMembers.role,
@@ -103,6 +104,7 @@ export async function getStartupPosts(startupId: string) {
     body: posts.bodyMd,
     publishedAt: posts.publishedAt,
     authorName: users.name,
+    authorHandle: users.handle,
     authorEmail: users.email,
   }).from(posts).innerJoin(users, eq(users.id, posts.authorId))
     .where(and(eq(posts.startupId, startupId), eq(posts.visibility, "public")))
