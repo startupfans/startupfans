@@ -30,7 +30,8 @@ const messages = new Map([
   ["invalid-name", "Choose a name between 2 and 60 characters."],
   ["text-too-long", "Use up to 120 characters for the tagline and location, 280 for the bio and 2,000 for the description."],
   ["url-too-long", "Use up to 500 characters for image and website addresses."],
-  ["invalid-url", "Upload images to this page's profile folder or paste an https:// image URL. Your website also needs an https:// address."],
+  ["invalid-url", "Upload images to this page's profile folder or paste an https:// image URL."],
+  ["invalid-website", "Use a website address like yourstartup.com."],
   ["invalid-social-x", "Use an X handle or an https://x.com/ profile URL."],
   ["invalid-social-linkedin", "Use an https://www.linkedin.com/company/ or /in/ profile URL."],
   ["invalid-social-github", "Use an https://github.com/ profile URL."],
@@ -121,7 +122,7 @@ async function SettingsPage({ params, searchParams }: {
               <IconField icon={<PinIcon />} id="location" name="location" defaultValue={startup.location ?? ""} maxLength={120} placeholder="City, country or remote" />
             </label>
             <label htmlFor="website" className="block font-bold">Website
-              <IconField icon={<GlobeIcon />} id="website" name="website" defaultValue={startup.website ?? ""} type="url" pattern="https://.*" maxLength={500} placeholder="https://" autoComplete="url" />
+              <IconField icon={<GlobeIcon />} id="website" name="website" defaultValue={startup.website ?? ""} type="text" inputMode="url" maxLength={500} placeholder="yourstartup.com" autoComplete="url" />
             </label>
             <label htmlFor="stage" className="block min-w-0 font-bold">Stage
               <select id="stage" name="stage" defaultValue={startup.stage ?? ""} className={inputClass}>
