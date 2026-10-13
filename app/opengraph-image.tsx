@@ -1,90 +1,198 @@
+import { readFile } from "node:fs/promises";
+import { join } from "node:path";
 import { ImageResponse } from "next/og";
+import { BRAND_COLORS, SITE_NAME, SITE_TAGLINE } from "./site";
 
-export const alt = "startupfans: Be a fan before they're famous.";
+export const alt = `${SITE_NAME}: ${SITE_TAGLINE}`;
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
-const ink = "#16120f";
-const cream = "#fff4e0";
-let fontPromise: Promise<ArrayBuffer | null> | undefined;
+const { cream, ink, pink, sun, lime, sky } = BRAND_COLORS;
 
-function getFont() {
-  fontPromise ??= fetch(
-    "https://fonts.gstatic.com/s/bricolagegrotesque/v9/3y9U6as8bTXq_nANBjzKo3IeZx8z6up5BeSl5jBNz_19PpbJMXuECpwUxJBOm_OJWiaaD30YfKfjZZoLvZvlyM0.ttf",
-    { signal: AbortSignal.timeout(5000) },
-  ).then((response) => {
-    if (!response.ok) throw new Error("Unable to load preview font");
-    return response.arrayBuffer();
-  }).catch(() => null);
-  return fontPromise;
-}
+const [displayFont, sansFont, monoFont, logoData] = await Promise.all([
+  readFile(join(process.cwd(), "assets/fonts/bricolage-grotesque-latin-800-normal.woff")),
+  readFile(join(process.cwd(), "assets/fonts/geist-sans-latin-500-normal.woff")),
+  readFile(join(process.cwd(), "assets/fonts/geist-mono-latin-700-normal.woff")),
+  readFile(join(process.cwd(), "public/logo/startupfans-logo-on-light.png"), "base64"),
+]);
+const logoSrc = `data:image/png;base64,${logoData}`;
 
-type StartupPreview = { name: string; tagline: string | null; fanCount: number };
+const LOGO_HEIGHT = 60;
+const LOGO_WIDTH = Math.round((LOGO_HEIGHT * 1820) / 300);
+const BARCODE_BARS = [3, 5, 2, 4, 2, 6, 2, 3, 5, 2, 4, 2, 6, 3, 2, 4, 5, 2, 3, 4];
+const PERKS = ["The inside scoop", "What's shipping, as it ships", "Free to follow"];
 
-export async function createShareImage(startup?: StartupPreview) {
-  const font = await getFont();
-  const title = startup?.name ?? "Be a fan before they're famous.";
-
+export default function OpengraphImage() {
   return new ImageResponse(
-    (
-      <div style={{
-        display: "flex", flexDirection: "column", width: "100%", height: "100%",
-        padding: "48px 64px", color: ink, backgroundColor: cream,
-        fontFamily: font ? "Bricolage Grotesque" : "sans-serif",
-        fontWeight: 800,
-      }}>
-        <svg width="1200" height="630" style={{ position: "absolute", top: 0, left: 0 }}>
-          <defs>
-            <pattern id="dots" width="22" height="22" patternUnits="userSpaceOnUse">
-              <circle cx="1" cy="1" r="1" fill={ink} opacity="0.12" />
-            </pattern>
-          </defs>
-          <rect width="1200" height="630" fill="url(#dots)" />
-        </svg>
-        <div style={{ display: "flex", alignItems: "center", gap: 14, fontSize: 42, letterSpacing: -2 }}>
-          <svg width="58" height="58" viewBox="0 0 64 64">
-            <path d="M32 6l7.6 16.6 18.1 2-13.5 12.2 3.8 17.9L32 45.6l-16 9.1 3.8-17.9L6.3 24.6l18.1-2z"
-              fill="#ffd23f" stroke={ink} strokeWidth="4" strokeLinejoin="round" />
-          </svg>
-          startupfans
+    <div
+      style={{
+        width: "100%",
+        height: "100%",
+        display: "flex",
+        backgroundColor: cream,
+        color: ink,
+        fontFamily: "Geist",
+        padding: "60px 72px",
+      }}
+    >
+      <div style={{ display: "flex", flexDirection: "column", width: 640 }}>
+        <img src={logoSrc} width={LOGO_WIDTH} height={LOGO_HEIGHT} alt="" />
+
+        <div
+          style={{
+            marginTop: 54,
+            fontFamily: "Bricolage Grotesque",
+            fontSize: 88,
+            lineHeight: 0.95,
+            letterSpacing: "-0.03em",
+          }}
+        >
+          {SITE_TAGLINE}
         </div>
-        <div style={{
-          display: "flex", flexDirection: "column", justifyContent: "center",
-          height: 344, marginTop: 30, padding: "30px 42px", backgroundColor: "white",
-          border: `4px solid ${ink}`, borderRadius: 24, boxShadow: `8px 8px 0 ${ink}`,
-          transform: "rotate(-1deg)",
-        }}>
-          <div style={{
-            display: "flex", fontSize: startup ? (title.length > 24 ? 48 : 64) : 88,
-            lineHeight: 1.02, letterSpacing: -3, wordBreak: "break-word",
-          }}>
-            {title}
-          </div>
-          {startup?.tagline && (
-            <div style={{ display: "flex", marginTop: 22, fontSize: 26, lineHeight: 1.2, wordBreak: "break-word" }}>
-              {startup.tagline}
-            </div>
-          )}
-        </div>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 28 }}>
-          <div style={{ display: "flex", fontSize: 24 }}>startupfans.co</div>
-          <div style={{
-            display: "flex", padding: "12px 24px", backgroundColor: "#ff5fa8",
-            border: `3px solid ${ink}`, borderRadius: 12, boxShadow: `5px 5px 0 ${ink}`,
-            transform: "rotate(4deg)", fontSize: 30,
-          }}>
-            {startup ? `${startup.fanCount.toLocaleString("en-GB")} fans` : "be an early fan"}
-          </div>
+
+        <div
+          style={{
+            marginTop: 30,
+            width: 150,
+            height: 16,
+            borderRadius: 999,
+            border: `3px solid ${ink}`,
+            backgroundColor: pink,
+            transform: "rotate(-2deg)",
+          }}
+        />
+
+        <div style={{ marginTop: 30, fontSize: 29, lineHeight: 1.3, color: "rgba(22, 18, 15, 0.8)" }}>
+          One public feed for everything a startup&apos;s team ships. Follow along for free.
         </div>
       </div>
-    ),
+
+      <div style={{ display: "flex", flex: 1, alignItems: "center", justifyContent: "flex-end", position: "relative" }}>
+        <FanCard />
+        <Sticker style={{ top: -22, left: 0, backgroundColor: lime, transform: "rotate(-9deg)" }}>
+          fan since day one
+        </Sticker>
+        <Sticker style={{ bottom: -18, right: -22, backgroundColor: sky, transform: "rotate(7deg)" }}>
+          early &gt; everyone
+        </Sticker>
+      </div>
+    </div>,
     {
       ...size,
-      ...(font ? { fonts: [{ name: "Bricolage Grotesque", data: font, weight: 800, style: "normal" }] } : {}),
+      fonts: [
+        { name: "Bricolage Grotesque", data: displayFont, weight: 800, style: "normal" },
+        { name: "Geist", data: sansFont, weight: 500, style: "normal" },
+        { name: "Geist Mono", data: monoFont, weight: 700, style: "normal" },
+      ],
     },
   );
 }
 
-export default async function Image() {
-  return createShareImage();
+function FanCard() {
+  return (
+    <div
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        width: 384,
+        padding: 26,
+        borderRadius: 30,
+        border: `4px solid ${ink}`,
+        backgroundColor: sun,
+        boxShadow: `12px 12px 0 0 ${ink}`,
+        transform: "rotate(4deg)",
+      }}
+    >
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+        <MonoLabel>Official fan club</MonoLabel>
+        <Star size={40} />
+      </div>
+
+      <div style={{ display: "flex", marginTop: 20 }}>
+        <MonoLabel color="rgba(22, 18, 15, 0.6)">Member no.</MonoLabel>
+      </div>
+      <div style={{ fontFamily: "Bricolage Grotesque", fontSize: 84, lineHeight: 1 }}>#0001</div>
+      <div style={{ marginTop: 6, fontFamily: "Bricolage Grotesque", fontSize: 24 }}>Could be you.</div>
+
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          marginTop: 20,
+          padding: "14px 16px",
+          borderRadius: 18,
+          border: `3px solid ${ink}`,
+          backgroundColor: "#ffffff",
+          fontSize: 18,
+        }}
+      >
+        {PERKS.map((perk, index) => (
+          <div key={perk} style={{ display: "flex", alignItems: "center", marginTop: index === 0 ? 0 : 8 }}>
+            <Star size={18} />
+            <span style={{ marginLeft: 10 }}>{perk}</span>
+          </div>
+        ))}
+      </div>
+
+      <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", marginTop: 20 }}>
+        <div style={{ display: "flex", height: 40, alignItems: "flex-end" }}>
+          {BARCODE_BARS.map((width, index) => (
+            <div key={index} style={{ width, height: "100%", marginRight: 3, backgroundColor: ink }} />
+          ))}
+        </div>
+        <MonoLabel size={12}>Early access</MonoLabel>
+      </div>
+    </div>
+  );
+}
+
+function Sticker({ children, style }: { children: React.ReactNode; style: React.CSSProperties }) {
+  return (
+    <div
+      style={{
+        position: "absolute",
+        display: "flex",
+        padding: "10px 18px",
+        borderRadius: 14,
+        border: `4px solid ${ink}`,
+        boxShadow: `6px 6px 0 0 ${ink}`,
+        fontFamily: "Bricolage Grotesque",
+        fontSize: 20,
+        textTransform: "uppercase",
+        ...style,
+      }}
+    >
+      {children}
+    </div>
+  );
+}
+
+function MonoLabel({ children, color = ink, size = 14 }: { children: string; color?: string; size?: number }) {
+  return (
+    <span
+      style={{
+        fontFamily: "Geist Mono",
+        fontSize: size,
+        letterSpacing: "0.14em",
+        textTransform: "uppercase",
+        color,
+      }}
+    >
+      {children}
+    </span>
+  );
+}
+
+function Star({ size: starSize }: { size: number }) {
+  return (
+    <svg width={starSize} height={starSize} viewBox="0 0 64 64">
+      <path
+        d="M32 6l7.6 16.6 18.1 2-13.5 12.2 3.8 17.9L32 45.6l-16 9.1 3.8-17.9L6.3 24.6l18.1-2z"
+        fill={pink}
+        stroke={ink}
+        strokeWidth="5"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
 }

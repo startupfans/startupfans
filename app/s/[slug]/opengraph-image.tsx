@@ -1,4 +1,4 @@
-import { createShareImage } from "@/app/opengraph-image";
+import { createShareImage } from "@/app/share-image";
 import { getStartupBySlug, getStartupFanCount } from "@/lib/startups";
 
 export const alt = "Follow this startup on startupfans.";
