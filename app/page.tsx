@@ -1,5 +1,10 @@
+import type { Metadata } from "next";
 import Image from "next/image";
 import { WaitlistForm } from "./waitlist-form";
+
+export const metadata: Metadata = {
+  alternates: { canonical: "/" },
+};
 
 const LOGO_WIDTH = 910;
 const LOGO_HEIGHT = 150;

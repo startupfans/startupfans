@@ -280,13 +280,27 @@ Picked from a shortlist of about 50 ideas from Ian's notes, scored on launch spe
 ## What's built vs the brief
 
 Built:
+- Slack publishing: owners connect a workspace in settings; a 📣 reaction publishes a human message and its first supported image, with email-matched team attribution, encrypted tokens, deduplication and a thread confirmation.
 - Landing page (`app/page.tsx`): startup-first hero ("Get your startup in front of fans.") with waitlist CTA to apply for selection, honest "launching today · free to join" badge, fan path link, startups section before fans, and a second apply form at the bottom. Positioning: curated community of early startups, free to join, selected startups get promoted to fans.
-- Waitlist: email only, via GetWaitlist (`app/waitlist-form.tsx`). Post-signup shows queue position, copy-link, and a one-click X share with prefilled text + referral URL.
-- OG / social: `metadataBase` + Twitter `summary_large_image` in `app/layout.tsx`; generated share card in `app/opengraph-image.tsx`.
+- Waitlist: email only, via GetWaitlist (`app/waitlist-form.tsx`). Post-signup shows queue position, copy-link, and a one-click X share with prefilled text + referral URL. PostHog events: `waitlist_joined`, `waitlist_referral_link_copied`, `waitlist_x_share_clicked`.
+- Manual seed and waitlist import: `pnpm seed` upserts startupfans with owners from `SEED_OWNER_EMAILS` and its first post; `pnpm import:waitlist <path.csv>` imports GetWaitlist emails as fans in signup order, preserving existing member numbers on reruns.
+- Startup creation (`app/start/`): signed-in users create a public page and become its owner, with optional stage and team size.
+- Public startup pages (`app/s/[slug]/`): profile, team members, current fan count and a markdown feed, plus member settings links.
+- Public team pages (`app/s/[slug]/team`): member cards with roles, join dates, public post counts and latest post quotes; startup profiles link there through a compact avatar row.
+- Posting: team members publish markdown updates with one optional image or video uploaded directly to Vercel Blob, selected by picker, drag and drop or image paste. JPEG, PNG, WebP, GIF, AVIF, HEIC and HEIF photos are accepted up to 10 MB; HEIC and HEIF convert to JPEG in the browser. MP4, WebM, MOV and M4V videos are accepted up to 200 MB. Public post pages have share metadata; authors and owners can delete posts.
+- Follow and unfollow: signed-in fans receive unique member numbers; unfollowing never reuses a number. Team members see an "On the team" badge and cannot follow their own startup; accepting an invite removes any existing follow without reusing its number.
+- Global feed (`app/feed/`): public posts newest first, startup names and logos, a signed-in following filter, and cursor pagination with 20 posts per page.
+- Leaderboard (`app/leaderboard/`): most followed startups and most active teams by public posts in the last seven days, refreshed every five minutes and linked from the shared top nav.
+- Team settings: owners edit page details, remove members while keeping at least one owner, and create, email or revoke single-use invite links that expire after 7 days. Signed-in teammates accept links to join as editors.
+- Sticker-style sign-in and team invite emails share a table-based HTML shell and plain-text content, with a console fallback without a Resend key. Dev-only previews live at `/dev/emails`.
+- Profiles: optional names and avatar URLs, avatars or initial badges on member lists and `/me`, plus followed startups and fan numbers on `/me`.
+- Share previews: a default site image and dynamic startup images with the tagline and current fan count; unknown slugs use the default image.
+- Moderation: database-backed sign-in limits (5 requests per email and 30 per IP per 15-minute window), public post reports, and an admin report queue. Site admins configured in `ADMIN_EMAILS` can delete any post or startup; startup deletion requires confirmation and cascades to its content. App pages include a content policy and takedown contact.
+
+Also built: Postgres + Drizzle data layer (`db/`, shared hosted database) and email magic-link sign-in with sessions (`app/login`, `app/auth`, `app/me`, `lib/auth.ts`).
 
 Not built yet (from MVP must-haves):
 - Richer startup waitlist fields above
-- Company pages, team membership, posts, feeds, follows (no backend yet)
 
 Parked for now: founding spot payment (£99/year Stripe link). It's free for everyone at the moment.
 
@@ -305,12 +319,64 @@ Site copy only promises what exists. No pricing on the site (for fans or startup
 
 ## Layout
 
+- `lib/slack.ts` and `lib/crypto.ts`: Slack Web API, signed OAuth state, event signature verification, markdown conversion, image copying and encrypted bot tokens. `slack_connections` binds one workspace to one startup; `slack_posts` records published messages atomically with post creation.
+- `app/api/slack/`: owner-only install and OAuth callbacks, plus signed events acknowledged with `after()` before publishing. `slack-app-manifest.json` configures the app and its scopes.
+- `scripts/seed.ts` and `scripts/import-waitlist.ts`: manual, idempotent startupfans seed and GetWaitlist CSV import using the shared database and follow allocator. The importer skips team members and reports that reason in its summary. Commands load `.env` with Node 24 and run through `tsx` with the `react-server` condition for server-only imports.
+- `db/`: Drizzle schema, migrations, and the lazy Postgres client exported as `db`. Everyone uses the shared hosted Postgres through `DATABASE_URL` in the team's `.env`. Without it, database access throws a clear setup error; imports and builds do not need a connection.
+- `lib/`: server-only auth and session helpers (`lib/auth.ts`) and Resend email delivery with a console fallback (`lib/email.ts`).
+- `lib/ratelimit.ts`, `lib/reports.ts`, `lib/admin.ts`: atomic hashed sign-in counters, private post report submission and resolution, and site admin authorization/deletion. Reports retain their resolved timestamp so signed-in users cannot report a post twice.
+- `app/admin/`: admin-only open report queue with post excerpts, reasons, counts, resolution and confirmed deletion. `ADMIN_EMAILS` grants access; other visitors receive a 404.
+- `lib/emails/`: pure sign-in and invite templates using a shared inline-styled, table-based sticker layout and matching plain text.
+- `app/dev/emails/`: development-only template index and HTML previews, with `?text=1` for plain text; all routes return 404 in production.
+- `lib/startups.ts`: startup creation with owner membership, profile lookup, team members, public posts and current fan counts. `lib/follows.ts` serializes follow changes with a startup row lock and keeps the member-number counter increasing. `lib/slug.ts` holds shared slug suggestions and validation.
+- `app/components/sticker.tsx`: shared `Star`, `Sticker`, `SectionHeading` and `TopNav` components, plus confirmed admin startup deletion and `SiteFooter` for app pages. The footer uses `PRICING_CONTACT_EMAIL` or `hello@startupfans.co` for takedowns.
+- `app/leaderboard/page.tsx` and `lib/leaderboard.ts`: public sticker-style rankings with logos, taglines, fan and weekly post counts, and empty states; each list uses one aggregate query and excludes zero counts. The page renders on demand with queries cached for 300 seconds.
+- `app/opengraph-image.tsx`: site-wide 1200 by 630 share preview (logo, `SITE_TAGLINE` headline, "Selected startup" card mirroring the hero), prerendered at build time from local fonts in `assets/fonts/`. Inherited by every route without its own image.
+- `app/share-image.tsx`: `createShareImage`, the startup share renderer with a cached Bricolage Grotesque font fetch and a default font fallback. Kept separate from `app/opengraph-image.tsx` so dynamic routes don't load the homepage image's local font files.
+- `app/s/[slug]/opengraph-image.tsx`: dynamic startup share preview using the current follower count, with the generic `createShareImage()` card for unknown slugs.
+- `app/s/[slug]/team/`: public team page and server-rendered member cards, with one, two and three columns on phones, tablets and desktop. `getTeam` in `lib/startups.ts` queries membership join dates and public post activity for the current startup; owners get a settings link.
+- `app/start/`: protected startup creation page and validated server action. Its client form wrapper lives alongside `FollowButton` in `app/s/[slug]/follow-button.tsx`; fields render on the server.
+- `app/s/[slug]/`: public startup profile, team list, member composer and markdown post cards, startup metadata, and follow actions with pending and error states. `post-actions.ts` checks membership for creation and author/owner deletion; `/p/[postId]` renders individual public posts.
+- `app/feed/`: public global feed with Everyone and Following filters, sign-in and discovery empty states, and server-rendered load-more links.
+- `lib/media.ts`: shared image/video MIME types, case-insensitive extensions, picker accept lists and size limits for the composer, upload authorization and server-side media URL checks. HEIC and HEIF are picker-only formats converted to JPEG; raw uploads and media URLs are rejected by the server.
+- `app/api/upload/route.ts`: Vercel Blob client upload authorization restricted to startup members, with shared image/video type and size limits; text posting works without a Blob store token.
+- `lib/posts.ts`: public post queries with author and startup details, cursor-paginated global and following feeds, membership lookup, and startup media URL validation.
+- `lib/members.ts` and `lib/invites.ts`: owner authorization, serialized team changes, profiles and followed startups, plus hashed single-use invite creation, revocation and acceptance.
+- `app/s/[slug]/settings/`: owner-only page editing, member management and unused invites; `invite-link.tsx` creates and copies invite links and offers email invites through the settings action.
+- `app/join/[token]/`: signed-in invite confirmation with atomic editor membership creation and friendly invalid-link messages.
+- `app/components/markdown.tsx` and `post-media.tsx`: safe markdown rendering and sticker-framed images and videos.
+- `app/login/`: magic-link request form and its server action.
+- `app/auth/`: magic-link verification route that creates a session and sets the `sf_session` cookie.
+- `app/me/`: profile name and avatar editing, followed startups with member numbers, and sign out, protected by `requireUser`.
 - `app/page.tsx`: the landing page (server components; the only client component is the waitlist form). Copy and data are typed arrays at the top (`FAN_PROPS`, `STARTUP_PROPS`, `TICKER_WORDS`); edit those to change content. Both audience sections render through `AudienceSection` (`#fans` light, `#startups` dark), linked from the nav.
 - `app/globals.css`: design tokens in `@theme` (colors `cream/ink/pink/sun/lime/sky/tangerine`, `shadow-sticker`, marquee/wobble animations). Reduced motion disables animations.
-- `app/layout.tsx`: fonts (Bricolage Grotesque display, Geist sans/mono via `next/font`) and metadata.
+- `app/layout.tsx`: fonts (Bricolage Grotesque display, Geist sans/mono via `next/font`), root `metadata` (`metadataBase`, default title, site-wide OG/Twitter fields, robots), `viewport` (theme colour) and Organization/WebSite JSON-LD. No title template, because page titles already include "on startupfans". OG/Twitter title, description and url are left unset at the root so Next fills them from each page's own title and description; the canonical URL is set only in `app/page.tsx`.
+- `app/site.ts`: single source for site URL, name, tagline, description and brand hex colours (used by metadata routes and the OG image, which can't read CSS tokens).
+- SEO/metadata file conventions in `app/`: `opengraph-image.tsx` (1200x630, built at build time with `next/og`; X/Twitter reuses it automatically), `robots.ts`, `sitemap.ts`, `manifest.ts`, `icon.svg`, `apple-icon.png`. OG fonts are static woff files in `assets/fonts/` (from Fontsource; Satori needs ttf/otf/woff, not variable or woff2). PWA icons (`icon-192.png`, `icon-512.png`, `icon-maskable-512.png`) live in `public/` and were rendered from the mark with `sharp`. Satori ignores `radial-gradient` dot backgrounds, so the OG image uses flat cream.
+- File-based OG image URLs use `metadataBase` in production but `localhost` under `next dev`; check `og:image` against a `next build && next start` run.
 - `app/waitlist-form.tsx`: client component rendered twice: in the hero (primary CTA, top of page) and again in `JoinSection`. Posts emails straight to the GetWaitlist API (unauthenticated, waitlist ID in `WAITLIST_ID`) and shows queue position plus referral link on success. Signups are managed in the GetWaitlist dashboard.
-- `public/logo/`: brand assets, served at `/logo/...`. `startupfans-logo` is the full logo (SF wing monogram + wordmark), `startupfans-mark` is the square SF monogram (avatars, favicons). Each comes as SVG (outlined paths, no font dependency) and transparent PNG (logo 1820px wide, mark 1024px). Default files have a white wing and "Fans" for dark backgrounds; `-on-light` swaps those to ink. Logo blue is `#b6d3de`; wordmark is Fira Sans Condensed Bold. The nav and footer render `startupfans-logo-on-light.svg` via `next/image`; `app/icon.svg` (favicon) is the mark on an ink rounded square.
+- `public/logo/`: brand assets, served at `/logo/...`. `startupfans-logo` is the full logo (SF wing monogram + wordmark), `startupfans-mark` is the square SF monogram (avatars, favicons). Each comes as SVG (outlined paths, no font dependency) and transparent PNG (logo 1820px wide, mark 1024px). Default files have a white wing and "Fans" for dark backgrounds; `-on-light` swaps those to ink. Logo blue is `#b6d3de` on dark backgrounds and the deeper `#2f7493` in the `-on-light` files (4.8:1 on cream; the pale blue was 1.4:1); wordmark is Fira Sans Condensed Bold. The nav and footer render `startupfans-logo-on-light.svg` via `next/image`; `app/icon.svg` (favicon) is the mark on an ink rounded square.
 - `Untitled/`: stray empty git repo, unrelated; excluded from TS and ESLint.
+
+### Responsive app layouts
+
+All app routes were reasoned about at **390, 768, 834, 1024 and 1440px**. Shared navigation wraps with the signed-in admin link, controls have 44px minimum heights, and pages retain 20px side gutters. Wide app shells cap at 72rem; feeds cap at 48rem and post bodies at 65ch. The landing page and global tokens were not edited.
+
+| Route | 390px | 768 and 834px | 1024 and 1440px |
+| --- | --- | --- | --- |
+| `/login` | Full-width fields and actions; long inbox addresses and development links wrap | Single capped form with comfortable padding | Form stays capped at 36rem |
+| `/me` | Avatar above a width-constrained name; full-width actions and fan cards | Avatar and wrapping name share a row; admin navigation can wrap | Account column stays capped at 36rem |
+| `/start` | Fields fit the card; fieldset can shrink; textarea resizes vertically | Stage and team-size fields share a row | Form stays capped at 42rem |
+| `/s/[slug]` | Logo above name; star stays above content; team pills and follow controls fill the card; composer and media fit | Profile and follow panel stay stacked; text remains capped | Profile and follow panel share a grid; updates use a separate 48rem column |
+| `/s/[slug]/p/[postId]` | Startup and author names wrap; report textarea fits; media and code lines stay inside the card | Post body stays at most 65ch | Single post column stays capped at 48rem |
+| `/s/[slug]/settings` | Long slugs wrap; fields and member actions fit; invite controls fill available width | Page details and team stay stacked; invite forms have their own rows | Members sit beside the page form in a 72rem shell |
+| `/join/[token]` | Startup names and closed-invite copy wrap; primary action fills the card | One capped invitation card | Invitation column stays capped at 36rem |
+| `/feed` | Full-width filter pills; wrapping author/startup names; media and expanded reports fit | One readable feed column; post text caps at 65ch | Feed stays capped at 48rem |
+| `/leaderboard` | Ranking cards and long startup names fit; startup links are tap-sized | Rankings remain stacked to leave room for names and logos | Two ranking columns in a 72rem shell |
+| `/admin` | Report excerpts/reasons wrap; actions stack and confirmation labels are tap-sized | Action forms wrap when needed | Report column stays capped at 56rem |
+| `/dev/emails` | Preview links wrap into rows with 44px targets | Preview index stays a single card | Index stays capped at 36rem; production 404 behavior is preserved |
+
+Verification: the page components and production styles were rendered in headless Chromium with synthetic long names, addresses, post text, image/video attachments, admin navigation and expanded report forms. All 65 renders (11 routes plus startup fan and closed-invite variants, each at five widths) had no horizontal overflow or measured controls below 44px. Build, typecheck and lint passed without application environment variables.
 
 ## Style
 

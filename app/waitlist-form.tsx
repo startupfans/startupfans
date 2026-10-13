@@ -1,6 +1,15 @@
 "use client";
 
 import { useId, useState } from "react";
+import posthog from "posthog-js";
+
+function captureWaitlistEvent(
+  event: "waitlist_joined" | "waitlist_referral_link_copied" | "waitlist_x_share_clicked",
+) {
+  if (process.env.NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN && process.env.NEXT_PUBLIC_POSTHOG_HOST) {
+    posthog.capture(event);
+  }
+}
 
 const WAITLIST_ID = 33121;
 const SIGNUP_ENDPOINT = "https://api.getwaitlist.com/api/v1/signup";
@@ -61,7 +70,9 @@ export function WaitlistForm({ ctaLabel = "Get your startup selected →" }: Wai
 
     setState({ status: "submitting" });
     try {
-      setState({ status: "success", signup: await createSignup(email.trim()) });
+      const signup = await createSignup(email.trim());
+      captureWaitlistEvent("waitlist_joined");
+      setState({ status: "success", signup });
     } catch {
       setState({ status: "error", message: "That didn't go through. Check the email and try again." });
     }
@@ -111,6 +122,7 @@ function SuccessCard({ signup }: { signup: Signup }) {
   async function handleCopy() {
     try {
       await navigator.clipboard.writeText(signup.referral_link);
+      captureWaitlistEvent("waitlist_referral_link_copied");
       setIsCopied(true);
     } catch {
       // Clipboard can be blocked; the link stays visible to copy by hand.
@@ -134,6 +146,7 @@ function SuccessCard({ signup }: { signup: Signup }) {
         href={xShareUrl}
         target="_blank"
         rel="noopener noreferrer"
+        onClick={() => captureWaitlistEvent("waitlist_x_share_clicked")}
         className="mt-6 flex w-full items-center justify-center gap-2 rounded-2xl border-[3px] border-ink bg-ink px-5 py-4 font-display text-lg font-extrabold text-cream shadow-sticker transition hover:-translate-y-0.5 active:translate-y-0.5 active:shadow-none"
       >
         <XLogo className="size-5" />
