@@ -10,6 +10,8 @@ import { inviteEmail } from "@/lib/emails/invite";
 import { createStartupInvite, revokeStartupInvite } from "@/lib/invites";
 import { isOptionalHttpsUrl, removeStartupMember, requireStartupOwner, textField, withOwnedStartup } from "@/lib/members";
 import { captureServerEvent } from "@/lib/posthog-server";
+import { isStartupProfileImageUrl } from "@/lib/startups";
+import { normalizeSocial, socialNetworks, type SocialField } from "@/lib/socials";
 
 function refreshStartup(slug: string) {
   revalidatePath(`/s/${slug}`, "layout");
@@ -35,20 +37,23 @@ export async function updateStartupAction(slug: string, formData: FormData) {
   const name = textField(formData, "name");
   const tagline = textField(formData, "tagline");
   const description = textField(formData, "description");
+  const bio = textField(formData, "bio");
+  const location = textField(formData, "location");
   const logoUrl = textField(formData, "logoUrl");
+  const coverUrl = textField(formData, "coverUrl");
   const website = textField(formData, "website");
   const stage = textField(formData, "stage");
   const rawTeamSize = textField(formData, "teamSize");
   const teamSize = rawTeamSize ? Number(rawTeamSize) : null;
 
   if (name.length < 2 || name.length > 60) settingsMessage(slug, "invalid-name");
-  if (tagline.length > 120 || description.length > 2000) {
+  if (tagline.length > 120 || description.length > 2000 || bio.length > 280 || location.length > 120) {
     settingsMessage(slug, "text-too-long");
   }
-  if (logoUrl.length > 500 || website.length > 500) {
+  if (logoUrl.length > 500 || coverUrl.length > 500 || website.length > 500) {
     settingsMessage(slug, "url-too-long");
   }
-  if (!isOptionalHttpsUrl(logoUrl) || !isOptionalHttpsUrl(website)) {
+  if (!isStartupProfileImageUrl(logoUrl, slug) || !isStartupProfileImageUrl(coverUrl, slug) || !isOptionalHttpsUrl(website)) {
     settingsMessage(slug, "invalid-url");
   }
   if (stage && !["idea", "pre-seed", "seed", "series-a", "growth", "bootstrapped"].includes(stage)) {
@@ -57,9 +62,19 @@ export async function updateStartupAction(slug: string, formData: FormData) {
   if (teamSize !== null && (!/^\d+$/.test(rawTeamSize) || !Number.isInteger(teamSize) || teamSize < 1 || teamSize > 10000)) {
     settingsMessage(slug, "invalid-team-size");
   }
+  const socials: Record<SocialField, string | null> = {
+    xHandle: null, linkedinUrl: null, githubUrl: null,
+    instagramHandle: null, youtubeUrl: null, tiktokHandle: null,
+  };
+  for (const { network, field } of socialNetworks) {
+    const result = normalizeSocial(network, textField(formData, field));
+    if (result.status === "invalid") settingsMessage(slug, `invalid-social-${network}`);
+    socials[field] = result.value;
+  }
   await withOwnedStartup(slug, user.id, async (tx, startup) => {
     await tx.update(startups).set({
       name, tagline: tagline || null, description: description || null, logoUrl: logoUrl || null,
+      coverUrl: coverUrl || null, bio: bio || null, location: location || null, ...socials,
       website: website || null, stage: stage || null, teamSize,
     }).where(eq(startups.id, startup.id));
   });

@@ -4,6 +4,25 @@ import { asc, count, desc, eq, and, sql } from "drizzle-orm";
 import { cache } from "react";
 import { db } from "@/db";
 import { follows, posts, startupMembers, startups, users } from "@/db/schema";
+import { getMediaFormat, isMediaFilename } from "@/lib/media";
+
+export function isStartupProfileImageUrl(value: string, slug: string, creatorId?: string) {
+  if (!value) return true;
+  if (value.length > 500 || !value.startsWith("https://")) return false;
+  try {
+    const url = new URL(value);
+    if (url.protocol !== "https:" || url.username || url.password) return false;
+    if (!url.hostname.endsWith(".blob.vercel-storage.com")) return true;
+    const prefix = `/startups/${slug}/profile/`;
+    const filename = url.pathname.slice(prefix.length);
+    return /^[a-z0-9-]+\.public\.blob\.vercel-storage\.com$/i.test(url.hostname)
+      && !url.port && !url.search && !url.hash && url.pathname.startsWith(prefix)
+      && isMediaFilename(filename) && getMediaFormat(filename)?.type === "image"
+      && (!creatorId || filename.startsWith(`${creatorId}-`));
+  } catch {
+    return false;
+  }
+}
 
 export const getStartupBySlug = cache(async (slug: string) => {
   const [startup] = await db.select().from(startups).where(eq(startups.slug, slug)).limit(1);

@@ -2,6 +2,8 @@ import { handleUpload, type HandleUploadBody } from "@vercel/blob/client";
 import { getCurrentUser } from "@/lib/auth";
 import { getPostMembership } from "@/lib/posts";
 import { getMediaContentTypes, getMediaFormat, isMediaFilename, mediaLimits } from "@/lib/media";
+import { isValidSlug } from "@/lib/slug";
+import { getStartupBySlug } from "@/lib/startups";
 
 const unavailableMessage = "Attachments are unavailable because the Vercel Blob store is not configured. You can still post text.";
 
@@ -50,13 +52,24 @@ export async function POST(request: Request) {
           throw new Error("Choose a startup before uploading.");
         }
         const user = await getCurrentUser();
-        if (!user || !await getPostMembership(payload.slug, user.id)) {
+        if (!user) throw new Error("Sign in before uploading.");
+        const profilePrefix = `startups/${payload.slug}/profile/`;
+        const isProfile = pathname.startsWith(profilePrefix);
+        const member = await getPostMembership(payload.slug, user.id);
+        if (isProfile) {
+          if (member) {
+            if (member.role !== "owner") throw new Error("Only owners can upload profile images.");
+          } else if (!isValidSlug(payload.slug) || await getStartupBySlug(payload.slug)) {
+            throw new Error("Choose an unused page address before uploading a logo.");
+          }
+        } else if (!member) {
           throw new Error("Only signed-in team members can upload here.");
         }
-        const prefix = `startups/${payload.slug}/`;
+        const prefix = isProfile ? profilePrefix : `startups/${payload.slug}/`;
         const filename = pathname.slice(prefix.length);
         const format = getMediaFormat(filename);
-        if (!pathname.startsWith(prefix) || !isMediaFilename(filename) || !format) {
+        if (!pathname.startsWith(prefix) || !isMediaFilename(filename) || !format
+          || (isProfile && (format.type !== "image" || !filename.startsWith(`${user.id}-`)))) {
           throw new Error("Upload an image or video to this startup's media folder.");
         }
         return {

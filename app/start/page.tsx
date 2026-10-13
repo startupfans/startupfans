@@ -2,11 +2,12 @@ import Link from "next/link";
 import { Sticker } from "@/app/components/sticker";
 import { StartupForm } from "@/app/s/[slug]/follow-button";
 import { requireUser } from "@/lib/auth";
+import { BioField, ImageUpload } from "@/app/s/[slug]/settings/image-upload";
 
 const inputClass = "mt-2 min-h-11 w-full min-w-0 rounded-xl border-2 border-ink bg-white px-4 py-3 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ink";
 
 async function StartPage() {
-  await requireUser("/start");
+  const user = await requireUser("/start");
 
   return (
     <main className="mx-auto min-h-screen min-w-0 max-w-2xl break-words px-5 py-10 sm:py-16">
@@ -29,9 +30,8 @@ async function StartPage() {
           <label htmlFor="description" className="block font-bold">Description <span className="font-normal">(optional)</span>
             <textarea id="description" name="description" maxLength={2000} rows={5} className={`${inputClass} resize-y`} />
           </label>
-          <label htmlFor="logoUrl" className="block font-bold">Logo URL <span className="font-normal">(optional)</span>
-            <input id="logoUrl" name="logoUrl" type="url" pattern="https://.*" maxLength={500} placeholder="https://" className={inputClass} />
-          </label>
+          <BioField />
+          <ImageUpload name="logoUrl" label="Logo" creatorId={user.id} />
           <label htmlFor="website" className="block font-bold">Website <span className="font-normal">(optional)</span>
             <input id="website" name="website" type="url" pattern="https://.*" maxLength={500} placeholder="https://" autoComplete="url" className={inputClass} />
           </label>
