@@ -322,6 +322,7 @@ Site copy only promises what exists. No pricing on the site (for fans or startup
 
 ## Layout
 
+- `app/components/icons.tsx`: named UI icon wrappers use Lucide Image, Video, Send, Flag, Trash2, Link2, X, Globe and MapPin at 20px with a 2.25px absolute stroke. Round sticker button classes and hand-drawn social brand glyphs stay shared here; `Star` in `sticker.tsx` remains brand art.
 - `lib/slack.ts` and `lib/crypto.ts`: Slack Web API, signed OAuth state, event signature verification, markdown conversion, image copying and encrypted bot tokens. `slack_connections` binds one workspace to one startup; `slack_posts` records published messages atomically with post creation.
 - `app/api/slack/`: owner-only install and OAuth callbacks, plus signed events acknowledged with `after()` before publishing. `slack-app-manifest.json` configures the app and its scopes.
 - `scripts/seed.ts`: manual, idempotent startupfans seed. The command loads `.env` with Node 24 and runs through `tsx` with the `react-server` condition for server-only imports.
