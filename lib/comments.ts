@@ -3,6 +3,7 @@ import "server-only";
 import { and, asc, desc, eq, inArray, isNull, or, sql } from "drizzle-orm";
 import { db } from "@/db";
 import { commentLikes, follows, postComments, posts, startupMembers, startups, users } from "@/db/schema";
+import { mentionSegments, resolveMentions } from "@/lib/mentions";
 import { isAdmin } from "@/lib/admin";
 import { allowRateLimit } from "@/lib/ratelimit";
 
@@ -46,8 +47,13 @@ function commentQuery(postId: string, viewerId: string | null = null, threadIds?
     .orderBy(asc(postComments.createdAt), asc(postComments.id));
 }
 
+async function resolveCommentMentions(comments: Awaited<ReturnType<typeof commentQuery>>) {
+  const mentions = await resolveMentions(comments.map((comment) => comment.body));
+  return comments.map((comment) => ({ ...comment, mentions: mentionSegments(comment.body, mentions) }));
+}
+
 export async function getPublicComments(postId: string, viewerId: string | null = null) {
-  return commentQuery(postId, viewerId);
+  return resolveCommentMentions(await commentQuery(postId, viewerId));
 }
 
 export type PublicComment = Awaited<ReturnType<typeof getPublicComments>>[number];
@@ -78,7 +84,8 @@ export async function getRepliesPreview(postId: string, viewerId: string | null,
     db.select({ total: sql<number>`count(*)::int` }).from(postComments)
       .where(and(eq(postComments.postId, postId), isNull(postComments.deletedAt))),
   ]);
-  const comments = roots.length ? await commentQuery(postId, viewerId, roots.slice(0, previewLimit).map((root) => root.id)) : [];
+  const comments = await resolveCommentMentions(roots.length
+    ? await commentQuery(postId, viewerId, roots.slice(0, previewLimit).map((root) => root.id)) : []);
   return { startupId: post.startupId, comments, total: counts[0]?.total ?? 0, hasMore: roots.length > previewLimit };
 }
 

@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { useActionState, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { CloseIcon, ImageIcon, SendIcon, TrashIcon, VideoIcon, postIconButtonBaseClass, postIconButtonClass } from "@/app/components/icons";
+import { MentionAutocomplete } from "@/app/components/mention-autocomplete";
 import { SubmitButton } from "@/app/components/submit-button";
 import { ConfirmSubmit } from "@/app/components/confirm-dialog";
 import { getFileMediaFormat, getMediaAccept, mediaLimits, type MediaType } from "@/lib/media";
@@ -224,8 +225,8 @@ export function Composer({ slug, name, avatarUrl }: {
               </span>
             )}
           </div>
-          <textarea ref={textarea} id="post-body" name="body" aria-label="Your update" value={body}
-            onChange={(event) => setBody(event.target.value)} required maxLength={5000} rows={2} disabled={pending}
+          <MentionAutocomplete textareaRef={textarea} startup={slug} id="post-body" name="body" aria-label="Your update" value={body}
+            onValueChange={setBody} required maxLength={5000} rows={2} disabled={pending}
             placeholder="what are you working on today?"
             onKeyDown={(event) => {
               if ((event.metaKey || event.ctrlKey) && event.key === "Enter" && !event.nativeEvent.isComposing) {

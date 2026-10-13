@@ -4,6 +4,7 @@ import { and, desc, eq, inArray, sql } from "drizzle-orm";
 import { cache } from "react";
 import { db } from "@/db";
 import { follows, postComments, posts, startupMembers, startups, users } from "@/db/schema";
+import { resolveMentions } from "@/lib/mentions";
 import { isMediaFilename } from "@/lib/media";
 
 const publicPostFields = {
@@ -50,11 +51,13 @@ export async function createPostForStartup({ startupId, authorId, body, media, s
 }
 
 export async function getPublicStartupPosts(startupId: string) {
-  return db.select(publicPostFields).from(posts)
+  const rows = await db.select(publicPostFields).from(posts)
     .innerJoin(users, eq(users.id, posts.authorId))
     .innerJoin(startups, eq(startups.id, posts.startupId))
     .where(and(eq(posts.startupId, startupId), eq(posts.visibility, "public")))
     .orderBy(desc(posts.publishedAt), desc(posts.id));
+  await resolveMentions(rows.map((post) => post.body));
+  return rows;
 }
 
 export type PublicPost = Awaited<ReturnType<typeof getPublicStartupPosts>>[number];
@@ -92,6 +95,7 @@ export async function listFeed({ userId, following = false, cursor }: {
     .orderBy(desc(posts.publishedAt), desc(posts.id))
     .limit(21);
   const page = rows.slice(0, 20);
+  await resolveMentions(page.map((post) => post.body));
   const last = page.at(-1);
   return {
     posts: page,
@@ -102,11 +106,16 @@ export async function listFeed({ userId, following = false, cursor }: {
 
 export const getPublicPost = cache(async (slug: string, postId: string) => {
   if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(postId)) return null;
-  const [post] = await db.select(publicPostFields).from(posts)
+  const [post] = await db.select({
+    ...publicPostFields,
+    mentionBodies: sql<string[]>`coalesce((select json_agg(${postComments.body}) from ${postComments}
+      where ${postComments.postId} = ${posts.id} and ${postComments.deletedAt} is null), '[]'::json)`,
+  }).from(posts)
     .innerJoin(users, eq(users.id, posts.authorId))
     .innerJoin(startups, eq(startups.id, posts.startupId))
     .where(and(eq(posts.id, postId), eq(startups.slug, slug), eq(posts.visibility, "public")))
     .limit(1);
+  if (post) await resolveMentions([post.body, ...post.mentionBodies]);
   return post ?? null;
 });
 
@@ -128,4 +137,14 @@ export function isStartupMediaUrl(value: string, slug: string) {
   } catch {
     return false;
   }
+}
+
+export async function getPublicUserPosts(userId: string) {
+  const rows = await db.select(publicPostFields).from(posts)
+    .innerJoin(users, eq(users.id, posts.authorId))
+    .innerJoin(startups, eq(startups.id, posts.startupId))
+    .where(and(eq(posts.authorId, userId), eq(posts.visibility, "public")))
+    .orderBy(desc(posts.publishedAt), desc(posts.id)).limit(20);
+  await resolveMentions(rows.map((post) => post.body));
+  return rows;
 }

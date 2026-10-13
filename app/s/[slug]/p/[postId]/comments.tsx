@@ -6,6 +6,7 @@ import Link from "next/link";
 import type { PublicComment, ReplyComment } from "@/lib/comments";
 import { LikeButton, type LikeState } from "./like-button";
 import { relativeDate } from "@/lib/relative-date";
+import { MentionAutocomplete } from "@/app/components/mention-autocomplete";
 import { SubmitButton } from "@/app/components/submit-button";
 import { ConfirmSubmit } from "@/app/components/confirm-dialog";
 import { postIconButtonClass, TrashIcon } from "@/app/components/icons";
@@ -34,8 +35,8 @@ export function CommentComposer({ slug, postId, parentId = null, onReplied }: {
     <form action={action} aria-label={parentId ? "Reply to comment" : "Reply to post"} className="mt-6 min-w-0 rounded-2xl border-[3px] border-ink bg-cream p-4 shadow-sticker" aria-busy={pending}>
       <input type="hidden" name="parentId" value={parentId ?? ""} />
       <label htmlFor={inputId} className="block font-semibold">Your reply</label>
-      <textarea id={inputId} name="body" rows={3} required maxLength={1000} value={body}
-        onChange={(event) => setBody(event.target.value)} disabled={pending}
+      <MentionAutocomplete startup={slug} id={inputId} name="body" rows={3} required maxLength={1000} value={body}
+        onValueChange={setBody} disabled={pending}
         aria-describedby={state.status === "error" ? errorId : undefined}
         className="mt-2 block w-full min-w-0 resize-y rounded-xl border-2 border-ink bg-white p-3 disabled:opacity-60" />
       <SubmitButton pending={pending} pendingLabel="Replying…" disabled={!body.trim()}
@@ -118,7 +119,9 @@ export function CommentContent({ comment, slug, postId, canDelete, canReply, sig
           <DeleteCommentButton slug={slug} postId={postId} commentId={comment.id} onDeleted={onDeleted} />
         </div>}
       </div>
-      <p className="mt-3 whitespace-pre-wrap break-words text-sm leading-relaxed">{comment.body}</p>
+      <p className="mt-3 whitespace-pre-wrap break-words text-sm leading-relaxed">{comment.mentions.map((segment, index) => segment.handle === null ? segment.text : (
+        <Link key={index} href={`/u/${segment.handle}`} className="font-bold text-ink underline decoration-transparent decoration-4 underline-offset-4 hover:decoration-sun">{segment.text}</Link>
+      ))}</p>
       <div className="mt-2 flex flex-wrap items-center gap-3">
         <LikeButton commentId={comment.id} count={comment.likeCount} liked={comment.liked}
           signedIn={signedIn} postUrl={`/s/${slug}/p/${postId}`} onLiked={onLiked} />
