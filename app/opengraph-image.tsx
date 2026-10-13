@@ -20,7 +20,7 @@ const logoSrc = `data:image/png;base64,${logoData}`;
 const LOGO_HEIGHT = 60;
 const LOGO_WIDTH = Math.round((LOGO_HEIGHT * 1820) / 300);
 const BARCODE_BARS = [3, 5, 2, 4, 2, 6, 2, 3, 5, 2, 4, 2, 6, 3, 2, 4, 5, 2, 3, 4];
-const PERKS = ["The inside scoop", "What's shipping, as it ships", "Free to follow"];
+const PERKS = ["Get selected & promoted", "Show what you're shipping", "Free for startups & fans"];
 
 export default function OpengraphImage() {
   return new ImageResponse(
@@ -63,17 +63,17 @@ export default function OpengraphImage() {
         />
 
         <div style={{ marginTop: 30, fontSize: 29, lineHeight: 1.3, color: "rgba(22, 18, 15, 0.8)" }}>
-          One public feed for everything a startup&apos;s team ships. Follow along for free.
+          A curated community of early startups. Apply to get selected and promoted to fans.
         </div>
       </div>
 
       <div style={{ display: "flex", flex: 1, alignItems: "center", justifyContent: "flex-end", position: "relative" }}>
-        <FanCard />
+        <SpotCard />
         <Sticker style={{ top: -22, left: 0, backgroundColor: lime, transform: "rotate(-9deg)" }}>
-          fan since day one
+          free to join
         </Sticker>
         <Sticker style={{ bottom: -18, right: -22, backgroundColor: sky, transform: "rotate(7deg)" }}>
-          early &gt; everyone
+          apply now
         </Sticker>
       </div>
     </div>,
@@ -88,7 +88,7 @@ export default function OpengraphImage() {
   );
 }
 
-function FanCard() {
+function SpotCard() {
   return (
     <div
       style={{
@@ -104,12 +104,12 @@ function FanCard() {
       }}
     >
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-        <MonoLabel>Official fan club</MonoLabel>
+        <MonoLabel>Selected startup</MonoLabel>
         <Star size={40} />
       </div>
 
       <div style={{ display: "flex", marginTop: 20 }}>
-        <MonoLabel color="rgba(22, 18, 15, 0.6)">Member no.</MonoLabel>
+        <MonoLabel color="rgba(22, 18, 15, 0.6)">Spot no.</MonoLabel>
       </div>
       <div style={{ fontFamily: "Bricolage Grotesque", fontSize: 84, lineHeight: 1 }}>#0001</div>
       <div style={{ marginTop: 6, fontFamily: "Bricolage Grotesque", fontSize: 24 }}>Could be you.</div>
@@ -140,7 +140,7 @@ function FanCard() {
             <div key={index} style={{ width, height: "100%", marginRight: 3, backgroundColor: ink }} />
           ))}
         </div>
-        <MonoLabel size={12}>Early access</MonoLabel>
+        <MonoLabel size={12}>Apply today</MonoLabel>
       </div>
     </div>
   );

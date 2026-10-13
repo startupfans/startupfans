@@ -23,7 +23,7 @@ const geistMono = Geist_Mono({
 // OG/Twitter title, description and url are left unset so each page's own title and description flow into them.
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
-  title: `${SITE_NAME}: get the inside track on startups`,
+  title: `${SITE_NAME}: get your startup in front of fans`,
   description: SITE_DESCRIPTION,
   applicationName: SITE_NAME,
   keywords: [
