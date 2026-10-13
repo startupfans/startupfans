@@ -1,6 +1,13 @@
 "use client";
 
 import { useId, useState } from "react";
+import posthog from "posthog-js";
+
+function captureWaitlistEvent(event: "waitlist_joined" | "waitlist_referral_link_copied") {
+  if (process.env.NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN && process.env.NEXT_PUBLIC_POSTHOG_HOST) {
+    posthog.capture(event);
+  }
+}
 
 const WAITLIST_ID = 33121;
 const SIGNUP_ENDPOINT = "https://api.getwaitlist.com/api/v1/signup";
@@ -47,7 +54,9 @@ export function WaitlistForm() {
 
     setState({ status: "submitting" });
     try {
-      setState({ status: "success", signup: await createSignup(email.trim()) });
+      const signup = await createSignup(email.trim());
+      captureWaitlistEvent("waitlist_joined");
+      setState({ status: "success", signup });
     } catch {
       setState({ status: "error", message: "That didn't go through. Check the email and try again." });
     }
@@ -96,6 +105,7 @@ function SuccessCard({ signup }: { signup: Signup }) {
   async function handleCopy() {
     try {
       await navigator.clipboard.writeText(signup.referral_link);
+      captureWaitlistEvent("waitlist_referral_link_copied");
       setIsCopied(true);
     } catch {
       // Clipboard can be blocked; the link stays visible to copy by hand.

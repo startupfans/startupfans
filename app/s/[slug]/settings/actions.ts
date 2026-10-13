@@ -9,6 +9,7 @@ import { sendEmail } from "@/lib/email";
 import { inviteEmail } from "@/lib/emails/invite";
 import { createStartupInvite, revokeStartupInvite } from "@/lib/invites";
 import { isOptionalHttpsUrl, removeStartupMember, requireStartupOwner, textField, withOwnedStartup } from "@/lib/members";
+import { captureServerEvent } from "@/lib/posthog-server";
 
 function refreshStartup(slug: string) {
   revalidatePath(`/s/${slug}`, "layout");
@@ -62,6 +63,15 @@ export async function updateStartupAction(slug: string, formData: FormData) {
       website: website || null, stage: stage || null, teamSize,
     }).where(eq(startups.id, startup.id));
   });
+  await captureServerEvent({
+    distinctId: user.id,
+    event: "startup_updated",
+    properties: {
+      has_website: Boolean(website),
+      stage: stage || "unspecified",
+      team_size_provided: teamSize !== null,
+    },
+  });
   refreshStartup(slug);
   settingsMessage(slug, "saved");
 }
@@ -88,6 +98,7 @@ export async function removeMemberAction(slug: string, formData: FormData) {
 export async function createInviteAction(slug: string) {
   const { user } = await requireStartupOwner(slug);
   const url = await createStartupInvite(slug, user.id);
+  await captureServerEvent({ distinctId: user.id, event: "startup_invite_created" });
   revalidatePath(`/s/${slug}/settings`);
   return url;
 }
@@ -115,6 +126,7 @@ export async function sendInviteAction(slug: string, formData: FormData) {
     revalidatePath(`/s/${slug}/settings`);
     settingsMessage(slug, "invite-send-failed");
   }
+  await captureServerEvent({ distinctId: user.id, event: "startup_invite_sent" });
   revalidatePath(`/s/${slug}/settings`);
   settingsMessage(slug, "invite-sent");
 }

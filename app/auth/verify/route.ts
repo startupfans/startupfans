@@ -5,6 +5,8 @@ import { redirect } from "next/navigation";
 import { db } from "@/db";
 import { magicLinks, sessions, users } from "@/db/schema";
 import { getSafeNextPath, SESSION_COOKIE_NAME } from "@/lib/auth";
+import { captureServerEvent } from "@/lib/posthog-server";
+import { emitPostHogLog } from "@/lib/posthog-logs";
 
 export async function GET(request: Request) {
   const url = new URL(request.url);
@@ -36,12 +38,19 @@ export async function GET(request: Request) {
 
     const id = randomUUID();
     await tx.insert(sessions).values({ id, userId: user.id, expiresAt });
-    return id;
+    return { id, userId: user.id };
   });
 
   if (!sessionId) redirect(expiredLoginUrl);
 
-  (await cookies()).set(SESSION_COOKIE_NAME, sessionId, {
+  await captureServerEvent({
+    distinctId: sessionId.userId,
+    event: "magic_link_verified",
+    sessionId: sessionId.id,
+  });
+  await emitPostHogLog("magic_link_verified");
+
+  (await cookies()).set(SESSION_COOKIE_NAME, sessionId.id, {
     httpOnly: true,
     sameSite: "lax",
     secure: process.env.NODE_ENV === "production",

@@ -5,6 +5,8 @@ import { redirect } from "next/navigation";
 import { requireUser } from "@/lib/auth";
 import { isValidSlug } from "@/lib/slug";
 import { createStartup } from "@/lib/startups";
+import { captureServerEvent } from "@/lib/posthog-server";
+import { emitPostHogLog } from "@/lib/posthog-logs";
 
 export type CreateStartupState =
   | { status: "idle" }
@@ -76,6 +78,16 @@ export async function createStartupAction(
   if (!startup) {
     return { status: "error", message: "That page address is taken. Try another one." };
   }
+  await captureServerEvent({
+    distinctId: user.id,
+    event: "startup_created",
+    properties: {
+      has_website: Boolean(website),
+      stage: stage || "unspecified",
+      team_size_provided: teamSize !== null,
+    },
+  });
+  await emitPostHogLog("startup_created");
   revalidatePath(`/s/${startup.slug}`);
   redirect(`/s/${startup.slug}`);
 }

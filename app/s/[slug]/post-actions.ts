@@ -9,6 +9,8 @@ import { isAdmin } from "@/lib/admin";
 import { getCurrentUser, isValidSessionId } from "@/lib/auth";
 import { isStartupMediaUrl } from "@/lib/posts";
 import { submitPostReport } from "@/lib/reports";
+import { captureServerEvent } from "@/lib/posthog-server";
+import { emitPostHogLog } from "@/lib/posthog-logs";
 
 export type PostActionState =
   | { status: "idle" }
@@ -66,6 +68,15 @@ export async function createPost(
     console.error("[startupfans] Could not create post.", error);
     return { status: "error", message: "We couldn't publish your update. Try again." };
   }
+  await captureServerEvent({
+    distinctId: user.id,
+    event: "post_created",
+    properties: {
+      attachment_type: attachmentType,
+      has_attachment: Boolean(mediaUrl),
+    },
+  });
+  await emitPostHogLog("post_created");
   revalidatePath(`/s/${slug}`);
   revalidatePath(`/s/${slug}/p/${postId}`);
   return { status: "success" };
@@ -108,6 +119,11 @@ export async function deletePost(
     console.error("[startupfans] Could not delete post.", error);
     return { status: "error", message: "We couldn't delete this post. Try again." };
   }
+  await captureServerEvent({
+    distinctId: user.id,
+    event: "post_deleted",
+    properties: { deleted_by_admin: isAdmin(user) },
+  });
   revalidatePath(`/s/${slug}`);
   revalidatePath(`/s/${slug}/p/${postId}`);
   revalidatePath("/feed");

@@ -1,6 +1,61 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import posthog from "posthog-js";
+
+type PostHogIdentifyProps = {
+  user: {
+    id: string;
+    email: string;
+    name: string | null;
+  } | null;
+};
+
+type SignOutButtonProps = {
+  action: () => Promise<void>;
+};
+
+export function PostHogIdentify({ user }: PostHogIdentifyProps) {
+  const identifiedUserId = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (!user) {
+      identifiedUserId.current = null;
+      return;
+    }
+    if (identifiedUserId.current === user.id) return;
+    if (!process.env.NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN || !process.env.NEXT_PUBLIC_POSTHOG_HOST) return;
+
+    posthog.identify(user.id, {
+      email: user.email,
+      name: user.name ?? undefined,
+    });
+    identifiedUserId.current = user.id;
+  }, [user]);
+
+  return null;
+}
+
+export function SignOutButton({ action }: SignOutButtonProps) {
+  return (
+    <form
+      action={action}
+      className="mt-8"
+      onSubmit={() => {
+        if (process.env.NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN && process.env.NEXT_PUBLIC_POSTHOG_HOST) {
+          posthog.reset();
+        }
+      }}
+    >
+      <button
+        type="submit"
+        className="min-h-11 w-full rounded-xl border-[3px] border-ink bg-white px-5 py-3 font-display font-extrabold shadow-sticker transition hover:-translate-y-0.5 active:translate-y-0 active:shadow-none sm:w-auto"
+      >
+        Sign out
+      </button>
+    </form>
+  );
+}
 
 export function CopyMagicLinkButton({ link }: { link: string }) {
   const [message, setMessage] = useState("");

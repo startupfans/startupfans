@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { requireUser } from "@/lib/auth";
 import { followStartup, unfollowStartup } from "@/lib/follows";
 import { getStartupBySlug } from "@/lib/startups";
+import { captureServerEvent } from "@/lib/posthog-server";
 
 export type FollowState =
   | { status: "idle" }
@@ -39,6 +40,10 @@ export async function updateFollow(
     console.error("[startupfans] Could not update follow.", error);
     return { status: "error", message: "We couldn't update your fan pass. Try again." };
   }
+  await captureServerEvent({
+    distinctId: user.id,
+    event: intent === "follow" ? "startup_followed" : "startup_unfollowed",
+  });
   revalidatePath(`/s/${slug}`);
   return { status: "success" };
 }

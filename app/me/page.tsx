@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { SiteFooter, TopNav } from "@/app/components/sticker";
+import { SignOutButton } from "@/app/login/dev-inbox";
 import { requireUser, signOut } from "@/lib/auth";
 import { getFollowedStartups } from "@/lib/members";
 import { updateProfileAction } from "./actions";
@@ -41,14 +42,7 @@ async function MePage({ searchParams }: { searchParams: Promise<{ message?: stri
           <button type="submit" className="min-h-11 w-full rounded-xl border-[3px] border-ink bg-lime px-5 py-3 font-bold shadow-sticker sm:w-auto">Save profile</button>
         </form>
         <p className="mt-4 text-sm text-ink/70">Your name and avatar are public. Without a name, we show the first part of your email.</p>
-        <form action={signOut} className="mt-8">
-          <button
-            type="submit"
-            className="min-h-11 w-full rounded-xl border-[3px] border-ink bg-white px-5 py-3 font-display font-extrabold shadow-sticker transition hover:-translate-y-0.5 active:translate-y-0 active:shadow-none sm:w-auto"
-          >
-            Sign out
-          </button>
-        </form>
+        <SignOutButton action={signOut} />
       </section>
       <section className="mt-10 rounded-3xl border-[3px] border-ink bg-cream p-6 shadow-sticker-lg sm:p-10" aria-labelledby="following-heading">
         <h2 id="following-heading" className="font-display text-2xl font-extrabold">Your fan clubs</h2>
