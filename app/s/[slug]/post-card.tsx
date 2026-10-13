@@ -8,20 +8,12 @@ import { PostMedia } from "@/app/components/post-media";
 import { isAdmin } from "@/lib/admin";
 import { getCurrentUser } from "@/lib/auth";
 import type { PublicPost } from "@/lib/posts";
+import { relativeDate } from "@/lib/relative-date";
 import { DeletePostButton } from "./composer";
 import { RepliesPanel } from "./replies-panel";
 import { reportPost } from "./post-actions";
 
-export function relativeDate(date: Date) {
-  const seconds = Math.max(0, Math.floor((Date.now() - date.getTime()) / 1000));
-  if (seconds < 60) return "just now";
-  const formatter = new Intl.RelativeTimeFormat("en", { numeric: "auto" });
-  if (seconds < 3600) return formatter.format(-Math.floor(seconds / 60), "minute");
-  if (seconds < 86400) return formatter.format(-Math.floor(seconds / 3600), "hour");
-  if (seconds < 2592000) return formatter.format(-Math.floor(seconds / 86400), "day");
-  if (seconds < 31536000) return formatter.format(-Math.floor(seconds / 2592000), "month");
-  return formatter.format(-Math.floor(seconds / 31536000), "year");
-}
+export { relativeDate } from "@/lib/relative-date";
 
 export async function PostCard({ post, showStartup = false, canDelete = false, onPostPage = false }: {
   post: PublicPost;

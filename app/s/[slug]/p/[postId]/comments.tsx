@@ -1,10 +1,11 @@
 "use client";
 
-import { useActionState, useId, useState } from "react";
+import { useActionState, useEffect, useId, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import type { PublicComment, ReplyComment } from "@/lib/comments";
-import { LikeButton } from "./like-button";
+import { LikeButton, type LikeState } from "./like-button";
+import { relativeDate } from "@/lib/relative-date";
 import { SubmitButton } from "@/app/components/submit-button";
 import { ConfirmSubmit } from "@/app/components/confirm-dialog";
 import { postIconButtonClass, TrashIcon } from "@/app/components/icons";
@@ -80,18 +81,17 @@ export function DeleteCommentButton({ slug, postId, commentId, onDeleted }: { sl
   );
 }
 
-function commentDate(date: Date) {
-  const seconds = Math.max(0, Math.floor((Date.now() - date.getTime()) / 1000));
-  if (seconds < 60) return "just now";
-  const formatter = new Intl.RelativeTimeFormat("en", { numeric: "auto" });
-  if (seconds < 3600) return formatter.format(-Math.floor(seconds / 60), "minute");
-  if (seconds < 86400) return formatter.format(-Math.floor(seconds / 3600), "hour");
-  if (seconds < 2592000) return formatter.format(-Math.floor(seconds / 86400), "day");
-  if (seconds < 31536000) return formatter.format(-Math.floor(seconds / 2592000), "month");
-  return formatter.format(-Math.floor(seconds / 31536000), "year");
+export function CommentTime({ dateTime }: { dateTime: string }) {
+  const [label, setLabel] = useState<string | null>(null);
+  const absoluteDate = new Date(dateTime).toLocaleString("en-GB", { timeZone: "UTC" });
+  useEffect(() => {
+    const frame = requestAnimationFrame(() => setLabel(relativeDate(new Date(dateTime))));
+    return () => cancelAnimationFrame(frame);
+  }, [dateTime]);
+  return <time dateTime={dateTime} title={absoluteDate}>{label ?? absoluteDate}</time>;
 }
 
-export function CommentContent({ comment, slug, postId, canDelete, canReply, signedIn, onReplied, onDeleted }: {
+export function CommentContent({ comment, slug, postId, canDelete, canReply, signedIn, onReplied, onDeleted, onLiked }: {
   comment: PublicComment | ReplyComment;
   slug: string;
   postId: string;
@@ -100,6 +100,7 @@ export function CommentContent({ comment, slug, postId, canDelete, canReply, sig
   signedIn: boolean;
   onReplied?: () => void;
   onDeleted?: () => void;
+  onLiked?: (commentId: string, result: LikeState) => void;
 }) {
   const createdAt = new Date(comment.createdAt);
   return (
@@ -112,7 +113,7 @@ export function CommentContent({ comment, slug, postId, canDelete, canReply, sig
           </span>
         )}
         <span className="min-w-0 max-w-full break-words font-bold text-ink">{comment.displayName}</span>
-        <time dateTime={createdAt.toISOString()} title={createdAt.toLocaleString("en-GB", { timeZone: "UTC" })}>{commentDate(createdAt)}</time>
+        <CommentTime key={createdAt.toISOString()} dateTime={createdAt.toISOString()} />
         {canDelete && <div className="ml-auto">
           <DeleteCommentButton slug={slug} postId={postId} commentId={comment.id} onDeleted={onDeleted} />
         </div>}
@@ -120,14 +121,14 @@ export function CommentContent({ comment, slug, postId, canDelete, canReply, sig
       <p className="mt-3 whitespace-pre-wrap break-words text-sm leading-relaxed">{comment.body}</p>
       <div className="mt-2 flex flex-wrap items-center gap-3">
         <LikeButton commentId={comment.id} count={comment.likeCount} liked={comment.liked}
-          signedIn={signedIn} postUrl={`/s/${slug}/p/${postId}`} />
+          signedIn={signedIn} postUrl={`/s/${slug}/p/${postId}`} onLiked={onLiked} />
         {canReply && <InlineReply slug={slug} postId={postId} commentId={comment.id} onReplied={onReplied} />}
       </div>
     </article>
   );
 }
 
-export function CommentList({ comments, slug, postId, viewerId, canReply, canModerate, onReplied, onDeleted }: {
+export function CommentList({ comments, slug, postId, viewerId, canReply, canModerate, onReplied, onDeleted, onLiked }: {
   comments: (PublicComment | ReplyComment)[];
   slug: string;
   postId: string;
@@ -136,6 +137,7 @@ export function CommentList({ comments, slug, postId, viewerId, canReply, canMod
   canModerate: boolean;
   onReplied?: () => void;
   onDeleted?: () => void;
+  onLiked?: (commentId: string, result: LikeState) => void;
 }) {
   const threads = new Map<string, { parent: PublicComment | ReplyComment | null; replies: (PublicComment | ReplyComment)[] }>();
   for (const comment of comments) {
@@ -145,7 +147,7 @@ export function CommentList({ comments, slug, postId, viewerId, canReply, canMod
     else thread.replies.push(comment);
     threads.set(threadId, thread);
   }
-  const shared = { slug, postId, signedIn: viewerId !== null, onReplied, onDeleted };
+  const shared = { slug, postId, signedIn: viewerId !== null, onReplied, onDeleted, onLiked };
   const canDelete = (comment: PublicComment | ReplyComment) => canModerate || viewerId === comment.userId;
   return comments.length === 0 ? <p className="mt-4 text-ink/60">No replies yet.</p> : (
     <ol className="mt-4 space-y-4">

@@ -5,6 +5,7 @@ import { useCallback, useEffect, useId, useRef, useState, type ReactNode } from 
 import { ReplyIcon, postIconButtonClass } from "@/app/components/icons";
 import type { RepliesPreview, ReplyComment } from "@/lib/comments";
 import { CommentList, ReplyComposer } from "./p/[postId]/comments";
+import type { LikeState } from "./p/[postId]/like-button";
 
 function isComment(value: unknown): value is ReplyComment {
   return typeof value === "object" && value !== null
@@ -48,6 +49,7 @@ export function RepliesPanel({ slug, postId, snapshot, onPostPage, children }: {
 
   const refresh = useCallback(async (signal?: AbortSignal) => {
     const id = ++requestId.current;
+    setLoading(true);
     try {
       const response = await fetch(`/api/posts/${postId}/replies?limit=3`, { cache: "no-store", signal });
       if (!response.ok) throw new Error("Replies unavailable");
@@ -76,15 +78,22 @@ export function RepliesPanel({ slug, postId, snapshot, onPostPage, children }: {
   }, [open, onPostPage, refresh, snapshot]);
 
   function replied() {
-    setLoading(true);
     setCount((current) => current + 1);
     void refresh();
   }
 
   function deleted() {
-    setLoading(true);
     setCount((current) => Math.max(0, current - 1));
     void refresh();
+  }
+
+  function liked(commentId: string, result: LikeState) {
+    setPreview((current) => current && {
+      ...current,
+      comments: current.comments.map((comment) => comment.id === commentId
+        ? { ...comment, liked: result.liked, likeCount: result.count }
+        : comment),
+    });
   }
 
   const shownCount = onPostPage || !open ? snapshot.replyCount : count;
@@ -96,22 +105,26 @@ export function RepliesPanel({ slug, postId, snapshot, onPostPage, children }: {
     <footer className="relative mt-3 flex items-start justify-between gap-2">
       {onPostPage ? <Link href={`${postUrl}#replies`} title={label} aria-label={label} className={buttonClass}>{bubble}</Link> : (
         <button type="button" title={label} aria-label={label} aria-expanded={open} aria-controls={panelId}
-          className={buttonClass} onClick={() => { setLoading(true); setError(""); setOpen((current) => !current); }}>{bubble}</button>
+          className={buttonClass} onClick={() => {
+            if (open) { requestId.current++; setLoading(false); }
+            setError("");
+            setOpen((current) => !current);
+          }}>{bubble}</button>
       )}
       <div className="ml-auto flex min-w-0 flex-wrap justify-end gap-2">{children}</div>
     </footer>
-    {!onPostPage && <section id={panelId} hidden={!open} aria-labelledby={headingId} aria-busy={loading}
+    {!onPostPage && <section id={panelId} hidden={!open} aria-labelledby={headingId} aria-busy={open && loading}
       className="mt-5 min-w-0 border-t-2 border-ink/20 pt-4">
       {open && <>
         <h2 id={headingId} className="font-display text-xl font-extrabold">Replies <span className="text-ink/60">({count})</span></h2>
         {loading && !preview && <p role="status" className="mt-4 text-sm text-ink/60">Loading replies…</p>}
         {error && <div role="alert" className="mt-4 text-sm">
           <p>{error}</p>
-          <button type="button" onClick={() => { setLoading(true); setError(""); void refresh(); }} className="min-h-11 py-2 font-semibold underline">Try again</button>
+          <button type="button" onClick={() => { setError(""); void refresh(); }} className="min-h-11 py-2 font-semibold underline">Try again</button>
         </div>}
         {preview && <>
           <CommentList comments={preview.comments} slug={slug} postId={postId} viewerId={preview.viewerId}
-            canReply={preview.canReply} canModerate={preview.canModerate} onReplied={replied} onDeleted={deleted} />
+            canReply={preview.canReply} canModerate={preview.canModerate} onReplied={replied} onDeleted={deleted} onLiked={liked} />
           {preview.hasMore && <Link href={`${postUrl}#replies`} className="mt-4 inline-flex min-h-11 items-center py-2 font-semibold underline underline-offset-4">
             View all {count} replies
           </Link>}

@@ -5,7 +5,7 @@ import { useEffect, useId, useOptimistic, useRef, useState, useTransition, type 
 import { HeartIcon } from "@/app/components/icons";
 import { toggleCommentLike } from "./comment-actions";
 
-type LikeState = { liked: boolean; count: number };
+export type LikeState = { liked: boolean; count: number };
 type BurstHeart = {
   color: string;
   style: CSSProperties & { "--heart-x": string; "--heart-y": string; "--heart-rotation": string };
@@ -13,14 +13,21 @@ type BurstHeart = {
 
 const buttonClass = "group relative inline-flex min-h-11 min-w-11 items-center justify-center gap-1 rounded-full px-1 text-sm font-semibold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink disabled:cursor-wait";
 
-export function LikeButton({ commentId, count, liked, signedIn, postUrl }: {
+export function LikeButton({ commentId, count, liked, signedIn, postUrl, onLiked }: {
   commentId: string;
   count: number;
   liked: boolean;
   signedIn: boolean;
   postUrl: string;
+  onLiked?: (commentId: string, result: LikeState) => void;
 }) {
-  const [optimistic, setOptimistic] = useOptimistic({ liked, count }, (_current: LikeState, next: LikeState) => next);
+  const [committed, setCommitted] = useState({ liked, count });
+  const [previousProps, setPreviousProps] = useState({ liked, count });
+  if (previousProps.liked !== liked || previousProps.count !== count) {
+    setPreviousProps({ liked, count });
+    setCommitted({ liked, count });
+  }
+  const [optimistic, setOptimistic] = useOptimistic(committed, (_current: LikeState, next: LikeState) => next);
   const [pending, startTransition] = useTransition();
   const inFlight = useRef(false);
   const [error, setError] = useState("");
@@ -57,7 +64,9 @@ export function LikeButton({ commentId, count, liked, signedIn, postUrl }: {
     startTransition(async () => {
       setOptimistic({ liked: nextLiked, count: Math.max(0, optimistic.count + (nextLiked ? 1 : -1)) });
       try {
-        await toggleCommentLike(commentId, nextLiked);
+        const result = await toggleCommentLike(commentId, nextLiked);
+        setCommitted(result);
+        onLiked?.(commentId, result);
       } catch {
         setError("We couldn't update your like. Try again in a little while.");
         setBurst(0);
