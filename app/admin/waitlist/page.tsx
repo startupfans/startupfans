@@ -1,0 +1,99 @@
+import Link from "next/link";
+import { SiteFooter, TopNav } from "@/app/components/sticker";
+import { requireAdmin } from "@/lib/admin";
+import { listWaitlist, MAX_WAITLIST_BATCH } from "@/lib/waitlist";
+import { letInEntryAction, letInFirstAction, resendEntryAction, syncWaitlistAction } from "./actions";
+import { WaitlistUpload } from "./upload";
+
+const buttonClass = "inline-flex min-h-11 items-center justify-center rounded-xl border-2 border-ink px-4 py-2 font-bold";
+const dateFormat = new Intl.DateTimeFormat("en-GB", {
+  dateStyle: "medium", timeStyle: "short", timeZone: "UTC",
+});
+
+function dateLabel(value: Date | null) {
+  return value ? dateFormat.format(value) : "Unknown";
+}
+
+export async function WaitlistPage({ searchParams }: {
+  searchParams: Promise<{ message?: string | string[] }>
+}) {
+  await requireAdmin();
+  const [entries, query] = await Promise.all([listWaitlist(), searchParams]);
+  const counts = { waiting: 0, invited: 0, joined: 0 };
+  for (const entry of entries) counts[entry.status]++;
+  const message = typeof query.message === "string" ? query.message.slice(0, 1000) : null;
+  return (
+    <main className="mx-auto min-h-screen min-w-0 max-w-6xl break-words px-5 py-10 sm:py-16">
+      <TopNav signedIn next="/admin/waitlist" />
+      <Link href="/admin" className="mt-8 inline-flex min-h-11 items-center font-bold underline underline-offset-4">Post reports</Link>
+      <h1 className="mt-5 font-display text-4xl font-extrabold">Waitlist</h1>
+      <dl className="mt-6 flex flex-wrap gap-4">
+        {(["waiting", "invited", "joined"] as const).map((status) => (
+          <div key={status} className="rounded-xl border-[3px] border-ink bg-sun px-5 py-3 shadow-sticker">
+            <dt className="capitalize">{status}</dt><dd className="font-display text-3xl font-extrabold">{counts[status]}</dd>
+          </div>
+        ))}
+      </dl>
+      {message && <p role="status" className="mt-6 rounded-xl border-2 border-ink bg-lime p-4">{message}</p>}
+      <section aria-label="Manage waitlist" className="mt-8 grid min-w-0 gap-6 rounded-2xl border-[3px] border-ink bg-white p-5 shadow-sticker sm:p-6 lg:grid-cols-2">
+        <div className="space-y-6">
+          <form action={letInFirstAction} className="space-y-3">
+            <label htmlFor="waitlist-count" className="block font-bold">Let in the first N waiting</label>
+            <div className="flex flex-wrap gap-3">
+              <input id="waitlist-count" name="count" type="number" min={1} max={MAX_WAITLIST_BATCH}
+                step={1} defaultValue={10} required className="min-h-11 w-24 rounded-xl border-2 border-ink bg-cream px-3 py-2" />
+              <button type="submit" className={`${buttonClass} bg-lime`}>Let in</button>
+            </div>
+            <p className="text-sm">Up to 50 at a time, in signup order. Team members are skipped.</p>
+          </form>
+          {process.env.GETWAITLIST_API_KEY && <form action={syncWaitlistAction}>
+            <button type="submit" className={`${buttonClass} bg-sun`}>Sync from GetWaitlist</button>
+          </form>}
+        </div>
+        <WaitlistUpload />
+      </section>
+      <p className="mt-8 text-sm">Dates are shown in UTC. Unverified signups can still be let in.</p>
+      <div className="mt-3 overflow-x-auto rounded-2xl border-[3px] border-ink bg-white shadow-sticker">
+        <table className="w-full min-w-[640px] table-fixed text-left text-sm">
+          <caption className="sr-only">Waitlist entries in signup order</caption>
+          <thead className="border-b-2 border-ink bg-sky">
+            <tr>{["Email", "Position", "Signed up", "Status", "Actions"].map((heading) =>
+              <th key={heading} scope="col" className="px-3 py-4 font-bold">{heading}</th>)}</tr>
+          </thead>
+          <tbody>
+            {entries.map((entry) => (
+              <tr key={entry.id} className="border-b-2 border-ink/20 last:border-b-0">
+                <td className="break-all px-3 py-4">
+                  {entry.email}
+                  {entry.verified === false && <span className="mt-2 block w-fit rounded-lg border border-ink bg-sun px-2 py-1 text-xs font-bold">Unverified</span>}
+                </td>
+                <td className="px-3 py-4">{entry.position ?? "Unknown"}</td>
+                <td className="px-3 py-4">{dateLabel(entry.signedUpAt)}</td>
+                <td className="px-3 py-4">
+                  {entry.status === "waiting" && "Waiting"}
+                  {entry.status === "invited" && <>Invited {dateLabel(entry.invitedAt)}</>}
+                  {entry.status === "joined" && <>Joined {dateLabel(entry.joinedAt)}
+                    {entry.user && <a href={`mailto:${entry.user.email}`} className="mt-2 block break-all font-bold underline underline-offset-4">
+                      {entry.user.name || entry.user.email}
+                    </a>}
+                  </>}
+                </td>
+                <td className="px-3 py-4">
+                  <form action={entry.invitedAt ? resendEntryAction.bind(null, entry.id) : letInEntryAction.bind(null, entry.id)}>
+                    <button type="submit" className={`${buttonClass} ${entry.invitedAt ? "bg-cream" : "bg-lime"}`}>
+                      {entry.invitedAt ? "Resend" : "Let in"}
+                    </button>
+                  </form>
+                </td>
+              </tr>
+            ))}
+            {entries.length === 0 && <tr><td colSpan={5} className="p-6">No entries yet. Import a CSV or sync from GetWaitlist.</td></tr>}
+          </tbody>
+        </table>
+      </div>
+      <SiteFooter />
+    </main>
+  );
+}
+
+export { WaitlistPage as default };

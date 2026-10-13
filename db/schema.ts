@@ -44,6 +44,22 @@ export const magicLinks = pgTable("magic_links", {
   usedAt: timestamp("used_at", { withTimezone: true }),
 });
 
+export const waitlistEntries = pgTable("waitlist_entries", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  email: text("email").notNull().unique(),
+  source: text("source", { enum: ["csv", "getwaitlist"] }).notNull(),
+  position: integer("position"),
+  signedUpAt: timestamp("signed_up_at", { withTimezone: true }),
+  verified: boolean("verified"),
+  invitedAt: timestamp("invited_at", { withTimezone: true }),
+  joinedUserId: uuid("joined_user_id").references(() => users.id, { onDelete: "set null" }),
+  joinedAt: timestamp("joined_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [
+  check("waitlist_entries_source_check", sql`${table.source} in ('csv', 'getwaitlist')`),
+  index("waitlist_entries_order_idx").on(table.position, table.signedUpAt),
+]);
+
 export const startups = pgTable("startups", {
   id: uuid("id").primaryKey().defaultRandom(),
   slug: text("slug").notNull().unique(),
