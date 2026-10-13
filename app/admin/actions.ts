@@ -1,8 +1,11 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { eq } from "drizzle-orm";
 import { notFound, redirect } from "next/navigation";
-import { deletePostAsAdmin, deleteStartupAsAdmin, requireAdmin } from "@/lib/admin";
+import { startups } from "@/db/schema";
+import { deletePostAsAdmin, requireAdmin } from "@/lib/admin";
+import { requireStartupOwner, withOwnedStartup } from "@/lib/members";
 import { resolvePostReports } from "@/lib/reports";
 
 export async function resolveReportsAction(postId: string) {
@@ -21,12 +24,15 @@ export async function deleteReportedPostAction(postId: string, formData: FormDat
 }
 
 export async function deleteStartupAction(slug: string, formData: FormData) {
-  await requireAdmin();
+  if (typeof slug !== "string" || !/^[a-z0-9-]{1,40}$/.test(slug)) notFound();
+  const { user } = await requireStartupOwner(slug);
   if (formData.get("confirm") !== "delete") notFound();
-  const startup = await deleteStartupAsAdmin(slug);
-  revalidatePath(`/s/${startup.slug}`, "layout");
+  await withOwnedStartup(slug, user.id, async (tx, startup) => {
+    await tx.delete(startups).where(eq(startups.id, startup.id));
+  });
+  revalidatePath(`/s/${slug}`, "layout");
   revalidatePath("/feed");
   revalidatePath("/me");
   revalidatePath("/admin");
-  redirect("/feed");
+  redirect("/me?message=startup-deleted");
 }

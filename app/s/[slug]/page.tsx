@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { AdminDeleteStartup, SectionHeading, SiteFooter, TopNav } from "@/app/components/sticker";
+import { SectionHeading, SiteFooter, TopNav } from "@/app/components/sticker";
 import { SubNav } from "@/app/components/sub-nav";
 import { isAdmin } from "@/lib/admin";
 import { getCurrentUser } from "@/lib/auth";
@@ -76,7 +76,6 @@ async function StartupPage({ params }: StartupPageProps) {
           <p className="mt-3 text-sm text-ink/70">Everyone on the team posts here.</p>
           <Link href={`/s/${slug}/team`} className="mt-2 inline-flex min-h-11 items-center py-2 font-bold underline underline-offset-4">Meet the team</Link>
         </div>
-        <AdminDeleteStartup slug={slug} />
       </ProfileHeader>
       <section className="mx-auto mt-14 max-w-3xl" aria-label="Startup updates">
         <SectionHeading eyebrow="From the team" title="The latest." />

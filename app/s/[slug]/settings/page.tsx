@@ -13,6 +13,7 @@ import { getSlackConnection, isSlackConfigured } from "@/lib/slack";
 import { clearExpiredInvitesAction, disconnectSlackAction, removeMemberAction, revokeInviteAction, setMemberRoleAction, updateStartupAction } from "./actions";
 import { InviteByEmail, InviteLink } from "./invite-link";
 import { BioField, ImageUpload } from "./image-upload";
+import { DangerZone } from "./danger-zone";
 import { socialNetworks, type SocialNetwork } from "@/lib/socials";
 
 const socialIcons = {
@@ -211,6 +212,7 @@ async function SettingsPage({ params, searchParams }: {
           </ul>
         )}
       </section>
+      <DangerZone slug={slug} />
     </main>
   );
 }

@@ -15,6 +15,7 @@ const messages = new Map([
   ["name-too-long", "Use up to 60 characters for your name."],
   ["invalid-avatar", "Upload your own avatar or use a full https:// image address."],
   ["saved", "Profile saved."],
+  ["startup-deleted", "Startup deleted."],
 ]);
 
 async function MePage({ searchParams }: { searchParams: Promise<{ message?: string | string[] }> }) {

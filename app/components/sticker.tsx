@@ -1,9 +1,7 @@
-import { ConfirmSubmit } from "@/app/components/confirm-dialog";
 import type { ReactNode } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { AdminLink } from "./admin-link";
-import { deleteStartupAction } from "@/app/admin/actions";
 import { isAdmin } from "@/lib/admin";
 import { getCurrentUser } from "@/lib/auth";
 
@@ -33,18 +31,6 @@ export function SiteFooter() {
       <p>startupfans · for people who like things early · keep it real, keep it legal, no spam</p>
       <a href={`mailto:${contact}`} className="mt-2 inline-flex min-h-11 items-center py-2 underline underline-offset-4">Contact us for takedowns</a>
     </footer>
-  );
-}
-
-export async function AdminDeleteStartup({ slug }: { slug: string }) {
-  if (!isAdmin(await getCurrentUser())) return null;
-  return (
-    <form action={deleteStartupAction.bind(null, slug)} className="mt-6 min-w-0 break-words text-sm">
-      <input type="hidden" name="confirm" value="delete" />
-      <ConfirmSubmit pendingLabel="Deleting…" className="min-h-11 w-full rounded-xl border-2 border-ink bg-pink px-4 py-2 font-bold sm:w-auto"
-        description={`This permanently deletes ${slug}, its posts, reports, team memberships and follows.`}
-        confirmLabel="Yes, delete">Delete startup</ConfirmSubmit>
-    </form>
   );
 }
 
