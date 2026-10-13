@@ -30,13 +30,13 @@ export function ProfileHeader({ startup, followPanel, isOwner, children }: {
   });
 
   return (
-    <section className="relative mt-10 rounded-3xl border-[3px] border-ink bg-white shadow-sticker-lg" aria-labelledby="startup-name">
-      <div className="relative aspect-[3/1] overflow-hidden rounded-t-[21px] border-b-[3px] border-ink bg-cream shadow-sticker"
+    <section className="relative mt-10 overflow-hidden rounded-3xl border-[3px] border-ink bg-white shadow-sticker-lg" aria-labelledby="startup-name">
+      <div className={`relative overflow-hidden border-b-[3px] border-ink bg-sky ${startup.coverUrl ? "aspect-[3/1] max-h-72" : "h-28 sm:h-36 lg:h-44"}`}
         style={startup.coverUrl ? undefined : { backgroundImage: "radial-gradient(circle, #19191926 1.5px, transparent 1.5px)", backgroundSize: "18px 18px" }}>
-        {startup.coverUrl && <Image src={startup.coverUrl} alt={`${startup.name} cover`} fill unoptimized
+        {startup.coverUrl && <Image src={startup.coverUrl} alt="" fill unoptimized
           sizes="(max-width: 1152px) 100vw, 1152px" className="object-cover" />}
       </div>
-      <Star className="pointer-events-none absolute -top-6 right-5 h-12 w-12 rotate-12 text-sun" />
+      <Star className="pointer-events-none absolute top-4 right-5 h-12 w-12 rotate-12 text-sun" />
       <div className="relative px-6 pb-6 sm:px-10 sm:pb-10">
         <div className="relative -mt-14 mb-6 w-28">
           {startup.logoUrl ? <Image src={startup.logoUrl} alt={`${startup.name} logo`} width={112} height={112} unoptimized

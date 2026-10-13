@@ -43,36 +43,33 @@ export function ImageUpload({ name, label, slug, initialUrl = "", creatorId }: {
   useEffect(() => () => { if (preview) URL.revokeObjectURL(preview); }, [preview]);
   useEffect(() => {
     const form = fileInput.current?.form;
-    function blockIncompleteUpload(event: SubmitEvent) {
+    function checkImageBeforeSubmit(event: SubmitEvent) {
+      const input = form?.elements.namedItem("slug");
+      const targetSlug = slug ?? (input instanceof HTMLInputElement ? input.value.trim() : "");
+      if (uploadedSlug.current && targetSlug !== uploadedSlug.current) {
+        event.preventDefault();
+        event.stopPropagation();
+        controller.current?.abort();
+        controller.current = null;
+        uploadedSlug.current = null;
+        setUploading(false);
+        setConverting(false);
+        setProgress(0);
+        setUrl("");
+        setPreview(null);
+        setError(`Your page address changed. Upload the ${label.toLowerCase()} again for this address or save without it.`);
+        return;
+      }
       if (!controller.current) return;
       event.preventDefault();
       event.stopPropagation();
       setError("Wait for the image upload to finish or remove it before saving.");
     }
-    function addressChanged(event: Event) {
-      if (slug || !(event.target instanceof HTMLInputElement)
-        || !["name", "slug"].includes(event.target.name)) return;
-      queueMicrotask(() => {
-        const input = form?.elements.namedItem("slug");
-        if (input instanceof HTMLInputElement && uploadedSlug.current && input.value.trim() !== uploadedSlug.current) {
-          controller.current?.abort();
-          controller.current = null;
-          uploadedSlug.current = null;
-          setUploading(false);
-          setConverting(false);
-          setUrl("");
-          setPreview(null);
-          setError("Your page address changed. Upload the logo again for this address.");
-        }
-      });
-    }
-    form?.addEventListener("submit", blockIncompleteUpload, true);
-    form?.addEventListener("input", addressChanged);
+    form?.addEventListener("submit", checkImageBeforeSubmit, true);
     return () => {
-      form?.removeEventListener("submit", blockIncompleteUpload, true);
-      form?.removeEventListener("input", addressChanged);
+      form?.removeEventListener("submit", checkImageBeforeSubmit, true);
     };
-  }, [slug]);
+  }, [slug, label]);
 
   function removeImage() {
     controller.current?.abort();

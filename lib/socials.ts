@@ -23,8 +23,11 @@ const hosts = {
 function profileUrl(network: SocialNetwork, input: string) {
   try {
     const url = new URL(input);
+    const hostname = url.hostname.replace(/^www\./, "");
+    const validHost = hosts[network].includes(hostname)
+      || (network === "linkedin" && hostname.endsWith(".linkedin.com"));
     if (!input.startsWith("https://") || url.protocol !== "https:" || url.username || url.password || url.port
-      || !hosts[network].includes(url.hostname.replace(/^www\./, ""))) return null;
+      || !validHost) return null;
     return url;
   } catch {
     return null;
