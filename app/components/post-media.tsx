@@ -1,4 +1,3 @@
-import Image from "next/image";
 import { getMediaFormat } from "@/lib/media";
 
 export function PostMedia({ mediaUrl, mediaType, mediaPosterUrl }: {
@@ -10,15 +9,14 @@ export function PostMedia({ mediaUrl, mediaType, mediaPosterUrl }: {
   const contentType = getMediaFormat(new URL(mediaUrl).pathname)?.contentType;
 
   return (
-    <div className="mt-3 min-w-0 max-w-full overflow-hidden rounded-2xl border-[3px] border-ink bg-cream shadow-sticker">
+    <div className="mt-3 min-w-0 max-w-full overflow-hidden rounded-2xl border-[3px] border-ink bg-ink shadow-sticker">
       {mediaType === "image" ? (
-        <Image src={mediaUrl} alt="Post attachment" width={1200} height={1200}
-          unoptimized={contentType === "image/gif"}
-          sizes="(max-width: 768px) calc(100vw - 86px), 680px"
-          className="mx-auto h-auto max-h-[70vh] w-auto max-w-full object-contain" />
+        // eslint-disable-next-line @next/next/no-img-element -- Post dimensions are unknown; let the image establish its intrinsic ratio.
+        <img src={mediaUrl} alt="Post attachment" loading="lazy" decoding="async"
+          className="block h-auto max-h-[85vh] w-full object-contain" />
       ) : (
         <video poster={mediaPosterUrl ?? undefined} controls playsInline preload="metadata"
-          className="mx-auto max-h-[70vh] w-full object-contain" aria-label="Post video attachment">
+          className="block h-auto max-h-[85vh] w-full object-contain" aria-label="Post video attachment">
           {contentType === "video/quicktime" && <source src={mediaUrl} type="video/quicktime" />}
           <source src={mediaUrl} />
         </video>
