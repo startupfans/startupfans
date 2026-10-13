@@ -1,6 +1,7 @@
 import { SubmitButton } from "@/app/components/submit-button";
 import { TopNav } from "@/app/components/sticker";
 import { SubNav } from "@/app/components/sub-nav";
+import { ConfirmSubmit } from "@/app/components/confirm-dialog";
 import Image from "next/image";
 import type { ReactNode } from "react";
 import { IconField } from "@/app/components/icon-field";
@@ -85,7 +86,9 @@ async function SettingsPage({ params, searchParams }: {
             <p className="mt-2">React with 📣 to post. Messages become public on your startup page.</p>
             <p className="mt-2 text-sm text-ink/70">Invite startupfans to the channels you want to publish from.</p>
             <form action={disconnectSlackAction.bind(null, slug)} className="mt-5">
-              <SubmitButton pendingLabel="Disconnecting…" className={buttonClass}>Disconnect</SubmitButton>
+              <ConfirmSubmit pendingLabel="Disconnecting…" className={buttonClass}
+                description={`This disconnects ${slackConnection.workspaceName} from this startup. Existing posts stay published.`}
+                confirmLabel="Yes, disconnect">Disconnect</ConfirmSubmit>
             </form>
           </>
         ) : (
@@ -165,7 +168,9 @@ async function SettingsPage({ params, searchParams }: {
                     </form>
                     <form action={removeMemberAction.bind(null, slug)} className="w-full sm:w-auto">
                       <input type="hidden" name="memberId" value={member.id} />
-                      <SubmitButton pendingLabel="Removing…" disabled={lastOwner} title={lastOwner ? "Keep at least one owner on your page." : undefined} className={buttonClass} aria-label={`Remove ${name}`}>Remove</SubmitButton>
+                      <ConfirmSubmit pendingLabel="Removing…" disabled={lastOwner} title={lastOwner ? "Keep at least one owner on your page." : undefined} className={buttonClass} aria-label={`Remove ${name}`}
+                        description={`This removes ${name} from the team. They keep their account.`}
+                        confirmLabel="Yes, remove">Remove</ConfirmSubmit>
                     </form>
                   </div>
                 </li>
@@ -197,7 +202,9 @@ async function SettingsPage({ params, searchParams }: {
                 </div>
                 <form action={revokeInviteAction.bind(null, slug)} className="w-full sm:w-auto">
                   <input type="hidden" name="tokenHash" value={invite.tokenHash} />
-                  <SubmitButton pendingLabel="Revoking…" className={buttonClass} aria-label={invite.invitedEmail ? `Revoke invite to ${invite.invitedEmail}` : "Revoke link invite"}>Revoke</SubmitButton>
+                  <ConfirmSubmit pendingLabel="Revoking…" className={buttonClass} aria-label={invite.invitedEmail ? `Revoke invite to ${invite.invitedEmail}` : "Revoke link invite"}
+                    description={invite.invitedEmail ? `This revokes the invite to ${invite.invitedEmail}. It can no longer be used to join the team.` : "This revokes the invite link. It can no longer be used to join the team."}
+                    confirmLabel="Yes, revoke">Revoke</ConfirmSubmit>
                 </form>
               </li>
             ))}

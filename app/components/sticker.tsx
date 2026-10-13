@@ -1,4 +1,4 @@
-import { SubmitButton } from "@/app/components/submit-button";
+import { ConfirmSubmit } from "@/app/components/confirm-dialog";
 import type { ReactNode } from "react";
 import Image from "next/image";
 import Link from "next/link";
@@ -39,17 +39,12 @@ export function SiteFooter() {
 export async function AdminDeleteStartup({ slug }: { slug: string }) {
   if (!isAdmin(await getCurrentUser())) return null;
   return (
-    <details className="mt-6 min-w-0 break-words text-sm">
-      <summary className="min-h-11 cursor-pointer py-3 font-semibold underline underline-offset-4">Delete startup</summary>
-      <form action={deleteStartupAction.bind(null, slug)} className="mt-3 space-y-3">
-        <p>This permanently deletes the startup, its posts, reports, team memberships and follows.</p>
-        <label className="flex min-h-11 items-start gap-2 py-2">
-          <input type="checkbox" name="confirm" value="delete" required className="mt-1" />
-          I confirm this permanent deletion
-        </label>
-        <SubmitButton pendingLabel="Deleting…" className="min-h-11 w-full rounded-xl border-2 border-ink bg-pink px-4 py-2 font-bold sm:w-auto">Delete startup</SubmitButton>
-      </form>
-    </details>
+    <form action={deleteStartupAction.bind(null, slug)} className="mt-6 min-w-0 break-words text-sm">
+      <input type="hidden" name="confirm" value="delete" />
+      <ConfirmSubmit pendingLabel="Deleting…" className="min-h-11 w-full rounded-xl border-2 border-ink bg-pink px-4 py-2 font-bold sm:w-auto"
+        description={`This permanently deletes ${slug}, its posts, reports, team memberships and follows.`}
+        confirmLabel="Yes, delete">Delete startup</ConfirmSubmit>
+    </form>
   );
 }
 

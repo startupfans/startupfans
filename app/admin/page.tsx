@@ -1,4 +1,5 @@
 import { SubmitButton } from "@/app/components/submit-button";
+import { ConfirmSubmit } from "@/app/components/confirm-dialog";
 import Link from "next/link";
 import { SiteFooter, TopNav } from "@/app/components/sticker";
 import { SubNav } from "@/app/components/sub-nav";
@@ -37,11 +38,10 @@ export async function AdminPage() {
                 <SubmitButton pendingLabel="Resolving…" className="min-h-11 w-full rounded-xl border-2 border-ink bg-lime px-4 py-2 font-bold">Resolve reports</SubmitButton>
               </form>
               <form action={deleteReportedPostAction.bind(null, report.postId)} className="w-full min-w-0 space-y-3 sm:w-auto">
-                <label className="flex min-h-11 items-start gap-2 py-2 text-sm">
-                  <input type="checkbox" name="confirm" value="delete" required className="mt-1" />
-                  Delete this post permanently
-                </label>
-                <SubmitButton pendingLabel="Deleting…" className="min-h-11 w-full rounded-xl border-2 border-ink bg-pink px-4 py-2 font-bold">Delete post</SubmitButton>
+                <input type="hidden" name="confirm" value="delete" />
+                <ConfirmSubmit pendingLabel="Deleting…" className="min-h-11 w-full rounded-xl border-2 border-ink bg-pink px-4 py-2 font-bold"
+                  description="This permanently deletes the post and its media for everyone and removes its reports."
+                  confirmLabel="Yes, delete">Delete post</ConfirmSubmit>
               </form>
             </div>
           </article>

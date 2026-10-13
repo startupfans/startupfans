@@ -6,6 +6,7 @@ import Image from "next/image";
 import { useActionState, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { CloseIcon, ImageIcon, SendIcon, TrashIcon, VideoIcon, postIconButtonBaseClass, postIconButtonClass } from "@/app/components/icons";
 import { SubmitButton } from "@/app/components/submit-button";
+import { ConfirmSubmit } from "@/app/components/confirm-dialog";
 import { getFileMediaFormat, getMediaAccept, mediaLimits, type MediaType } from "@/lib/media";
 import { createPost, deletePost, type PostActionState } from "./post-actions";
 
@@ -296,12 +297,12 @@ export function DeletePostButton({ slug, postId, returnToStartup = false }: {
   return (
     <form action={action} onSubmit={(event) => {
       if (pending) { event.preventDefault(); return; }
-      if (!window.confirm("Delete this post? This can't be undone.")) event.preventDefault();
     }} className="min-w-0 max-w-full break-words" aria-busy={pending}>
-      <SubmitButton icon pending={pending} pendingLabel="Deleting…" title="Delete post" aria-label="Delete post"
+      <ConfirmSubmit icon pending={pending} pendingLabel="Deleting…" title="Delete post" aria-label="Delete post"
+        description="This deletes the post and its media for everyone." confirmLabel="Yes, delete"
         className={postIconButtonClass}>
         <TrashIcon />
-      </SubmitButton>
+      </ConfirmSubmit>
       {state.status === "error" && <p role="alert" className="mt-2 text-sm">{state.message}</p>}
     </form>
   );

@@ -1,4 +1,5 @@
 import { SubmitButton } from "@/app/components/submit-button";
+import { ConfirmSubmit } from "@/app/components/confirm-dialog";
 import { SiteFooter, TopNav } from "@/app/components/sticker";
 import { SubNav } from "@/app/components/sub-nav";
 import { requireAdmin } from "@/lib/admin";
@@ -54,7 +55,9 @@ export async function WaitlistPage({ searchParams }: {
             <div className="flex flex-wrap gap-3">
               <input id="waitlist-count" name="count" type="number" min={1} max={MAX_WAITLIST_BATCH}
                 step={1} defaultValue={10} required className="min-h-11 w-24 rounded-xl border-2 border-ink bg-cream px-3 py-2" />
-              <SubmitButton pendingLabel="Letting in…" className={`${buttonClass} bg-lime`}>Let in</SubmitButton>
+              <ConfirmSubmit pendingLabel="Letting in…" className={`${buttonClass} bg-lime`}
+                description="This sends welcome emails to the first {count} people waiting." countField="count"
+                confirmLabel="Yes, let in">Let in</ConfirmSubmit>
             </div>
             <p className="text-sm">Up to {MAX_WAITLIST_BATCH} at a time, in signup order. Team members are marked as invited without an email.</p>
           </form>
