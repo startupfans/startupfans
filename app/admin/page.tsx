@@ -1,6 +1,7 @@
 import { SubmitButton } from "@/app/components/submit-button";
 import Link from "next/link";
 import { SiteFooter, TopNav } from "@/app/components/sticker";
+import { SubNav } from "@/app/components/sub-nav";
 import { requireAdmin } from "@/lib/admin";
 import { listOpenReports } from "@/lib/reports";
 import { deleteReportedPostAction, resolveReportsAction } from "./actions";
@@ -11,11 +12,11 @@ export async function AdminPage() {
   return (
     <main className="mx-auto min-h-screen min-w-0 max-w-4xl break-words px-5 py-10 sm:py-16">
       <TopNav signedIn next="/admin" />
-      <nav aria-label="Admin navigation" className="mt-8 flex flex-wrap gap-4">
-        <Link href="/admin" aria-current="page" className="inline-flex min-h-11 -rotate-2 items-center rounded-xl border-2 border-ink bg-sun px-4 py-2 font-bold shadow-sticker">Post reports</Link>
-        <Link href="/admin/waitlist" className="inline-flex min-h-11 rotate-1 items-center rounded-xl border-2 border-ink bg-white px-4 py-2 font-bold shadow-sticker hover:-translate-y-0.5 hover:rotate-0">Waitlist</Link>
-      </nav>
-      <h1 className="mt-10 font-display text-4xl font-extrabold">Post reports</h1>
+      <SubNav aria-label="Admin navigation" items={[
+        { href: "/admin", label: "Post reports", current: true },
+        { href: "/admin/waitlist", label: "Waitlist" },
+      ]} />
+      <h1 className="font-display text-4xl font-extrabold">Post reports</h1>
       <section className="mt-8 space-y-6" aria-label="Open reports">
         {reports.length === 0 && <p>No open reports.</p>}
         {reports.map((report) => (

@@ -1,6 +1,6 @@
 import { SubmitButton } from "@/app/components/submit-button";
-import Link from "next/link";
 import { SiteFooter, TopNav } from "@/app/components/sticker";
+import { SubNav } from "@/app/components/sub-nav";
 import { requireAdmin } from "@/lib/admin";
 import { getWaitlistSyncState, listWaitlist, MAX_WAITLIST_BATCH, syncGetWaitlistIfStale } from "@/lib/waitlist";
 import { letInEntryAction, letInFirstAction, resendEntryAction, syncWaitlistAction } from "./actions";
@@ -30,8 +30,11 @@ export async function WaitlistPage({ searchParams }: {
   return (
     <main className="mx-auto min-h-screen min-w-0 max-w-6xl break-words px-5 py-10 sm:py-16">
       <TopNav signedIn next="/admin/waitlist" />
-      <Link href="/admin" className="mt-8 inline-flex min-h-11 items-center font-bold underline underline-offset-4">Post reports</Link>
-      <h1 className="mt-5 font-display text-4xl font-extrabold">Waitlist</h1>
+      <SubNav aria-label="Admin navigation" items={[
+        { href: "/admin", label: "Post reports" },
+        { href: "/admin/waitlist", label: "Waitlist", current: true },
+      ]} />
+      <h1 className="font-display text-4xl font-extrabold">Waitlist</h1>
       <dl className="mt-6 flex flex-wrap gap-4">
         {(["waiting", "invited", "joined"] as const).map((status) => (
           <div key={status} className="rounded-xl border-[3px] border-ink bg-sun px-5 py-3 shadow-sticker">

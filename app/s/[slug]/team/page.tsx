@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
 import Image from "next/image";
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import { SiteFooter, Star, TopNav } from "@/app/components/sticker";
+import { SubNav } from "@/app/components/sub-nav";
+import { isAdmin } from "@/lib/admin";
 import { getCurrentUser } from "@/lib/auth";
 import { getStartupBySlug, getTeam } from "@/lib/startups";
 import { MemberCard } from "./member-card";
@@ -31,8 +32,12 @@ async function TeamPage({ params }: TeamPageProps) {
   return (
     <main className="mx-auto min-h-screen min-w-0 max-w-6xl break-words px-5 py-10 sm:py-16">
       <TopNav signedIn={user !== null} next={`/s/${slug}/team`} />
-      <Link href={`/s/${slug}`} className="mt-8 inline-flex min-h-11 items-center py-2 font-bold underline underline-offset-4">Back to {startup.name}</Link>
-      <header className="relative mt-6 rounded-3xl border-[3px] border-ink bg-white p-6 shadow-sticker-lg sm:p-10">
+      <SubNav aria-label="Startup navigation" items={[
+        { href: `/s/${slug}`, label: "Page" },
+        { href: `/s/${slug}/team`, label: "Team", current: true },
+        ...(isOwner || isAdmin(user) ? [{ href: `/s/${slug}/settings`, label: "Settings" }] : []),
+      ]} />
+      <header className="relative rounded-3xl border-[3px] border-ink bg-white p-6 shadow-sticker-lg sm:p-10">
         <Star className="pointer-events-none absolute -top-6 right-5 h-12 w-12 rotate-12 text-sun" />
         <div className="flex min-w-0 flex-col gap-6 sm:flex-row sm:items-center">
           {startup.logoUrl ? (
@@ -51,7 +56,6 @@ async function TeamPage({ params }: TeamPageProps) {
             </p>
           </div>
         </div>
-        {isOwner && <Link href={`/s/${slug}/settings`} className="mt-6 inline-flex min-h-11 items-center py-2 font-bold underline underline-offset-4">Manage the team in settings</Link>}
       </header>
       <section aria-label="Team members" className="mt-10 grid min-w-0 grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
         {members.map((member) => <MemberCard key={member.id} member={member} />)}

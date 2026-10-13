@@ -1,6 +1,7 @@
 import { SubmitButton } from "@/app/components/submit-button";
+import { TopNav } from "@/app/components/sticker";
+import { SubNav } from "@/app/components/sub-nav";
 import Image from "next/image";
-import Link from "next/link";
 import type { ReactNode } from "react";
 import { IconField } from "@/app/components/icon-field";
 import { GitHubIcon, GlobeIcon, InstagramIcon, LinkedInIcon, PinIcon, TikTokIcon, XIcon, YouTubeIcon } from "@/app/components/icons";
@@ -68,8 +69,13 @@ async function SettingsPage({ params, searchParams }: {
 
   return (
     <main className="mx-auto min-h-screen min-w-0 max-w-6xl break-words px-5 py-10 sm:py-16">
-      <Link href={`/s/${slug}`} className="inline-block min-h-11 max-w-full py-2 font-bold underline underline-offset-4">← Back to {startup.name}</Link>
-      <h1 className="mt-8 font-display text-4xl font-extrabold">Your page settings.</h1>
+      <TopNav signedIn next={`/s/${slug}/settings`} />
+      <SubNav aria-label="Startup navigation" items={[
+        { href: `/s/${slug}`, label: "Page" },
+        { href: `/s/${slug}/team`, label: "Team" },
+        { href: `/s/${slug}/settings`, label: "Settings", current: true },
+      ]} />
+      <h1 className="font-display text-4xl font-extrabold">Your page settings.</h1>
       {isSiteAdmin && !isMember && <p className="mt-5 inline-block -rotate-1 rounded-xl border-2 border-ink bg-sun px-4 py-3 shadow-sticker">You&apos;re here as a site admin.</p>}
       {message && <p role="status" className="mt-5 rounded-xl border-2 border-ink bg-sun p-4">{message}</p>}
       {isOwner && <section className="mt-8 rounded-3xl border-[3px] border-ink bg-lime p-6 shadow-sticker-lg sm:p-8" aria-labelledby="slack-heading">

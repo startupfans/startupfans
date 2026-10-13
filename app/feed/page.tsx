@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { SiteFooter, Sticker, TopNav } from "@/app/components/sticker";
+import { SubNav } from "@/app/components/sub-nav";
 import { PostCard } from "@/app/s/[slug]/post-card";
 import { getCurrentUser } from "@/lib/auth";
 import { listFeed } from "@/lib/posts";
@@ -29,17 +30,15 @@ export default async function FeedPage({ searchParams }: {
   return (
     <main className="mx-auto min-h-screen min-w-0 max-w-3xl break-words px-5 py-10 sm:py-16">
       <TopNav signedIn={user !== null} next={following ? "/feed?filter=following" : "/feed"} />
-      <header className="mt-10">
+      <SubNav aria-label="Feed filter" items={[
+        { href: "/feed", label: "Everyone", current: !following },
+        { href: user ? "/feed?filter=following" : followingLogin, label: "Following", current: following },
+      ]} />
+      <header>
         <Sticker className="inline-block -rotate-3 bg-lime normal-case">From the teams</Sticker>
         <h1 className="mt-7 font-display text-4xl font-extrabold tracking-tight sm:text-5xl">The latest.</h1>
         <p className="mt-4 text-lg text-ink/80">See what startup teams are building and sharing.</p>
       </header>
-      <nav className="mt-8 flex flex-wrap gap-4" aria-label="Feed filter">
-        <Link href="/feed" aria-current={!following ? "page" : undefined}
-          className={`${pillClass} -rotate-2 ${!following ? "bg-sun" : "bg-white"}`}>Everyone</Link>
-        <Link href={user ? "/feed?filter=following" : followingLogin} aria-current={following ? "page" : undefined}
-          className={`${pillClass} rotate-2 ${following ? "bg-sun" : "bg-white"}`}>Following</Link>
-      </nav>
       <section className="mt-8 space-y-6" aria-label={following ? "Updates from startups you follow" : "Updates from all startups"}>
         {needsSignIn ? (
           <div className="rounded-2xl border-[3px] border-ink bg-sky p-6 shadow-sticker">

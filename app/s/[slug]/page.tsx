@@ -3,6 +3,8 @@ import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { AdminDeleteStartup, SectionHeading, SiteFooter, TopNav } from "@/app/components/sticker";
+import { SubNav } from "@/app/components/sub-nav";
+import { isAdmin } from "@/lib/admin";
 import { getCurrentUser } from "@/lib/auth";
 import { getStartupFollow } from "@/lib/follows";
 import { getPublicStartupPosts } from "@/lib/posts";
@@ -36,6 +38,11 @@ async function StartupPage({ params }: StartupPageProps) {
   return (
     <main className="mx-auto min-h-screen min-w-0 max-w-6xl break-words px-5 py-10 sm:py-16">
       <TopNav signedIn={user !== null} next={`/s/${slug}`} />
+      <SubNav aria-label="Startup navigation" items={[
+        { href: `/s/${slug}`, label: "Page", current: true },
+        { href: `/s/${slug}/team`, label: "Team" },
+        ...(isOwner || isAdmin(user) ? [{ href: `/s/${slug}/settings`, label: "Settings" }] : []),
+      ]} />
       <ProfileHeader startup={startup} isOwner={isOwner} followPanel={
         <>
           {isMember ? (
