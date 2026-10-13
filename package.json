@@ -10,7 +10,6 @@
     "typecheck": "tsc --noEmit",
     "seed": "node --env-file-if-exists=.env --conditions=react-server --import tsx scripts/seed.ts",
     "import:waitlist": "node --env-file-if-exists=.env --conditions=react-server --import tsx scripts/import-waitlist.ts",
-    "db:up": "docker compose up -d",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:studio": "drizzle-kit studio"

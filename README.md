@@ -12,26 +12,25 @@ See `AGENTS.md` for what we're building, structure, and conventions.
 
 ## Database
 
-For local development, teammates only need Docker running. Start Postgres, apply
-the generated migrations, and run the app; no `.env` is required:
+The team shares one hosted Postgres database, including for local development.
+Copy the team's shared `.env` into the repo so `DATABASE_URL` is set, then apply
+the generated migrations and run the app:
 
 ```bash
-pnpm db:up
 pnpm db:migrate
 pnpm dev
 ```
 
-Postgres runs on port 5433 and persists data in a named Docker volume. The app
-and Drizzle CLI default to `postgres://startupfans:startupfans@localhost:5433/startupfans`.
-Set `DATABASE_URL` in `.env` or your environment to override it; an exported variable takes precedence.
-Production uses a Vercel-hosted Postgres with `DATABASE_URL` set on the Vercel project.
+The app and Drizzle CLI require `DATABASE_URL`; an exported variable takes
+precedence over `.env`. Production sets the same shared database URL on the
+Vercel project. Builds do not need a database connection.
 After editing `db/schema.ts`, run `pnpm db:generate` and then
 `pnpm db:migrate`. Use `pnpm db:studio` to inspect the database.
 
 ## Seed and import
 
 These manual commands use Node 24, load `.env` if present, and use the same
-`DATABASE_URL` (or local Docker default) as the app. Apply migrations first.
+`DATABASE_URL` as the app. Apply migrations first.
 
 ```bash
 SEED_OWNER_EMAILS=ian@example.com,tori@example.com pnpm seed
@@ -63,8 +62,7 @@ and can be used once; sessions last 30 days. `/me` shows your email and sign-out
 Set `APP_URL` to the site's public origin, `RESEND_API_KEY` for delivery, and
 `EMAIL_FROM` to a verified sender. Without a Resend key, the server logs the full
 sign-in link with a `[startupfans email: dev fallback]` prefix; open it locally
-to sign in. Auth requests require a running database; locally, the Docker default
-works without setting `DATABASE_URL`.
+to sign in. Auth requests require `DATABASE_URL` from the team's shared `.env`.
 
 ## Slack
 

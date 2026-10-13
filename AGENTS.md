@@ -297,7 +297,7 @@ Built:
 - Share previews: a default site image and dynamic startup images with the tagline and current fan count; unknown slugs use the default image.
 - Moderation: database-backed sign-in limits (5 requests per email and 30 per IP per 15-minute window), public post reports, and an admin report queue. Site admins configured in `ADMIN_EMAILS` can delete any post or startup; startup deletion requires confirmation and cascades to its content. App pages include a content policy and takedown contact.
 
-Also built: Postgres + Drizzle data layer (`db/`, local Docker database) and email magic-link sign-in with sessions (`app/login`, `app/auth`, `app/me`, `lib/auth.ts`).
+Also built: Postgres + Drizzle data layer (`db/`, shared hosted database) and email magic-link sign-in with sessions (`app/login`, `app/auth`, `app/me`, `lib/auth.ts`).
 
 Not built yet (from MVP must-haves):
 - Richer startup waitlist fields above
@@ -322,7 +322,7 @@ Site copy only promises what exists. No pricing on the site (for fans or startup
 - `lib/slack.ts` and `lib/crypto.ts`: Slack Web API, signed OAuth state, event signature verification, markdown conversion, image copying and encrypted bot tokens. `slack_connections` binds one workspace to one startup; `slack_posts` records published messages atomically with post creation.
 - `app/api/slack/`: owner-only install and OAuth callbacks, plus signed events acknowledged with `after()` before publishing. `slack-app-manifest.json` configures the app and its scopes.
 - `scripts/seed.ts` and `scripts/import-waitlist.ts`: manual, idempotent startupfans seed and GetWaitlist CSV import using the shared database and follow allocator. The importer skips team members and reports that reason in its summary. Commands load `.env` with Node 24 and run through `tsx` with the `react-server` condition for server-only imports.
-- `db/`: Drizzle schema, migrations, and the lazy Postgres client exported as `db`. Without `DATABASE_URL` it falls back to the local Docker database on port 5433.
+- `db/`: Drizzle schema, migrations, and the lazy Postgres client exported as `db`. Everyone uses the shared hosted Postgres through `DATABASE_URL` in the team's `.env`. Without it, database access throws a clear setup error; imports and builds do not need a connection.
 - `lib/`: server-only auth and session helpers (`lib/auth.ts`) and Resend email delivery with a console fallback (`lib/email.ts`).
 - `lib/ratelimit.ts`, `lib/reports.ts`, `lib/admin.ts`: atomic hashed sign-in counters, private post report submission and resolution, and site admin authorization/deletion. Reports retain their resolved timestamp so signed-in users cannot report a post twice.
 - `app/admin/`: admin-only open report queue with post excerpts, reasons, counts, resolution and confirmed deletion. `ADMIN_EMAILS` grants access; other visitors receive a 404.

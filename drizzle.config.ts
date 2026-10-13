@@ -9,7 +9,15 @@ export const config = defineConfig({
   schema: "./db/schema.ts",
   out: "./db/migrations",
   dialect: "postgresql",
-  dbCredentials: { url: process.env.DATABASE_URL ?? "postgres://startupfans:startupfans@localhost:5433/startupfans" },
+  dbCredentials: {
+    get url() {
+      const url = process.env.DATABASE_URL;
+      if (!url) {
+        throw new Error("DATABASE_URL is not set; copy the team .env");
+      }
+      return url;
+    },
+  },
 });
 
 // drizzle-kit reads the default export; the named export satisfies the named-exports convention.

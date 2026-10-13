@@ -4,8 +4,6 @@ import { drizzle, type PostgresJsDatabase } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 import * as schema from "./schema";
 
-export const LOCAL_DATABASE_URL = "postgres://startupfans:startupfans@localhost:5433/startupfans";
-
 const globalForDatabase: typeof globalThis & {
   startupfansPostgres?: ReturnType<typeof postgres>;
   startupfansDatabase?: PostgresJsDatabase<typeof schema>;
@@ -13,7 +11,10 @@ const globalForDatabase: typeof globalThis & {
 
 function getDatabase() {
   if (!globalForDatabase.startupfansDatabase) {
-    const url = process.env.DATABASE_URL ?? LOCAL_DATABASE_URL;
+    const url = process.env.DATABASE_URL;
+    if (!url) {
+      throw new Error("DATABASE_URL is not set; copy the team .env");
+    }
     globalForDatabase.startupfansPostgres ??= postgres(url, { prepare: false });
     globalForDatabase.startupfansDatabase = drizzle(globalForDatabase.startupfansPostgres, { schema });
   }
