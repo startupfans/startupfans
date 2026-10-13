@@ -11,7 +11,7 @@ const uiIconProps = {
 } as const;
 
 function BrandIcon({ path }: { path: string }) {
-  return <svg width={20} height={20} viewBox="0 0 24 24" fill="currentColor"
+  return <svg width={20} height={20} viewBox="-2 -2 28 28" fill="currentColor"
     aria-hidden="true" focusable="false" className="h-5 w-5 shrink-0"><path d={path} /></svg>;
 }
 
