@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { inviteEmail } from "@/lib/emails/invite";
 import { magicLinkEmail } from "@/lib/emails/magic-link";
+import { signInCodeEmail } from "@/lib/emails/sign-in-code";
 
 export async function GET(request: Request, { params }: { params: Promise<{ name: string }> }) {
   if (process.env.NODE_ENV === "production") notFound();
@@ -10,6 +11,8 @@ export async function GET(request: Request, { params }: { params: Promise<{ name
     switch (name) {
       case "magic-link":
         return magicLinkEmail("https://www.startupfans.co/auth/verify?token=sample-sign-in-token&next=%2Ffeed");
+      case "sign-in-code":
+        return signInCodeEmail("123456");
       case "invite":
         return inviteEmail({
           startupName: "Acme", inviter: "Alex",
