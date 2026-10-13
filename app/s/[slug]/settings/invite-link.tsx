@@ -51,8 +51,9 @@ export function InviteLink({ slug }: { slug: string }) {
   return (
     <div className="mt-5 min-w-0 space-y-4" aria-busy={pending}>
       <SubmitButton type="button" onClick={createLink} pending={pending} pendingLabel="Creating link…" className={buttonClass}>
-        Invite a teammate
+        Create invite link
       </SubmitButton>
+      <p className="text-sm text-ink/70">Anyone with this link can join your team until it expires in 7 days. Don&apos;t post it publicly.</p>
       {error && <p role="alert" className="text-sm">{error}</p>}
       {url && (
         <div className="space-y-3">
@@ -62,7 +63,7 @@ export function InviteLink({ slug }: { slug: string }) {
           </label>
           <button type="button" className={buttonClass} onClick={() => copyLink(url)}>Copy link</button>
           <p role="status" className="text-sm">{copyMessage}</p>
-          <p className="text-sm text-ink/70">Save this link now. It can be used once and expires in 7 days.</p>
+          <p className="text-sm text-ink/70">Save this link now so you can share it with your team.</p>
         </div>
       )}
     </div>

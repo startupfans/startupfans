@@ -193,7 +193,7 @@ async function SettingsPage({ params, searchParams }: {
           </section>
         </div>
         <section className="mt-10 rounded-3xl border-[3px] border-ink bg-white p-6 shadow-sticker-lg sm:p-8" aria-labelledby="invites-heading">
-          <h2 id="invites-heading" className="font-display text-2xl font-extrabold">Unused invites</h2>
+          <h2 id="invites-heading" className="font-display text-2xl font-extrabold">Active invites</h2>
           {hasExpiredInvites && <form action={clearExpiredInvitesAction.bind(null, slug)} className="mt-4">
             <SubmitButton pendingLabel="Clearing…" className={buttonClass}>Clear expired</SubmitButton>
           </form>}
@@ -201,9 +201,9 @@ async function SettingsPage({ params, searchParams }: {
             <ul className="mt-5 space-y-4">
               {invites.map((invite) => (
                 <li key={invite.tokenHash} className="flex flex-wrap items-center justify-between gap-3 rounded-xl border-2 border-ink bg-cream p-4">
-                  <div className="min-w-0 max-w-full"><p className="font-bold">{invite.invitedEmail ? `Sent to ${invite.invitedEmail}` : "Link invite"}</p>
+                  <div className="min-w-0 max-w-full"><p className="font-bold">{invite.invitedEmail ? `Sent to ${invite.invitedEmail}` : `Link invite · used ${invite.uses} times · expires ${invite.expiresAt.toLocaleString("en-GB", { timeZone: "UTC" })} UTC`}</p>
                     <p className="text-sm text-ink/70">Created {invite.createdAt.toLocaleString("en-GB", { timeZone: "UTC" })} UTC</p>
-                    <p className="text-sm text-ink/70">Expires {invite.expiresAt.toLocaleString("en-GB", { timeZone: "UTC" })} UTC</p>
+                    {invite.invitedEmail && <p className="text-sm text-ink/70">Expires {invite.expiresAt.toLocaleString("en-GB", { timeZone: "UTC" })} UTC</p>}
                   </div>
                   <form action={revokeInviteAction.bind(null, slug)} className="w-full sm:w-auto">
                     <input type="hidden" name="tokenHash" value={invite.tokenHash} />

@@ -2,6 +2,9 @@ import { AppHeader } from "@/app/components/app-shell";
 import { SubmitButton } from "@/app/components/submit-button";
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { and, eq } from "drizzle-orm";
+import { db } from "@/db";
+import { startupMembers } from "@/db/schema";
 import { getCurrentUser } from "@/lib/auth";
 import { getValidStartupInvite } from "@/lib/invites";
 import { acceptInviteAction } from "./actions";
@@ -14,21 +17,29 @@ async function JoinPage({ params, searchParams }: {
 }) {
   const [{ token }, query] = await Promise.all([params, searchParams]);
   const invalid = query.invalid === "1";
-  if (!await getCurrentUser()) {
+  const user = await getCurrentUser();
+  if (!user) {
     const next = `/join/${encodeURIComponent(token)}${invalid ? "?invalid=1" : ""}`;
     redirect(`/login?${new URLSearchParams({ next, invite: token })}`);
   }
-  const invite = invalid ? null : await getValidStartupInvite(token);
+  const invite = invalid ? null : await getValidStartupInvite(token, user.email);
+  const [member] = invite ? await db.select({ userId: startupMembers.userId }).from(startupMembers)
+    .where(and(eq(startupMembers.startupId, invite.startupId), eq(startupMembers.userId, user.id))).limit(1) : [];
 
   return (
     <div className="min-h-screen min-w-0">
       <AppHeader signedIn next={`/join/${encodeURIComponent(token)}`} />
       <main className="mx-auto min-w-0 max-w-xl break-words px-5 pb-10 sm:pb-16">
         <section className="mt-10 rounded-3xl border-[3px] border-ink bg-sky p-6 shadow-sticker-lg sm:p-10">
-          {invite ? (
+          {invite && invite.invitedEmail === null && member ? (
+            <>
+              <h1 className="font-display text-4xl font-extrabold">You&apos;re already on the team</h1>
+              <Link href={`/s/${invite.slug}`} className="mt-6 inline-flex min-h-11 items-center py-2 font-bold underline underline-offset-4">Go to {invite.name}</Link>
+            </>
+          ) : invite ? (
             <>
               <h1 className="font-display text-4xl font-extrabold">Join {invite.name}.</h1>
-              <p className="mt-5 text-lg">You&apos;re invited to share updates as part of the team.</p>
+              <p className="mt-5 text-lg">{invite.inviterName || `@${invite.inviterHandle}`} invited you to join {invite.name}.</p>
               <form action={acceptInviteAction.bind(null, token)} className="mt-8">
                 <SubmitButton pendingLabel="Joining…" className="min-h-11 w-full rounded-xl border-[3px] border-ink bg-lime px-5 py-3 font-bold shadow-sticker">Join the team</SubmitButton>
               </form>

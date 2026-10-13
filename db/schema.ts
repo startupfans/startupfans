@@ -111,6 +111,7 @@ export const startupInvites = pgTable("startup_invites", {
   createdBy: uuid("created_by").notNull().references(() => users.id),
   expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
   usedAt: timestamp("used_at", { withTimezone: true }),
+  uses: integer("uses").notNull().default(0),
 });
 
 export const posts = pgTable(

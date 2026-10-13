@@ -13,7 +13,8 @@ export async function acceptInviteAction(token: string) {
   const startup = await acceptStartupInvite(token, user.id);
   revalidatePath(`/join/${token}`);
   if (!startup) redirect(`/join/${token}?invalid=1`);
-  await captureServerEvent({ distinctId: user.id, event: "startup_invite_accepted" });
+  if (startup.status === "already-member") redirect(`/join/${token}`);
+  await captureServerEvent({ distinctId: user.id, event: "startup_invite_accepted", properties: { kind: startup.kind } });
   revalidatePath(`/s/${startup.slug}`);
   revalidatePath(`/s/${startup.slug}/settings`);
   revalidatePath("/me");

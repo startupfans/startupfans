@@ -1,0 +1,1 @@
+ALTER TABLE "startup_invites" ADD COLUMN "uses" integer DEFAULT 0 NOT NULL;
