@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireUser } from "@/lib/auth";
 import { isValidSlug } from "@/lib/slug";
-import { createStartup, isStartupProfileImageUrl } from "@/lib/startups";
+import { createStartup, isStartupProfileImageUrl, normalizeWebsiteUrl } from "@/lib/startups";
 import { captureServerEvent } from "@/lib/posthog-server";
 import { emitPostHogLog } from "@/lib/posthog-logs";
 
@@ -15,16 +15,6 @@ export type CreateStartupState =
 function textField(formData: FormData, key: string) {
   const value = formData.get(key);
   return typeof value === "string" ? value.trim() : "";
-}
-
-function isHttpsUrl(value: string) {
-  if (!value) return true;
-  try {
-    const url = new URL(value);
-    return value.startsWith("https://") && url.protocol === "https:" && !url.username && !url.password;
-  } catch {
-    return false;
-  }
 }
 
 export async function createStartupAction(
@@ -38,7 +28,7 @@ export async function createStartupAction(
   const description = textField(formData, "description");
   const bio = textField(formData, "bio");
   const logoUrl = textField(formData, "logoUrl");
-  const website = textField(formData, "website");
+  const websiteResult = normalizeWebsiteUrl(textField(formData, "website"));
   const stage = textField(formData, "stage");
 
   if (name.length < 2 || name.length > 60) {
@@ -50,22 +40,27 @@ export async function createStartupAction(
   if (tagline.length > 120 || description.length > 2000 || bio.length > 280) {
     return { status: "error", message: "Use up to 120 characters for the tagline, 280 for the bio and 2,000 for the description." };
   }
-  if (logoUrl.length > 500 || website.length > 500) {
-    return { status: "error", message: "Use up to 500 characters for your logo and website addresses." };
+  if (logoUrl.length > 500) {
+    return { status: "error", message: "Use up to 500 characters for your logo address." };
   }
-  if (!isStartupProfileImageUrl(logoUrl, slug, user.id) || !isHttpsUrl(website)) {
-    return { status: "error", message: "Upload a logo for this page address or use a full https:// image URL. Your website also needs an https:// address." };
+  if (!isStartupProfileImageUrl(logoUrl, slug, user.id)) {
+    return { status: "error", message: "Upload a logo for this page address or use a full https:// image URL." };
+  }
+  if (websiteResult.status === "invalid") {
+    return { status: "error", message: "Use a website address like yourstartup.com." };
   }
   if (stage && !["idea", "pre-seed", "seed", "series-a", "growth", "bootstrapped"].includes(stage)) {
     return { status: "error", message: "Choose a stage from the list." };
   }
+
+  const website = websiteResult.value;
 
   let startup;
   try {
     startup = await createStartup({
       name, slug, tagline: tagline || null, description: description || null,
       bio: bio || null,
-      logoUrl: logoUrl || null, website: website || null, stage: stage || null,
+      logoUrl: logoUrl || null, website, stage: stage || null,
       createdBy: user.id,
     });
   } catch (error) {

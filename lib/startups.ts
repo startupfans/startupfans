@@ -35,6 +35,27 @@ export function isStartupProfileImageUrl(value: string, slug: string, creatorId?
   }
 }
 
+/** Accepts bare domains, http://, or https://; stores a full http(s) URL. */
+export function normalizeWebsiteUrl(input: string):
+  | { status: "valid"; value: string | null }
+  | { status: "invalid" } {
+  const value = input.trim();
+  if (!value) return { status: "valid", value: null };
+  if (value.length > 500) return { status: "invalid" };
+  const candidate = /^[a-zA-Z][a-zA-Z\d+.-]*:/.test(value) ? value : `https://${value}`;
+  try {
+    const url = new URL(candidate);
+    if ((url.protocol !== "https:" && url.protocol !== "http:") || url.username || url.password) {
+      return { status: "invalid" };
+    }
+    const host = url.hostname.replace(/\.$/, "");
+    if (!host || !host.includes(".")) return { status: "invalid" };
+    return { status: "valid", value: url.href };
+  } catch {
+    return { status: "invalid" };
+  }
+}
+
 export const getStartupBySlug = cache(async (slug: string) => {
   const [startup] = await db.select({
     ...getTableColumns(startups),

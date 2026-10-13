@@ -33,7 +33,7 @@ async function StartPage() {
           <BioField />
           <ImageUpload name="logoUrl" label="Logo" creatorId={user.id} />
           <label htmlFor="website" className="block font-bold">Website <span className="font-normal">(optional)</span>
-            <input id="website" name="website" type="url" pattern="https://.*" maxLength={500} placeholder="https://" autoComplete="url" className={inputClass} />
+            <input id="website" name="website" type="text" inputMode="url" maxLength={500} placeholder="yourstartup.com" autoComplete="url" className={inputClass} />
           </label>
           <label htmlFor="stage" className="block font-bold">Stage <span className="font-normal">(optional)</span>
             <select id="stage" name="stage" defaultValue="" className={inputClass}>
