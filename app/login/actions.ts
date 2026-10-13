@@ -46,15 +46,18 @@ export async function requestMagicLink(formData: FormData) {
     redirect(`/login?${query}`);
   }
 
-  let canReceiveLink: boolean;
+  let isEligible: boolean;
   try {
-    canReceiveLink = await canSignUp(email, { inviteToken });
+    isEligible = await canSignUp(email);
   } catch (error) {
     console.error("[startupfans auth] Could not check sign-up eligibility.", error);
     query.set("error", "sending");
     redirect(`/login?${query}`);
   }
-  if (!canReceiveLink) redirect("/login?error=invite-only");
+  if (!isEligible) {
+    query.set("error", "invalid");
+    redirect(`/login?${query}`);
+  }
 
   try {
     const token = randomBytes(32).toString("hex");
