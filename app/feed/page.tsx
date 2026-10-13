@@ -5,6 +5,8 @@ import { AppHeader, AppShell } from "@/app/components/app-shell";
 import { PostCard } from "@/app/s/[slug]/post-card";
 import { getCurrentUser } from "@/lib/auth";
 import { listFeed } from "@/lib/posts";
+import { getMemberStartups } from "@/lib/members";
+import { FeedComposer } from "./feed-composer";
 
 export function generateMetadata(): Metadata {
   return { title: "Startup feed", description: "The latest updates from startup teams. Follow along as they build." };
@@ -14,6 +16,7 @@ export default async function FeedPage({ searchParams }: {
   searchParams: Promise<{ filter?: string | string[]; before?: string | string[] }>;
 }) {
   const [query, user] = await Promise.all([searchParams, getCurrentUser()]);
+  const memberStartups = user ? await getMemberStartups(user.id) : [];
   const following = query.filter === "following";
   const needsSignIn = following && !user;
   const followingLogin = `/login?next=${encodeURIComponent("/feed?filter=following")}`;
@@ -35,6 +38,10 @@ export default async function FeedPage({ searchParams }: {
           { href: "/feed", label: "Everyone", current: !following },
           { href: user ? "/feed?filter=following" : followingLogin, label: "Following", current: following },
         ] }} />
+        {user && memberStartups.length > 0 && (
+          <FeedComposer startups={memberStartups.map(({ name, slug, logoUrl }) => ({ name, slug, logoUrl }))}
+            userId={user.id} name={user.name?.trim() || user.handle} avatarUrl={user.avatarUrl} />
+        )}
         <section className="mt-8 space-y-6" aria-label={following ? "Updates from startups you follow" : "Updates from all startups"}>
           {needsSignIn ? (
             <div className="rounded-2xl border-[3px] border-ink bg-sky p-6 shadow-sticker">

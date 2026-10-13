@@ -25,10 +25,12 @@ async function checkUploadAvailability() {
   }
 }
 
-export function Composer({ slug, name, avatarUrl }: {
+export function Composer({ slug, name, avatarUrl, onPosted, onBusyChange }: {
   slug: string;
   name: string;
   avatarUrl: string | null;
+  onPosted?: () => void;
+  onBusyChange?: (busy: boolean) => void;
 }) {
   const [body, setBody] = useState("");
   const [attachment, setAttachment] = useState<Attachment | null>(null);
@@ -84,9 +86,14 @@ export function Composer({ slug, name, avatarUrl }: {
     if (result.status === "success") {
       setBody("");
       removeAttachment();
+      onPosted?.();
     }
     return result;
   }, initialState);
+
+  useEffect(() => {
+    onBusyChange?.(pending || uploading);
+  }, [onBusyChange, pending, uploading]);
 
   async function attachFile(file: File) {
     if (pending) return;
