@@ -1,5 +1,8 @@
 import Image from "next/image";
 import Link from "next/link";
+import type { ReactNode } from "react";
+import { IconField } from "@/app/components/icon-field";
+import { GitHubIcon, GlobeIcon, InstagramIcon, LinkedInIcon, PinIcon, TikTokIcon, XIcon, YouTubeIcon } from "@/app/components/icons";
 import { getUnusedStartupInvites } from "@/lib/invites";
 import { requireStartupOwner } from "@/lib/members";
 import { getStartupMembers } from "@/lib/startups";
@@ -7,7 +10,12 @@ import { getSlackConnection, isSlackConfigured } from "@/lib/slack";
 import { disconnectSlackAction, removeMemberAction, revokeInviteAction, updateStartupAction } from "./actions";
 import { InviteByEmail, InviteLink } from "./invite-link";
 import { BioField, ImageUpload } from "./image-upload";
-import { socialNetworks } from "@/lib/socials";
+import { socialNetworks, type SocialNetwork } from "@/lib/socials";
+
+const socialIcons = {
+  x: XIcon, linkedin: LinkedInIcon, github: GitHubIcon,
+  instagram: InstagramIcon, youtube: YouTubeIcon, tiktok: TikTokIcon,
+} satisfies Record<SocialNetwork, () => ReactNode>;
 
 const inputClass = "mt-2 min-h-11 w-full min-w-0 rounded-xl border-2 border-ink bg-white px-4 py-3 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ink";
 const buttonClass = "inline-flex min-h-11 w-full max-w-full items-center justify-center rounded-xl border-[3px] border-ink bg-white px-4 py-2 font-bold shadow-sticker disabled:opacity-50 sm:w-auto";
@@ -94,10 +102,10 @@ async function SettingsPage({ params, searchParams }: {
             <ImageUpload name="logoUrl" label="Logo" slug={slug} initialUrl={startup.logoUrl ?? ""} creatorId={user.id} />
             <ImageUpload name="coverUrl" label="Cover image" slug={slug} initialUrl={startup.coverUrl ?? ""} creatorId={user.id} />
             <label htmlFor="location" className="block font-bold">Location
-              <input id="location" name="location" defaultValue={startup.location ?? ""} maxLength={120} placeholder="City, country or remote" className={inputClass} />
+              <IconField icon={<PinIcon />} id="location" name="location" defaultValue={startup.location ?? ""} maxLength={120} placeholder="City, country or remote" />
             </label>
             <label htmlFor="website" className="block font-bold">Website
-              <input id="website" name="website" defaultValue={startup.website ?? ""} type="url" pattern="https://.*" maxLength={500} placeholder="https://" autoComplete="url" className={inputClass} />
+              <IconField icon={<GlobeIcon />} id="website" name="website" defaultValue={startup.website ?? ""} type="url" pattern="https://.*" maxLength={500} placeholder="https://" autoComplete="url" />
             </label>
             <div className="grid gap-5 sm:grid-cols-2">
               <label htmlFor="stage" className="block min-w-0 font-bold">Stage
@@ -114,12 +122,13 @@ async function SettingsPage({ params, searchParams }: {
             </div>
             <fieldset className="min-w-0 space-y-5">
               <legend className="mb-3 font-display text-xl font-extrabold">Social profiles</legend>
-              {socialNetworks.map(({ field, label, placeholder }) => (
-                <label key={field} htmlFor={field} className="block font-bold">{label}
-                  <input id={field} name={field} defaultValue={startup[field] ?? ""} maxLength={500} placeholder={placeholder}
-                    autoCapitalize="none" autoCorrect="off" spellCheck={false} className={inputClass} />
-                </label>
-              ))}
+              {socialNetworks.map(({ network, field, label, placeholder }) => {
+                const SocialIcon = socialIcons[network];
+                return <label key={field} htmlFor={field} className="block font-bold">{label}
+                  <IconField icon={<SocialIcon />} id={field} name={field} defaultValue={startup[field] ?? ""} maxLength={500} placeholder={placeholder}
+                    autoCapitalize="none" autoCorrect="off" spellCheck={false} />
+                </label>;
+              })}
             </fieldset>
             <button type="submit" className={`${buttonClass} bg-lime`}>Save page</button>
           </form>
