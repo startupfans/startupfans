@@ -1,9 +1,11 @@
+import Image from "next/image";
 import { getMediaFormat } from "@/lib/media";
 
-export function PostMedia({ mediaUrl, mediaType, mediaPosterUrl }: {
+export function PostMedia({ mediaUrl, mediaType, mediaPosterUrl, priority = false }: {
   mediaUrl: string | null;
   mediaType: "image" | "video" | null;
   mediaPosterUrl: string | null;
+  priority?: boolean;
 }) {
   if (!mediaUrl || !mediaType) return null;
   const contentType = getMediaFormat(new URL(mediaUrl).pathname)?.contentType;
@@ -11,8 +13,8 @@ export function PostMedia({ mediaUrl, mediaType, mediaPosterUrl }: {
   return (
     <div className="mt-3 min-w-0 max-w-full overflow-hidden rounded-2xl border-[3px] border-ink bg-ink shadow-sticker">
       {mediaType === "image" ? (
-        // eslint-disable-next-line @next/next/no-img-element -- Post dimensions are unknown; let the image establish its intrinsic ratio.
-        <img src={mediaUrl} alt="Post attachment" loading="lazy" decoding="async"
+        <Image src={mediaUrl} alt="Post attachment" width={1600} height={1600}
+          sizes="(min-width: 768px) 48rem, 100vw" quality={82} preload={priority}
           className="block h-auto max-h-[85vh] w-full object-contain" />
       ) : (
         <video poster={mediaPosterUrl ?? undefined} controls playsInline preload="metadata"
