@@ -169,6 +169,10 @@ Day 3
 - Friendly startups in the Lightdash customer and partner network
 - Also floated: launch on tinylaunch
 
+### GTM drafts (`gtm/`)
+
+Full social and outreach drafts live in [`gtm/`](gtm/README.md) (Grok bot pack + edits). Use those files for X, Reddit, outreach, newsletters, launch directories, team kit and investor DMs. For Reddit, use **`gtm/reddit-v2.md` only** (older reddit drafts were discarded).
+
 ## Success metrics (priority order)
 
 1. Paid founding spots
@@ -251,6 +255,31 @@ first startups get in this week. waitlist: [link]
 ```
 
 Irakli's live launch post (fan-side framing: open up the kitchen, fans get it first): linkedin.com/feed/update/urn:li:activity:7515469992105213952
+
+## LinkedIn announcement (whiteboard / launch)
+
+Origin story angle: joke idea on the offsite whiteboard that became the product. Put the waitlist or site link in the first comment.
+
+```text
+at the Lightdash offsite in Lisbon, we're doing a launch-a-thon.
+launch any product and get as much traction as possible in 48 hours.
+
+at the beginning, we wrote up our ideas on a whiteboard.
+mostly as a joke, I submitted: "OnlyFans for startups"
+
+it turned some heads and we actually made something valuable out of it.
+today we're launching StartupFans (link in comments)
+
+and no, there are no nudes on this one...
+it's one for those that build in public
+and for those that want to follow them
+without the modern social media slop.
+
+if you're a startup, this helps you with your brand
+if you're a fan, or investor, you get the inside track on your favourite early stage startups
+
+seriously, no nudes pls
+```
 
 ## Posting tips
 
