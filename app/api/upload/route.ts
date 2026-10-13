@@ -1,10 +1,9 @@
 import { handleUpload, type HandleUploadBody } from "@vercel/blob/client";
 import { getCurrentUser } from "@/lib/auth";
 import { getPostMembership } from "@/lib/posts";
+import { getMediaContentTypes, getMediaFormat, isMediaFilename, mediaLimits } from "@/lib/media";
 
 const unavailableMessage = "Attachments are unavailable because the Vercel Blob store is not configured. You can still post text.";
-const imageContentTypes = ["image/jpeg", "image/png", "image/webp", "image/gif"];
-const videoContentTypes = ["video/mp4", "video/webm"];
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
@@ -56,13 +55,13 @@ export async function POST(request: Request) {
         }
         const prefix = `startups/${payload.slug}/`;
         const filename = pathname.slice(prefix.length);
-        if (!pathname.startsWith(prefix) || !/^[-a-zA-Z0-9_.]+\.(jpe?g|png|webp|gif|mp4|webm)$/i.test(filename)) {
+        const format = getMediaFormat(filename);
+        if (!pathname.startsWith(prefix) || !isMediaFilename(filename) || !format) {
           throw new Error("Upload an image or video to this startup's media folder.");
         }
-        const isImage = /\.(jpe?g|png|webp|gif)$/i.test(filename);
         return {
-          allowedContentTypes: isImage ? imageContentTypes : videoContentTypes,
-          maximumSizeInBytes: (isImage ? 10 : 200) * 1024 * 1024,
+          allowedContentTypes: getMediaContentTypes(format.type),
+          maximumSizeInBytes: mediaLimits[format.type],
           addRandomSuffix: true,
         };
       },

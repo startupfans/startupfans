@@ -4,20 +4,12 @@ import { upload } from "@vercel/blob/client";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { useActionState, useEffect, useLayoutEffect, useRef, useState } from "react";
-import { CloseIcon, ImageIcon, SendIcon, TrashIcon, VideoIcon, postIconButtonClass } from "@/app/components/icons";
+import { CloseIcon, ImageIcon, SendIcon, TrashIcon, VideoIcon, postIconButtonBaseClass, postIconButtonClass } from "@/app/components/icons";
+import { getFileMediaFormat, getMediaAccept, mediaLimits, type MediaType } from "@/lib/media";
 import { createPost, deletePost, type PostActionState } from "./post-actions";
 
 const initialState: PostActionState = { status: "idle" };
-const extensions = {
-  "image/jpeg": "jpg",
-  "image/png": "png",
-  "image/webp": "webp",
-  "image/gif": "gif",
-  "video/mp4": "mp4",
-  "video/webm": "webm",
-};
-
-type Attachment = { url: string; type: "image" | "video"; name: string };
+type Attachment = { url: string; type: MediaType; name: string; contentType: string };
 
 async function checkUploadAvailability() {
   const response = await fetch("/api/upload", { cache: "no-store" });
@@ -38,12 +30,15 @@ export function Composer({ slug, name, avatarUrl }: {
   const [body, setBody] = useState("");
   const [attachment, setAttachment] = useState<Attachment | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [converting, setConverting] = useState(false);
+  const [dragging, setDragging] = useState(false);
   const [preview, setPreview] = useState<Attachment | null>(null);
   const [progress, setProgress] = useState(0);
   const [uploadError, setUploadError] = useState("");
   const fileInput = useRef<HTMLInputElement>(null);
   const textarea = useRef<HTMLTextAreaElement>(null);
   const uploadController = useRef<AbortController | null>(null);
+  const dragDepth = useRef(0);
 
   useLayoutEffect(() => {
     function resize() {
@@ -74,6 +69,7 @@ export function Composer({ slug, name, avatarUrl }: {
     uploadController.current = null;
     setAttachment(null);
     setUploading(false);
+    setConverting(false);
     setPreview(null);
     setProgress(0);
     setUploadError("");
@@ -90,41 +86,74 @@ export function Composer({ slug, name, avatarUrl }: {
   }, initialState);
 
   async function attachFile(file: File) {
-    const extension = Object.entries(extensions).find(([type]) => type === file.type)?.[1];
-    if (!extension) {
-      setUploadError("Choose a JPEG, PNG, WebP, GIF, MP4 or WebM file.");
+    if (pending) return;
+    const format = getFileMediaFormat(file);
+    if (!format) {
+      setUploadError("Choose a JPEG, PNG, WebP, GIF, AVIF, HEIC, HEIF, MP4, WebM, MOV or M4V file.");
       if (fileInput.current) fileInput.current.value = "";
       return;
     }
-    const type = file.type.startsWith("image/") ? "image" : "video";
-    const maximum = type === "image" ? 10 : 200;
-    if (file.size > maximum * 1024 * 1024) {
+    const { type } = format;
+    const maximum = mediaLimits[type] / (1024 * 1024);
+    if (file.size > mediaLimits[type]) {
       setUploadError(`${type === "image" ? "Images" : "Videos"} must be ${maximum} MB or smaller.`);
       if (fileInput.current) fileInput.current.value = "";
       return;
     }
+    uploadController.current?.abort();
     const controller = new AbortController();
     uploadController.current = controller;
     setUploading(true);
     setAttachment(null);
     setUploadError("");
-    setPreview({ url: URL.createObjectURL(file), type, name: file.name });
+    setPreview(null);
+    const needsConversion = format.contentType === "image/heic" || format.contentType === "image/heif";
+    setConverting(needsConversion);
     setProgress(0);
     try {
+      let uploadFile = file;
+      let contentType = format.contentType;
+      let extension = format.extensions[0];
+      if (needsConversion) {
+        try {
+          const { default: heic2any } = await import("heic2any");
+          if (controller.signal.aborted) return;
+          const converted = await heic2any({ blob: file, toType: "image/jpeg", quality: 0.9 });
+          if (controller.signal.aborted) return;
+          const jpeg = Array.isArray(converted) ? converted[0] : converted;
+          if (!jpeg) throw new Error("No converted photo.");
+          uploadFile = new File([jpeg], `${file.name.replace(/\.[^.]+$/, "")}.jpg`, { type: "image/jpeg" });
+          const jpegFormat = getFileMediaFormat(uploadFile);
+          if (!jpegFormat) throw new Error("Unsupported converted photo.");
+          contentType = jpegFormat.contentType;
+          extension = jpegFormat.extensions[0];
+        } catch {
+          throw new Error("Couldn't convert this photo. Choose another file or export it as JPEG and try again.");
+        }
+      }
+      if (controller.signal.aborted) return;
+      setConverting(false);
+      if (uploadFile.size > mediaLimits[type]) {
+        throw new Error(`The converted photo must be ${maximum} MB or smaller. Choose another file.`);
+      }
+      setPreview({ url: URL.createObjectURL(uploadFile), type, name: uploadFile.name, contentType });
       await checkUploadAvailability();
       if (controller.signal.aborted) return;
-      const blob = await upload(`startups/${slug}/${crypto.randomUUID()}.${extension}`, file, {
+      const blob = await upload(`startups/${slug}/${crypto.randomUUID()}.${extension}`, uploadFile, {
         access: "public",
         handleUploadUrl: "/api/upload",
         clientPayload: JSON.stringify({ slug }),
-        contentType: file.type,
+        contentType,
         multipart: type === "video",
         abortSignal: controller.signal,
         onUploadProgress: ({ percentage }) => {
           if (!controller.signal.aborted) setProgress(Math.round(percentage));
         },
       });
-      if (!controller.signal.aborted) setAttachment({ url: blob.url, type, name: file.name });
+      if (!controller.signal.aborted) {
+        setAttachment({ url: blob.url, type, name: uploadFile.name, contentType });
+        if (fileInput.current) fileInput.current.value = "";
+      }
     } catch (error) {
       if (!controller.signal.aborted) {
         setUploadError(error instanceof Error ? error.message : "Couldn't upload this attachment. Try again.");
@@ -135,6 +164,7 @@ export function Composer({ slug, name, avatarUrl }: {
       if (uploadController.current === controller) {
         uploadController.current = null;
         setUploading(false);
+        setConverting(false);
       }
     }
   }
@@ -147,7 +177,40 @@ export function Composer({ slug, name, avatarUrl }: {
     <form action={action} onSubmit={(event) => {
       if (disabled) event.preventDefault();
     }} className="mt-7 min-w-0" aria-busy={pending || uploading}>
-      <div className="min-w-0 rounded-2xl border-[3px] border-ink bg-white shadow-sticker focus-within:ring-2 focus-within:ring-ink/20 focus-within:ring-offset-2 focus-within:ring-offset-cream">
+      <div
+        onDragEnter={(event) => {
+          if (!event.dataTransfer.types.includes("Files")) return;
+          event.preventDefault();
+          dragDepth.current += 1;
+          if (!pending) setDragging(true);
+        }}
+        onDragOver={(event) => {
+          if (!event.dataTransfer.types.includes("Files")) return;
+          event.preventDefault();
+          event.dataTransfer.dropEffect = pending ? "none" : "copy";
+        }}
+        onDragLeave={(event) => {
+          event.preventDefault();
+          dragDepth.current = Math.max(0, dragDepth.current - 1);
+          if (dragDepth.current === 0) setDragging(false);
+        }}
+        onDrop={(event) => {
+          if (!event.dataTransfer.types.includes("Files")) return;
+          event.preventDefault();
+          dragDepth.current = 0;
+          setDragging(false);
+          const file = event.dataTransfer.files[0];
+          if (file) void attachFile(file);
+        }}
+        onPaste={(event) => {
+          const file = Array.from(event.clipboardData.items)
+            .find((item) => item.kind === "file" && item.type.startsWith("image/"))?.getAsFile();
+          if (!file || pending) return;
+          event.preventDefault();
+          void attachFile(file);
+        }}
+        className={`relative min-w-0 rounded-2xl border-[3px] border-ink bg-cream shadow-sticker focus-within:ring-2 focus-within:ring-ink/20 focus-within:ring-offset-2 focus-within:ring-offset-cream ${dragging ? "outline-2 outline-offset-4 outline-dashed outline-ink" : ""}`}>
+        {dragging && <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center rounded-xl bg-cream/95 font-bold" role="status">Drop to attach</div>}
         <div className="flex min-w-0 items-start gap-3 p-5 pb-3">
           <div className="hidden shrink-0 sm:block">
             {avatarUrl ? (
@@ -172,15 +235,18 @@ export function Composer({ slug, name, avatarUrl }: {
         </div>
         <input type="hidden" name="mediaUrl" value={attachment?.url ?? ""} />
         <input type="hidden" name="mediaType" value={attachment?.type ?? ""} />
-        <input ref={fileInput} type="file" accept={Object.keys(extensions).join(",")} hidden
-          disabled={pending || uploading || attachment !== null}
+        <input ref={fileInput} type="file" accept={getMediaAccept()} hidden
+          disabled={pending}
           onChange={(event) => { const file = event.target.files?.[0]; if (file) void attachFile(file); }} />
         {visibleAttachment && <div className="relative mx-5 mb-3 h-28 w-40 max-w-[calc(100%-2.5rem)] overflow-hidden rounded-xl border-2 border-ink bg-cream">
           {visibleAttachment.type === "image" ? (
             <Image src={visibleAttachment.url} alt="Attachment preview" width={160} height={112} unoptimized
               className="h-full w-full object-cover" />
-          ) : <video src={visibleAttachment.url} muted playsInline preload="metadata" aria-label="Video attachment preview"
-            className="h-full w-full object-cover" />}
+          ) : <video key={visibleAttachment.url} muted playsInline preload="metadata" aria-label="Video attachment preview"
+            className="h-full w-full object-cover">
+            {visibleAttachment.contentType === "video/quicktime" && <source src={visibleAttachment.url} type="video/quicktime" />}
+            <source src={visibleAttachment.url} />
+          </video>}
           <button type="button" onClick={removeAttachment} disabled={pending} title="Remove attachment" aria-label="Remove attachment"
             className={`${postIconButtonClass} absolute top-1 right-1 bg-white`}><CloseIcon /></button>
           {uploading && <div role="progressbar" aria-label="Attachment upload progress" aria-valuenow={progress}
@@ -188,19 +254,21 @@ export function Composer({ slug, name, avatarUrl }: {
             <div className="h-full bg-pink" style={{ width: `${progress}%` }} />
           </div>}
         </div>}
-        <div className="flex items-center justify-between gap-3 rounded-b-xl bg-sky/20 px-5 py-3">
+        {visibleAttachment?.contentType === "video/quicktime" && <p className="mx-5 mb-3 text-xs text-ink/60">Some browsers may not play .mov videos. MP4 is safest.</p>}
+        {uploading && <p role="status" className="mx-5 mb-3 text-sm text-ink/60">{converting ? "Converting photo" : `Uploading attachment ${progress}%`}</p>}
+        <div className="flex items-center justify-between gap-3 rounded-b-xl border-t-2 border-ink/15 px-5 py-3">
           <div className="flex gap-2">
-            <button type="button" disabled={pending || uploading || attachment !== null}
-              onClick={() => openFilePicker("image/jpeg,image/png,image/webp,image/gif")}
-              title="Add image (up to 10 MB)" aria-label="Add image" className={postIconButtonClass}><ImageIcon /></button>
-            <button type="button" disabled={pending || uploading || attachment !== null}
-              onClick={() => openFilePicker("video/mp4,video/webm")}
-              title="Add video (up to 200 MB)" aria-label="Add video" className={postIconButtonClass}><VideoIcon /></button>
+            <button type="button" disabled={pending}
+              onClick={() => openFilePicker(getMediaAccept("image"))}
+              title={`Add image (up to ${mediaLimits.image / (1024 * 1024)} MB)`} aria-label="Add image" className={postIconButtonClass}><ImageIcon /></button>
+            <button type="button" disabled={pending}
+              onClick={() => openFilePicker(getMediaAccept("video"))}
+              title={`Add video (up to ${mediaLimits.video / (1024 * 1024)} MB)`} aria-label="Add video" className={postIconButtonClass}><VideoIcon /></button>
           </div>
           <div className="flex min-w-0 items-center gap-3">
             {body.length > 4000 && <span className="text-xs tabular-nums text-ink/60">{body.length.toLocaleString("en-GB")}/5,000</span>}
             <button type="submit" disabled={disabled} title={pending ? "Posting…" : "Post (⌘ or Ctrl + Enter)"}
-              aria-label={pending ? "Posting…" : "Post"} className={`${postIconButtonClass} bg-pink hover:bg-pink/80`}>
+              aria-label={pending ? "Posting…" : "Post"} className={`${postIconButtonBaseClass} ${disabled ? "bg-white text-ink/40" : "bg-pink text-ink shadow-sticker"}`}>
               {pending ? <span aria-hidden="true" className="h-5 w-5 animate-spin rounded-full border-2 border-ink/30 border-t-ink" /> : <SendIcon />}
             </button>
           </div>

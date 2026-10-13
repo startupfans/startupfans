@@ -33,4 +33,5 @@ export function CloseIcon() {
   return <Icon><path d="m6 6 12 12M18 6 6 18" /></Icon>;
 }
 
-export const postIconButtonClass = "inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border-2 border-ink bg-cream text-ink transition hover:bg-sun focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink disabled:cursor-not-allowed disabled:opacity-50";
+export const postIconButtonBaseClass = "inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border-2 border-ink transition-transform hover:-translate-y-0.5 hover:shadow-sticker focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink disabled:cursor-not-allowed disabled:hover:translate-y-0 disabled:hover:shadow-none";
+export const postIconButtonClass = `${postIconButtonBaseClass} bg-white text-ink disabled:text-ink/40`;

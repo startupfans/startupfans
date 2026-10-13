@@ -8,6 +8,7 @@ import { posts, startupMembers, startups } from "@/db/schema";
 import { isAdmin } from "@/lib/admin";
 import { getCurrentUser, isValidSessionId } from "@/lib/auth";
 import { isStartupMediaUrl } from "@/lib/posts";
+import { getMediaFormat } from "@/lib/media";
 import { submitPostReport } from "@/lib/reports";
 import { captureServerEvent } from "@/lib/posthog-server";
 import { emitPostHogLog } from "@/lib/posthog-logs";
@@ -37,7 +38,7 @@ export async function createPost(
     return { status: "error", message: "Remove the attachment and upload it again." };
   }
   const attachmentType = mediaType === "image" || mediaType === "video" ? mediaType : null;
-  if (mediaUrl && !(attachmentType === "image" ? /\.(jpe?g|png|webp|gif)$/i : /\.(mp4|webm)$/i).test(mediaUrl)) {
+  if (mediaUrl && getMediaFormat(new URL(mediaUrl).pathname)?.type !== attachmentType) {
     return { status: "error", message: "The attachment doesn't match its media type. Upload it again." };
   }
   const user = await getCurrentUser();

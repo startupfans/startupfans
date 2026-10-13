@@ -4,6 +4,7 @@ import { and, desc, eq, inArray, sql } from "drizzle-orm";
 import { cache } from "react";
 import { db } from "@/db";
 import { follows, posts, startupMembers, startups, users } from "@/db/schema";
+import { isMediaFilename } from "@/lib/media";
 
 const publicPostFields = {
   id: posts.id,
@@ -120,7 +121,7 @@ export function isStartupMediaUrl(value: string, slug: string) {
       && url.port === "" && url.username === "" && url.password === ""
       && url.search === "" && url.hash === ""
       && url.pathname.startsWith(`/startups/${slug}/`)
-      && /^[-a-zA-Z0-9_.]+$/.test(url.pathname.slice(`/startups/${slug}/`.length));
+      && isMediaFilename(url.pathname.slice(`/startups/${slug}/`.length));
   } catch {
     return false;
   }

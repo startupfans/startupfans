@@ -287,7 +287,7 @@ Built:
 - Startup creation (`app/start/`): signed-in users create a public page and become its owner, with optional stage and team size.
 - Public startup pages (`app/s/[slug]/`): profile, team members, current fan count and a markdown feed, plus member settings links.
 - Public team pages (`app/s/[slug]/team`): member cards with roles, join dates, public post counts and latest post quotes; startup profiles link there through a compact avatar row.
-- Posting: team members publish markdown updates with one optional image or video uploaded directly to Vercel Blob. Public post pages have share metadata; authors and owners can delete posts.
+- Posting: team members publish markdown updates with one optional image or video uploaded directly to Vercel Blob, selected by picker, drag and drop or image paste. JPEG, PNG, WebP, GIF, AVIF, HEIC and HEIF photos are accepted up to 10 MB; HEIC and HEIF convert to JPEG in the browser. MP4, WebM, MOV and M4V videos are accepted up to 200 MB. Public post pages have share metadata; authors and owners can delete posts.
 - Follow and unfollow: signed-in fans receive unique member numbers; unfollowing never reuses a number. Team members see an "On the team" badge and cannot follow their own startup; accepting an invite removes any existing follow without reusing its number.
 - Global feed (`app/feed/`): public posts newest first, startup names and logos, a signed-in following filter, and cursor pagination with 20 posts per page.
 - Leaderboard (`app/leaderboard/`): most followed startups and most active teams by public posts in the last seven days, refreshed every five minutes and linked from the shared top nav.
@@ -337,7 +337,8 @@ Site copy only promises what exists. No pricing on the site (for fans or startup
 - `app/start/`: protected startup creation page and validated server action. Its client form wrapper lives alongside `FollowButton` in `app/s/[slug]/follow-button.tsx`; fields render on the server.
 - `app/s/[slug]/`: public startup profile, team list, member composer and markdown post cards, startup metadata, and follow actions with pending and error states. `post-actions.ts` checks membership for creation and author/owner deletion; `/p/[postId]` renders individual public posts.
 - `app/feed/`: public global feed with Everyone and Following filters, sign-in and discovery empty states, and server-rendered load-more links.
-- `app/api/upload/route.ts`: Vercel Blob client upload authorization restricted to startup members, with image/video type and size limits; text posting works without a Blob store token.
+- `lib/media.ts`: shared image/video MIME types, case-insensitive extensions, picker accept lists and size limits for the composer, upload authorization and server-side media URL checks. HEIC and HEIF are picker-only formats converted to JPEG; raw uploads and media URLs are rejected by the server.
+- `app/api/upload/route.ts`: Vercel Blob client upload authorization restricted to startup members, with shared image/video type and size limits; text posting works without a Blob store token.
 - `lib/posts.ts`: public post queries with author and startup details, cursor-paginated global and following feeds, membership lookup, and startup media URL validation.
 - `lib/members.ts` and `lib/invites.ts`: owner authorization, serialized team changes, profiles and followed startups, plus hashed single-use invite creation, revocation and acceptance.
 - `app/s/[slug]/settings/`: owner-only page editing, member management and unused invites; `invite-link.tsx` creates and copies invite links and offers email invites through the settings action.
