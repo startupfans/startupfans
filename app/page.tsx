@@ -1,6 +1,8 @@
 import Image from "next/image";
-import Link from "next/link";
+import { SessionLink } from "./components/session-link";
 import { WaitlistForm } from "./waitlist-form";
+
+export const dynamic = "force-static";
 
 const LOGO_WIDTH = 910;
 const LOGO_HEIGHT = 150;
@@ -110,12 +112,13 @@ function Nav() {
         <a href="#startups" className="hidden font-bold hover:text-pink sm:inline">
           For startups
         </a>
-        <Link href="/login" className="inline-flex min-h-11 items-center text-sm font-bold hover:text-pink sm:text-base">
-          Sign in
-        </Link>
+        <SessionLink
+          signedOut={{ href: "/login", label: "Sign in", className: "min-h-11 text-sm font-bold hover:text-pink sm:text-base" }}
+          signedIn={{ href: "/feed", label: "Your feed", className: "min-h-11 text-sm font-bold hover:text-pink sm:text-base" }}
+        />
         <a
           href="#join"
-          className="rounded-full border-2 border-ink bg-white px-4 py-2 text-sm font-bold shadow-sticker transition hover:-translate-y-0.5 hover:bg-sun active:translate-y-0 active:shadow-none"
+          className="rounded-full border-2 border-ink bg-white px-3 py-2 text-sm font-bold shadow-sticker transition hover:-translate-y-0.5 hover:bg-sun active:translate-y-0 active:shadow-none sm:px-4"
         >
           Join the waitlist
         </a>
@@ -277,11 +280,16 @@ function JoinSection() {
 
         <WaitlistForm />
         <p className="mt-4 text-sm text-ink">
-          Already have access?{" "}
-          <Link href="/login" className="font-bold underline underline-offset-4">
-            Sign in
-          </Link>
-          .
+          <SessionLink
+            signedOut={{
+              href: "/login",
+              label: <>Already have access? <span className="font-bold underline underline-offset-4">Sign in</span>.</>,
+            }}
+            signedIn={{
+              href: "/feed",
+              label: <>You&apos;re signed in. <span className="font-bold underline underline-offset-4">Go to your feed</span>.</>,
+            }}
+          />
         </p>
       </div>
     </section>

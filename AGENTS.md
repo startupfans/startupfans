@@ -281,7 +281,7 @@ Picked from a shortlist of about 50 ideas from Ian's notes, scored on launch spe
 
 Built:
 - Slack publishing: owners connect a workspace in settings; a 📣 reaction publishes a human message and its first supported image, with email-matched team attribution, encrypted tokens, deduplication and a thread confirmation.
-- Landing page (`app/page.tsx`): hero "Get the inside track on startups." with waitlist form, a "For fans" section and a "For startups" section (three value props each), and a second waitlist form at the bottom.
+- Landing page (`app/page.tsx`): static hero "Get the inside track on startups." with waitlist form, a "For fans" section and a "For startups" section (three value props each), and a second waitlist form at the bottom. Client `SessionLink` checks `/api/session` once on mount to offer signed-in visitors their feed in the nav and join card, reserving space for both labels.
 - Waitlist: email only, via GetWaitlist (`app/waitlist-form.tsx`).
 - Invite-only sign-up: existing accounts can sign in; new accounts need an admin waitlist admission, an active email or link team invite, or an `ADMIN_EMAILS` entry. Unknown emails see an invite-only message and a waitlist link. Link eligibility is rechecked before account creation.
 - Manual seed: `pnpm seed` upserts startupfans with owners from `SEED_OWNER_EMAILS` and its first post.
@@ -354,7 +354,7 @@ Site copy only promises what exists. No pricing on the site (for fans or startup
 - `app/login/`: sign-in link request form, development inbox and server action with shared invite-only eligibility checks and a waitlist link for unknown emails.
 - `app/auth/`: magic-link verification route that creates a session and sets the `sf_session` cookie.
 - `app/me/`: profile name and avatar editing with picker, drop and paste uploads, browser HEIC/HEIF conversion, progress, removal and an HTTPS URL fallback (open when Blob uploads are off), followed startups with member numbers, and sign out, protected by `requireUser`. Blob avatars must use the user's own image path on a public Blob host.
-- `app/page.tsx`: the landing page (server components; the only client component is the waitlist form). Copy and data are typed arrays at the top (`FAN_PROPS`, `STARTUP_PROPS`, `TICKER_WORDS`); edit those to change content. Both audience sections render through `AudienceSection` (`#fans` light, `#startups` dark), linked from the nav.
+- `app/page.tsx`: the static landing page (`force-static`; client components are the waitlist form and `SessionLink`). Session links load the private, uncached `/api/session` endpoint for signed-in feed navigation. Copy and data are typed arrays at the top (`FAN_PROPS`, `STARTUP_PROPS`, `TICKER_WORDS`); edit those to change content. Both audience sections render through `AudienceSection` (`#fans` light, `#startups` dark), linked from the nav.
 - `app/globals.css`: design tokens in `@theme` (colors `cream/ink/pink/sun/lime/sky/tangerine`, `shadow-sticker`, marquee/wobble animations). Reduced motion disables animations.
 - `app/layout.tsx`: fonts (Bricolage Grotesque display, Geist sans/mono via `next/font`) and metadata.
 - `app/waitlist-form.tsx`: client component rendered twice: in the hero (primary CTA, top of page) and again in `JoinSection`. Posts emails straight to the GetWaitlist API (unauthenticated, waitlist ID in `WAITLIST_ID`) and shows queue position plus referral link on success. Signups are managed in the GetWaitlist dashboard.
