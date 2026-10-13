@@ -36,7 +36,7 @@ export function ProfileHeader({ startup, followPanel, isOwner, children }: {
         {startup.coverUrl && <Image src={startup.coverUrl} alt="" fill unoptimized
           sizes="(max-width: 1152px) 100vw, 1152px" className="object-cover" />}
       </div>
-      <Star className="pointer-events-none absolute top-4 right-5 h-12 w-12 rotate-12 text-sun" />
+      {!startup.coverUrl && <Star className="pointer-events-none absolute top-4 right-5 h-12 w-12 rotate-12 text-sun" />}
       <div className="relative px-6 pb-6 sm:px-10 sm:pb-10">
         <div className="relative -mt-14 mb-6 w-28">
           {startup.logoUrl ? <Image src={startup.logoUrl} alt={`${startup.name} logo`} width={112} height={112} unoptimized
