@@ -8,12 +8,12 @@ import { getCurrentUser } from "@/lib/auth";
 export async function TopNav({ signedIn, next }: { signedIn: boolean; next: string }) {
   const admin = signedIn && isAdmin(await getCurrentUser());
   return (
-    <nav className="flex flex-nowrap items-center justify-between gap-x-2 lg:relative lg:left-1/2 lg:min-w-max lg:-translate-x-1/2 lg:gap-x-4" aria-label="Main navigation">
+    <nav className="flex flex-nowrap items-center justify-between gap-x-2 lg:gap-x-4" aria-label="Main navigation">
       <Link href="/" aria-label="startupfans home" className="inline-flex min-h-11 min-w-11 shrink-0 items-center justify-center">
         <Image src="/logo/startupfans-mark-on-light.svg" alt="startupfans" width={196} height={196} className="h-9 w-9 sm:hidden" />
         <Image src="/logo/startupfans-logo-on-light.svg" alt="startupfans" width={910} height={150} className="hidden h-auto w-32 sm:block lg:w-44" />
       </Link>
-      <div className="ml-auto flex min-w-0 flex-nowrap items-center gap-x-1 whitespace-nowrap text-xs font-bold underline-offset-4 max-[390px]:overflow-x-auto sm:gap-x-2 sm:text-sm lg:gap-x-4 lg:text-base [&_a]:min-h-11 [&_a]:min-w-11 [&_a]:shrink-0 [&_a]:items-center [&_a]:justify-center [&_a]:py-2">
+      <div className="ml-auto flex min-w-0 flex-nowrap items-center gap-x-1 pr-1 whitespace-nowrap text-xs font-bold underline-offset-4 max-[390px]:overflow-x-auto sm:gap-x-2 sm:text-sm lg:gap-x-4 lg:text-base [&_a]:min-h-11 [&_a]:min-w-11 [&_a]:shrink-0 [&_a]:items-center [&_a]:justify-center [&_a]:py-2">
         <Link href="/feed" className="inline-flex underline">Feed</Link>
         <Link href="/leaderboard" aria-label="Leaderboard" className="inline-flex underline">
           <span className="sm:hidden">Board</span>

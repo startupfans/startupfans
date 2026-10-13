@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { AppHeader } from "@/app/components/app-shell";
 import { Sticker } from "@/app/components/sticker";
 import { StartupForm } from "@/app/s/[slug]/follow-button";
 import { requireUser } from "@/lib/auth";
@@ -10,45 +10,47 @@ async function StartPage() {
   const user = await requireUser("/start");
 
   return (
-    <main className="mx-auto min-h-screen min-w-0 max-w-2xl break-words px-5 py-10 sm:py-16">
-      <Link href="/" className="inline-flex min-h-11 items-center py-2 font-display text-xl font-extrabold tracking-tight">startupfans</Link>
-      <section className="mt-10 rounded-3xl border-[3px] border-ink bg-cream p-6 shadow-sticker-lg sm:p-10">
-        <Sticker className="inline-block -rotate-3 bg-lime">Your startup, inside out</Sticker>
-        <h1 className="mt-8 font-display text-4xl font-extrabold tracking-tight sm:text-5xl">Start your fan club.</h1>
-        <p className="mt-4 text-lg text-ink/80">Give your team a place to share. Your page is public and free.</p>
-        <StartupForm>
-          <label htmlFor="name" className="block font-bold">Startup name
-            <input id="name" name="name" required minLength={2} maxLength={60} autoComplete="organization" className={inputClass} />
-          </label>
-          <label htmlFor="slug" className="block font-bold">Page address
-            <span id="slug-help" className="mt-1 block text-sm font-normal text-ink/70">startupfans.co/s/your-name</span>
-            <input id="slug" name="slug" required minLength={3} maxLength={40} pattern="[a-z0-9][a-z0-9\-]{1,38}[a-z0-9]" aria-describedby="slug-help" autoCapitalize="none" autoCorrect="off" spellCheck={false} className={inputClass} />
-          </label>
-          <label htmlFor="tagline" className="block font-bold">Tagline <span className="font-normal">(optional)</span>
-            <input id="tagline" name="tagline" maxLength={120} className={inputClass} />
-          </label>
-          <label htmlFor="description" className="block font-bold">Description <span className="font-normal">(optional)</span>
-            <textarea id="description" name="description" maxLength={2000} rows={5} className={`${inputClass} resize-y`} />
-          </label>
-          <BioField />
-          <ImageUpload name="logoUrl" label="Logo" creatorId={user.id} />
-          <label htmlFor="website" className="block font-bold">Website <span className="font-normal">(optional)</span>
-            <input id="website" name="website" type="text" inputMode="url" maxLength={500} placeholder="yourstartup.com" autoComplete="url" className={inputClass} />
-          </label>
-          <label htmlFor="stage" className="block font-bold">Stage <span className="font-normal">(optional)</span>
-            <select id="stage" name="stage" defaultValue="" className={inputClass}>
-              <option value="">Choose a stage</option>
-              <option value="idea">Idea</option>
-              <option value="pre-seed">Pre-seed</option>
-              <option value="seed">Seed</option>
-              <option value="series-a">Series A</option>
-              <option value="growth">Growth</option>
-              <option value="bootstrapped">Bootstrapped</option>
-            </select>
-          </label>
-        </StartupForm>
-      </section>
-    </main>
+    <div className="min-h-screen min-w-0">
+      <AppHeader signedIn next="/start" />
+      <main className="mx-auto min-w-0 max-w-2xl break-words px-5 pb-10 sm:pb-16">
+        <section className="mt-10 rounded-3xl border-[3px] border-ink bg-cream p-6 shadow-sticker-lg sm:p-10">
+          <Sticker className="inline-block -rotate-3 bg-lime">Your startup, inside out</Sticker>
+          <h1 className="mt-8 font-display text-4xl font-extrabold tracking-tight sm:text-5xl">Start your fan club.</h1>
+          <p className="mt-4 text-lg text-ink/80">Give your team a place to share. Your page is public and free.</p>
+          <StartupForm>
+            <label htmlFor="name" className="block font-bold">Startup name
+              <input id="name" name="name" required minLength={2} maxLength={60} autoComplete="organization" className={inputClass} />
+            </label>
+            <label htmlFor="slug" className="block font-bold">Page address
+              <span id="slug-help" className="mt-1 block text-sm font-normal text-ink/70">startupfans.co/s/your-name</span>
+              <input id="slug" name="slug" required minLength={3} maxLength={40} pattern="[a-z0-9][a-z0-9\-]{1,38}[a-z0-9]" aria-describedby="slug-help" autoCapitalize="none" autoCorrect="off" spellCheck={false} className={inputClass} />
+            </label>
+            <label htmlFor="tagline" className="block font-bold">Tagline <span className="font-normal">(optional)</span>
+              <input id="tagline" name="tagline" maxLength={120} className={inputClass} />
+            </label>
+            <label htmlFor="description" className="block font-bold">Description <span className="font-normal">(optional)</span>
+              <textarea id="description" name="description" maxLength={2000} rows={5} className={`${inputClass} resize-y`} />
+            </label>
+            <BioField />
+            <ImageUpload name="logoUrl" label="Logo" creatorId={user.id} />
+            <label htmlFor="website" className="block font-bold">Website <span className="font-normal">(optional)</span>
+              <input id="website" name="website" type="text" inputMode="url" maxLength={500} placeholder="yourstartup.com" autoComplete="url" className={inputClass} />
+            </label>
+            <label htmlFor="stage" className="block font-bold">Stage <span className="font-normal">(optional)</span>
+              <select id="stage" name="stage" defaultValue="" className={inputClass}>
+                <option value="">Choose a stage</option>
+                <option value="idea">Idea</option>
+                <option value="pre-seed">Pre-seed</option>
+                <option value="seed">Seed</option>
+                <option value="series-a">Series A</option>
+                <option value="growth">Growth</option>
+                <option value="bootstrapped">Bootstrapped</option>
+              </select>
+            </label>
+          </StartupForm>
+        </section>
+      </main>
+    </div>
   );
 }
 

@@ -2,7 +2,8 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { Children, isValidElement, type ReactNode } from "react";
 import ReactMarkdown from "react-markdown";
-import { SiteFooter, TopNav } from "@/app/components/sticker";
+import { SiteFooter } from "@/app/components/sticker";
+import { AppHeader } from "@/app/components/app-shell";
 import { SubNav } from "@/app/components/sub-nav";
 import { getCurrentUser } from "@/lib/auth";
 import { getPostMembership, getPublicPost } from "@/lib/posts";
@@ -59,24 +60,27 @@ export async function PostPage({ params, searchParams }: PostPageProps & {
       : query.report === "failed" ? "We couldn't save your report. Try again." : null;
 
   return (
-    <main className="mx-auto min-h-screen min-w-0 max-w-3xl break-words px-5 py-10 sm:py-16">
-      <TopNav signedIn={user !== null} next={`/s/${slug}/p/${postId}`} />
-      <SubNav aria-label="Startup navigation" items={[
-        { href: `/s/${slug}`, label: "Page" },
-        { href: `/s/${slug}/team`, label: "Team" },
-      ]} />
-      <h1 className="sr-only">An update from {post.startupName}</h1>
-      {reportMessage && <p role={query.report === "thanks" ? "status" : "alert"}
-        className="mb-6 rounded-xl border-2 border-ink bg-sun p-4">{reportMessage}</p>}
-      <PostCard post={post} showStartup canDelete={canDelete} onPostPage />
-      <section id="replies" aria-labelledby="replies-heading" className="mt-8 scroll-mt-6">
-        <h2 id="replies-heading" className="font-display text-2xl font-extrabold">Replies <span className="text-ink/60">({comments.length})</span></h2>
-        <CommentList comments={comments} slug={slug} postId={postId} viewerId={user?.id ?? null}
-          canReply={Boolean(access?.canReply)} canModerate={Boolean(access?.canModerate)} />
-        <ReplyComposer slug={slug} postId={postId} canReply={Boolean(access?.canReply)} signedIn={user !== null} />
-      </section>
-      <SiteFooter />
-    </main>
+    <div className="min-h-screen min-w-0">
+      <AppHeader signedIn={user !== null} next={`/s/${slug}/p/${postId}`} subNav={
+        <SubNav aria-label="Startup navigation" items={[
+          { href: `/s/${slug}`, label: "Page" },
+          { href: `/s/${slug}/team`, label: "Team" },
+        ]} />
+      } />
+      <main className="mx-auto min-w-0 max-w-3xl break-words px-5 pb-10 sm:pb-16">
+        <h1 className="sr-only">An update from {post.startupName}</h1>
+        {reportMessage && <p role={query.report === "thanks" ? "status" : "alert"}
+          className="mb-6 rounded-xl border-2 border-ink bg-sun p-4">{reportMessage}</p>}
+        <PostCard post={post} showStartup canDelete={canDelete} onPostPage />
+        <section id="replies" aria-labelledby="replies-heading" className="mt-8 scroll-mt-6">
+          <h2 id="replies-heading" className="font-display text-2xl font-extrabold">Replies <span className="text-ink/60">({comments.length})</span></h2>
+          <CommentList comments={comments} slug={slug} postId={postId} viewerId={user?.id ?? null}
+            canReply={Boolean(access?.canReply)} canModerate={Boolean(access?.canModerate)} />
+          <ReplyComposer slug={slug} postId={postId} canReply={Boolean(access?.canReply)} signedIn={user !== null} />
+        </section>
+        <SiteFooter />
+      </main>
+    </div>
   );
 }
 
