@@ -3,11 +3,13 @@ import "server-only";
 import { and, desc, eq, inArray, sql } from "drizzle-orm";
 import { cache } from "react";
 import { db } from "@/db";
-import { follows, posts, startupMembers, startups, users } from "@/db/schema";
+import { follows, postComments, posts, startupMembers, startups, users } from "@/db/schema";
 import { isMediaFilename } from "@/lib/media";
 
 const publicPostFields = {
   id: posts.id,
+  startupId: posts.startupId,
+  replyCount: sql<number>`(select count(*)::integer from ${postComments} where ${postComments.postId} = ${posts.id} and ${postComments.deletedAt} is null)`,
   authorId: posts.authorId,
   body: posts.bodyMd,
   publishedAt: posts.publishedAt,

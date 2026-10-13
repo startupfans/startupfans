@@ -71,6 +71,13 @@
       "when": 1791892187005,
       "tag": "0009_invited_email",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1791899540990,
+      "tag": "0010_post_comments",
+      "breakpoints": true
     }
   ]
 }

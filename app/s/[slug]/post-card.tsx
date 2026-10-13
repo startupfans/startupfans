@@ -1,7 +1,7 @@
 import { SubmitButton } from "@/app/components/submit-button";
 import Image from "next/image";
 import Link from "next/link";
-import { FlagIcon, LinkIcon, postIconButtonClass } from "@/app/components/icons";
+import { FlagIcon, LinkIcon, ReplyIcon, postIconButtonClass } from "@/app/components/icons";
 import { Markdown } from "@/app/components/markdown";
 import { PostMedia } from "@/app/components/post-media";
 import { isAdmin } from "@/lib/admin";
@@ -10,7 +10,7 @@ import type { PublicPost } from "@/lib/posts";
 import { DeletePostButton } from "./composer";
 import { reportPost } from "./post-actions";
 
-function relativeDate(date: Date) {
+export function relativeDate(date: Date) {
   const seconds = Math.max(0, Math.floor((Date.now() - date.getTime()) / 1000));
   if (seconds < 60) return "just now";
   const formatter = new Intl.RelativeTimeFormat("en", { numeric: "auto" });
@@ -63,6 +63,11 @@ export async function PostCard({ post, showStartup = false, canDelete = false, o
       <div className="mt-2 [&_p:first-child]:mt-0 [&_p:last-child]:mb-0"><Markdown body={post.body} /></div>
       <PostMedia mediaUrl={post.mediaUrl} mediaType={post.mediaType} mediaPosterUrl={post.mediaPosterUrl} />
       <footer className="relative mt-3 flex flex-wrap items-start justify-end gap-2">
+        <Link href={`${postPath}#replies`} title={post.replyCount ? `${post.replyCount} ${post.replyCount === 1 ? "reply" : "replies"}` : "Reply"}
+          aria-label={post.replyCount ? `${post.replyCount} ${post.replyCount === 1 ? "reply" : "replies"}` : "Reply"}
+          className={`${postIconButtonClass} ${post.replyCount ? "w-auto gap-1.5 px-3" : ""}`}>
+          <ReplyIcon />{post.replyCount > 0 && <span className="text-sm font-semibold tabular-nums">{post.replyCount}</span>}
+        </Link>
         <Link href={postPath} title="View post" aria-label="View post" className={postIconButtonClass}><LinkIcon /></Link>
         <details className="min-w-0 max-w-full text-sm">
           <summary title="Report post" aria-label="Report post"

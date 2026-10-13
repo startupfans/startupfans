@@ -136,6 +136,7 @@ Out of scope for the 3 days
 - users: id, name, email, avatar_url
 - memberships: user_id, company_id, role (owner, member)
 - posts: id, company_id, author_id, body, image_url, created_at, source (web, slack)
+- post_comments: id, post_id, parent_id (nullable top-level comment), user_id, body (1 to 1000 characters), created_at, deleted_at (soft delete)
 - follows: user_id, company_id, created_at
 - waitlist_entries: company_name, website, contact_name, role, email, team_size, stage, main_reason, first_post_idea, wants_founding_spot, created_at
 - payments: company_id, stripe_session_id, amount, status, created_at
@@ -291,6 +292,7 @@ Built:
 - Company profiles: a 3:1 cover and overlapping logo, a short bio, location and social icon links. Owners upload logo and cover images, edit social profiles and keep a longer description in settings; creators upload a logo and add a bio at `/start`. Logo and cover uploads share `ImageDrop` with avatars: picker, drag and drop, focused paste, previews, progress, removal, HEIC/HEIF conversion and an HTTPS URL disclosure. Logos use a 96px square preview and covers use 3:1; page-address changes cancel and clear scoped uploads.
 - Public team pages (`app/s/[slug]/team`): member cards with roles, join dates, public post counts and latest post quotes; startup profiles link there through a compact avatar row.
 - Posting: team members publish markdown updates with one optional image or video uploaded directly to Vercel Blob, selected by picker, drag and drop or image paste. JPEG, PNG, WebP, GIF, AVIF, HEIC and HEIF photos are accepted up to 10 MB; HEIC and HEIF convert to JPEG in the browser. MP4, WebM, MOV and M4V videos are accepted up to 200 MB. Public post pages have share metadata; authors and owners can delete posts.
+- Replies: public plain-text replies on individual posts, with chronological threads and one level of nesting through inline reply composers. Replies to nested comments attach to the same top-level parent, enforced on the server. Reply counts on every post card include nested replies. Deleting a parent hides its content while keeping visible child replies. Fans, team members and site admins can reply, limited to 30 per user per 15 minutes through hashed database counters. Authors, startup owners and site admins can confirm a soft deletion. PostHog captures `comment_created` and `comment_deleted` with post and startup ids. `/api/mobile/v1` has no replies yet.
 - Follow and unfollow: signed-in fans receive unique member numbers; unfollowing never reuses a number. Team members see an "On the team" badge and cannot follow their own startup; accepting an invite removes any existing follow without reusing its number.
 - Global feed (`app/feed/`): public posts newest first, startup names and logos, a signed-in following filter, and cursor pagination with 20 posts per page.
 - Leaderboard (`app/leaderboard/`): most followed startups and most active teams by public posts in the last seven days, refreshed every five minutes and linked from the shared top nav.
