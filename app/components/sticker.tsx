@@ -14,13 +14,13 @@ export async function TopNav({ signedIn, next }: { signedIn: boolean; next: stri
       <Link href="/" aria-label="startupfans home" className="inline-flex min-h-11 shrink-0 items-center">
         <Image src="/logo/startupfans-logo-on-light.svg" alt="startupfans" width={910} height={150} className="h-auto w-36 sm:w-44" />
       </Link>
-      <div className="flex min-w-0 max-w-full flex-wrap items-center gap-x-4 font-bold underline underline-offset-4 [&_a]:inline-flex [&_a]:min-h-11 [&_a]:items-center [&_a]:py-2">
+      <div className="ml-auto flex min-w-0 max-w-full flex-wrap items-center justify-end gap-x-3 gap-y-2 text-sm font-bold underline underline-offset-4 sm:gap-x-4 sm:text-base [&_a]:inline-flex [&_a]:min-h-11 [&_a]:min-w-11 [&_a]:items-center [&_a]:justify-center [&_a]:py-2">
         <Link href="/feed">Feed</Link>
         <Link href="/leaderboard">Leaderboard</Link>
-        {admin && <AdminLink />}
         <Link href={signedIn ? "/me" : `/login?next=${encodeURIComponent(next)}`}>
           {signedIn ? "Your account" : "Sign in"}
         </Link>
+        {admin && <AdminLink />}
       </div>
     </nav>
   );

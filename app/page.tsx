@@ -123,11 +123,6 @@ function Nav() {
         <a href="#fans" className="hidden font-bold hover:text-pink sm:inline">
           For fans
         </a>
-        <SessionLink
-          showAdmin
-          signedOut={{ href: "/login", label: "Sign in", className: "min-h-11 text-sm font-bold hover:text-pink sm:text-base" }}
-          signedIn={{ href: "/feed", label: "Your feed", className: "min-h-11 text-sm font-bold hover:text-pink sm:text-base" }}
-        />
         <a
           href="#join"
           className="rounded-full border-2 border-ink bg-white px-3 py-2 text-sm font-bold shadow-sticker transition hover:-translate-y-0.5 hover:bg-sun active:translate-y-0 active:shadow-none sm:px-4"
@@ -135,6 +130,11 @@ function Nav() {
           <span className="sm:hidden">Apply</span>
           <span className="hidden sm:inline">Apply now</span>
         </a>
+        <SessionLink
+          showAdmin
+          signedOut={{ href: "/login", label: "Sign in", className: "min-h-11 text-sm font-bold hover:text-pink sm:text-base" }}
+          signedIn={{ href: "/feed", label: "Your feed", className: "min-h-11 text-sm font-bold hover:text-pink sm:text-base" }}
+        />
       </nav>
     </header>
   );
