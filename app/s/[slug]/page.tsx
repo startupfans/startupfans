@@ -76,21 +76,26 @@ async function StartupPage({ params }: StartupPageProps) {
         </div>
         <div className="mt-8">
           <h2 className="font-display text-xl font-extrabold">The team</h2>
-          <ul className="mt-3 flex flex-wrap gap-3">
-            {members.map((member) => {
+          <ul className="mt-3 flex -space-x-3" aria-label="Team members">
+            {members.slice(0, 5).map((member) => {
               const name = member.name?.trim() || member.email.split("@")[0];
               return (
-                <li key={member.id} className="flex w-full min-w-0 max-w-full items-center gap-2 rounded-xl border-2 border-ink bg-cream px-3 py-2 text-sm font-semibold sm:w-auto">
+                <li key={member.id} className="shrink-0" title={name}>
                   {member.avatarUrl ? (
-                    <Image src={member.avatarUrl} alt={`${name}'s avatar`} width={32} height={32} unoptimized referrerPolicy="no-referrer"
-                      className="h-8 w-8 shrink-0 rounded-full border-2 border-ink object-cover" />
-                  ) : <span aria-hidden="true" className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border-2 border-ink bg-sun font-bold">{name.charAt(0).toUpperCase()}</span>}
-                  <span className="min-w-0 break-words">{name}</span>
+                    <Image src={member.avatarUrl} alt={name} width={44} height={44} unoptimized referrerPolicy="no-referrer"
+                      className="h-11 w-11 rounded-full border-[3px] border-ink bg-cream object-cover" />
+                  ) : <span aria-label={name} className="flex h-11 w-11 items-center justify-center rounded-full border-[3px] border-ink bg-sun font-bold">{name.charAt(0).toUpperCase()}</span>}
                 </li>
               );
             })}
+            {members.length > 5 && (
+              <li aria-label={`${members.length - 5} more team members`} className="flex h-11 min-w-11 shrink-0 items-center justify-center rounded-full border-[3px] border-ink bg-sky px-2 text-sm font-bold">
+                +{members.length - 5}
+              </li>
+            )}
           </ul>
           <p className="mt-3 text-sm text-ink/70">Everyone on the team posts here.</p>
+          <Link href={`/s/${slug}/team`} className="mt-2 inline-flex min-h-11 items-center py-2 font-bold underline underline-offset-4">Meet the team</Link>
         </div>
         <AdminDeleteStartup slug={slug} />
       </section>

@@ -1,6 +1,6 @@
 import "server-only";
 
-import { asc, count, desc, eq, and } from "drizzle-orm";
+import { asc, count, desc, eq, and, sql } from "drizzle-orm";
 import { cache } from "react";
 import { db } from "@/db";
 import { follows, posts, startupMembers, startups, users } from "@/db/schema";
@@ -31,6 +31,37 @@ export async function getStartupMembers(startupId: string) {
     .from(startupMembers).innerJoin(users, eq(users.id, startupMembers.userId))
     .where(eq(startupMembers.startupId, startupId)).orderBy(asc(users.createdAt), asc(users.id));
 }
+
+export const getTeam = cache(async (startupId: string) => {
+  const publicPosts = and(eq(posts.startupId, startupId), eq(posts.visibility, "public"));
+  const totals = db.select({ authorId: posts.authorId, postCount: count().as("post_count") })
+    .from(posts).where(publicPosts).groupBy(posts.authorId).as("team_post_totals");
+  const latest = db.selectDistinctOn([posts.authorId], {
+    authorId: posts.authorId,
+    body: posts.bodyMd,
+    publishedAt: posts.publishedAt,
+  }).from(posts).where(publicPosts)
+    .orderBy(asc(posts.authorId), desc(posts.publishedAt), desc(posts.id)).as("team_latest_posts");
+
+  return db.select({
+    id: users.id,
+    name: users.name,
+    email: users.email,
+    avatarUrl: users.avatarUrl,
+    role: startupMembers.role,
+    joinedAt: startupMembers.createdAt,
+    postCount: sql`coalesce(${totals.postCount}, 0)`.mapWith(Number),
+    latestPostDate: latest.publishedAt,
+    latestPostBody: latest.body,
+  }).from(startupMembers)
+    .innerJoin(users, eq(users.id, startupMembers.userId))
+    .leftJoin(totals, eq(totals.authorId, users.id))
+    .leftJoin(latest, eq(latest.authorId, users.id))
+    .where(eq(startupMembers.startupId, startupId))
+    .orderBy(asc(startupMembers.createdAt), asc(users.id));
+});
+
+export type TeamMember = Awaited<ReturnType<typeof getTeam>>[number];
 
 export async function getStartupPosts(startupId: string) {
   return db.select({

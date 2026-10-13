@@ -286,6 +286,7 @@ Built:
 - Manual seed and waitlist import: `pnpm seed` upserts startupfans with owners from `SEED_OWNER_EMAILS` and its first post; `pnpm import:waitlist <path.csv>` imports GetWaitlist emails as fans in signup order, preserving existing member numbers on reruns.
 - Startup creation (`app/start/`): signed-in users create a public page and become its owner, with optional stage and team size.
 - Public startup pages (`app/s/[slug]/`): profile, team members, current fan count and a markdown feed, plus member settings links.
+- Public team pages (`app/s/[slug]/team`): member cards with roles, join dates, public post counts and latest post quotes; startup profiles link there through a compact avatar row.
 - Posting: team members publish markdown updates with one optional image or video uploaded directly to Vercel Blob. Public post pages have share metadata; authors and owners can delete posts.
 - Follow and unfollow: signed-in fans receive unique member numbers; unfollowing never reuses a number. Team members see an "On the team" badge and cannot follow their own startup; accepting an invite removes any existing follow without reusing its number.
 - Global feed (`app/feed/`): public posts newest first, startup names and logos, a signed-in following filter, and cursor pagination with 20 posts per page.
@@ -332,6 +333,7 @@ Site copy only promises what exists. No pricing on the site (for fans or startup
 - `app/leaderboard/page.tsx` and `lib/leaderboard.ts`: public sticker-style rankings with logos, taglines, fan and weekly post counts, and empty states; each list uses one aggregate query and excludes zero counts. The page renders on demand with queries cached for 300 seconds.
 - `app/opengraph-image.tsx`: default 1200 by 630 share preview and shared image renderer, with a cached Bricolage Grotesque font and a default font fallback.
 - `app/s/[slug]/opengraph-image.tsx`: dynamic startup share preview using the current follower count, with the default site image for unknown slugs.
+- `app/s/[slug]/team/`: public team page and server-rendered member cards, with one, two and three columns on phones, tablets and desktop. `getTeam` in `lib/startups.ts` queries membership join dates and public post activity for the current startup; owners get a settings link.
 - `app/start/`: protected startup creation page and validated server action. Its client form wrapper lives alongside `FollowButton` in `app/s/[slug]/follow-button.tsx`; fields render on the server.
 - `app/s/[slug]/`: public startup profile, team list, member composer and markdown post cards, startup metadata, and follow actions with pending and error states. `post-actions.ts` checks membership for creation and author/owner deletion; `/p/[postId]` renders individual public posts.
 - `app/feed/`: public global feed with Everyone and Following filters, sign-in and discovery empty states, and server-rendered load-more links.

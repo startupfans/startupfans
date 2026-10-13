@@ -68,6 +68,7 @@ export const startupMembers = pgTable(
     startupId: uuid("startup_id").notNull().references(() => startups.id, { onDelete: "cascade" }),
     userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
     role: role("role").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => [unique("startup_members_startup_id_user_id_unique").on(table.startupId, table.userId)],
 );
