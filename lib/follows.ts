@@ -1,8 +1,18 @@
 import "server-only";
 
-import { and, eq, sql } from "drizzle-orm";
+import { and, asc, eq, inArray, ne, sql } from "drizzle-orm";
 import { db } from "@/db";
-import { follows, startupMembers, startups } from "@/db/schema";
+import { follows, startupFollows, startupMembers, startups } from "@/db/schema";
+
+type Transaction = Parameters<Parameters<typeof db.transaction>[0]>[0];
+
+async function allocateMemberNo(tx: Transaction, startupId: string) {
+  const [updated] = await tx.update(startups)
+    .set({ fanCount: sql`${startups.fanCount} + 1` })
+    .where(eq(startups.id, startupId)).returning({ fanCount: startups.fanCount });
+  if (!updated) throw new Error("Startup not found");
+  return updated.fanCount;
+}
 
 export type FollowResult =
   | { status: "member" }
@@ -28,13 +38,8 @@ export async function followStartup(userId: string, startupId: string): Promise<
       .where(and(eq(follows.userId, userId), eq(follows.startupId, startupId))).limit(1);
     if (existing) return { status: "followed", follow: existing, created: false };
 
-    const [updated] = await tx.update(startups)
-      .set({ fanCount: sql`${startups.fanCount} + 1` })
-      .where(eq(startups.id, startupId)).returning({ fanCount: startups.fanCount });
-    if (!updated) throw new Error("Startup not found");
-
     const [follow] = await tx.insert(follows).values({
-      userId, startupId, memberNo: updated.fanCount,
+      userId, startupId, memberNo: await allocateMemberNo(tx, startupId),
     }).returning();
     if (!follow) throw new Error("Could not follow startup");
     return { status: "followed", follow, created: true };
@@ -47,5 +52,39 @@ export async function unfollowStartup(userId: string, startupId: string) {
       .where(eq(startups.id, startupId)).for("update");
     await tx.delete(follows)
       .where(and(eq(follows.userId, userId), eq(follows.startupId, startupId)));
+  });
+}
+
+export async function getStartupFollowOptions(userId: string, startupId: string) {
+  return db.select({ name: startups.name, slug: startups.slug, memberNo: startupFollows.memberNo })
+    .from(startupMembers)
+    .innerJoin(startups, eq(startups.id, startupMembers.startupId))
+    .leftJoin(startupFollows, and(
+      eq(startupFollows.followerStartupId, startups.id), eq(startupFollows.startupId, startupId),
+    ))
+    .where(and(eq(startupMembers.userId, userId), ne(startups.id, startupId)))
+    .orderBy(asc(startups.name), asc(startups.id));
+}
+
+export async function updateStartupFollow(userId: string, startupId: string, followerStartupId: string, following: boolean) {
+  if (startupId === followerStartupId) return { status: "self" } as const;
+  return db.transaction(async (tx) => {
+    const locked = await tx.select({ id: startups.id }).from(startups)
+      .where(inArray(startups.id, [startupId, followerStartupId])).orderBy(asc(startups.id)).for("update");
+    if (locked.length !== 2) return { status: "missing" } as const;
+    const [member] = await tx.select({ role: startupMembers.role }).from(startupMembers)
+      .where(and(eq(startupMembers.userId, userId), eq(startupMembers.startupId, followerStartupId)));
+    if (!member || (member.role !== "owner" && member.role !== "editor")) return { status: "forbidden" } as const;
+    const condition = and(eq(startupFollows.followerStartupId, followerStartupId), eq(startupFollows.startupId, startupId));
+    if (!following) {
+      const removed = await tx.delete(startupFollows).where(condition).returning({ memberNo: startupFollows.memberNo });
+      return { status: "success", changed: removed.length > 0 } as const;
+    }
+    const [existing] = await tx.select().from(startupFollows).where(condition);
+    if (existing) return { status: "success", changed: false } as const;
+    await tx.insert(startupFollows).values({
+      followerStartupId, startupId, memberNo: await allocateMemberNo(tx, startupId),
+    });
+    return { status: "success", changed: true } as const;
   });
 }

@@ -6,11 +6,11 @@ import { SectionHeading, SiteFooter, TopNav } from "@/app/components/sticker";
 import { SubNav } from "@/app/components/sub-nav";
 import { isAdmin } from "@/lib/admin";
 import { getCurrentUser } from "@/lib/auth";
-import { getStartupFollow } from "@/lib/follows";
+import { getStartupFollow, getStartupFollowOptions } from "@/lib/follows";
 import { getPublicStartupPosts } from "@/lib/posts";
 import { getStartupBySlug, getStartupFanCount, getStartupMembers } from "@/lib/startups";
 import { Composer } from "./composer";
-import { FollowButton } from "./follow-button";
+import { FollowButton, StartupFollowButton } from "./follow-button";
 import { PostCard } from "./post-card";
 import { ProfileHeader } from "./profile-header";
 
@@ -32,7 +32,10 @@ async function StartupPage({ params }: StartupPageProps) {
     getCurrentUser(), getStartupMembers(startup.id), getPublicStartupPosts(startup.id), getStartupFanCount(startup.id),
   ]);
   const isMember = members.some((member) => member.id === user?.id);
-  const follow = user && !isMember ? await getStartupFollow(user.id, startup.id) : null;
+  const [follow, followOptions] = await Promise.all([
+    user && !isMember ? getStartupFollow(user.id, startup.id) : null,
+    user ? getStartupFollowOptions(user.id, startup.id) : [],
+  ]);
   const isOwner = members.some((member) => member.id === user?.id && member.role === "owner");
 
   return (
@@ -43,14 +46,14 @@ async function StartupPage({ params }: StartupPageProps) {
         { href: `/s/${slug}/team`, label: "Team" },
         ...(isOwner || isAdmin(user) ? [{ href: `/s/${slug}/settings`, label: "Settings" }] : []),
       ]} />
-      <ProfileHeader startup={startup} isOwner={isOwner} followPanel={
+      <ProfileHeader startup={startup} fanCount={fanCount} isOwner={isOwner} followPanel={
         <>
           {isMember ? (
             <span className="w-full -rotate-3 rounded-xl border-[3px] border-ink bg-lime px-5 py-3 text-center font-display font-extrabold shadow-sticker sm:w-auto">
               On the team
             </span>
           ) : <FollowButton slug={slug} signedIn={user !== null} memberNo={follow?.memberNo ?? null} />}
-          <p className="font-mono text-sm font-bold">{fanCount.toLocaleString("en-GB")} {fanCount === 1 ? "fan" : "fans"}</p>
+          {followOptions.length > 0 && <StartupFollowButton slug={slug} startups={followOptions} />}
         </>
       }>
         <div className="mt-8">

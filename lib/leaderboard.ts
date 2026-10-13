@@ -3,7 +3,9 @@ import "server-only";
 import { and, asc, count, desc, eq, sql } from "drizzle-orm";
 import { unstable_cache } from "next/cache";
 import { db } from "@/db";
-import { follows, posts, startups } from "@/db/schema";
+import { posts, startups } from "@/db/schema";
+
+import { startupFanCount } from "@/lib/startups";
 
 const startupFields = {
   id: startups.id,
@@ -14,10 +16,9 @@ const startupFields = {
 };
 
 export const getMostFollowed = unstable_cache(async (limit = 10) => {
-  const fanCount = count(follows.userId);
+  const fanCount = startupFanCount;
   return db.select({ ...startupFields, count: fanCount }).from(startups)
-    .innerJoin(follows, eq(follows.startupId, startups.id))
-    .groupBy(startups.id)
+    .where(sql`${fanCount} > 0`)
     .orderBy(desc(fanCount), asc(startups.name), asc(startups.id))
     .limit(limit);
 }, ["leaderboard-most-followed"], { revalidate: 300 });

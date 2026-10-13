@@ -1,13 +1,16 @@
 "use client";
 
 import Link from "next/link";
-import { startTransition, useActionState, useRef, type ReactNode } from "react";
+import { startTransition, useActionState, useId, useRef, useState, type ReactNode } from "react";
 import { createStartupAction, type CreateStartupState } from "@/app/start/actions";
 import { slugify } from "@/lib/slug";
 import { SubmitButton } from "@/app/components/submit-button";
+import { updateFollowAsStartup } from "./follow-actions";
+import type { getStartupFollowOptions } from "@/lib/follows";
 import { updateFollow, type FollowState } from "./actions";
 
 const buttonClass = "inline-flex min-h-11 w-full max-w-full items-center justify-center rounded-xl border-[3px] border-ink bg-pink px-5 py-3 font-display font-extrabold shadow-sticker transition hover:-translate-y-0.5 active:translate-y-0 active:shadow-none focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ink disabled:cursor-wait disabled:opacity-60 sm:w-auto";
+const fullWidthButtonClass = buttonClass.replace(" sm:w-auto", "");
 const initialFollowState: FollowState = { status: "idle" };
 const initialCreateState: CreateStartupState = { status: "idle" };
 
@@ -34,6 +37,38 @@ export function FollowButton({ slug, signedIn, memberNo }: {
         {memberNo === null ? "Become a fan" : "Unfollow"}
       </SubmitButton>
       {state.status === "error" && <p role="alert" className="w-full text-sm font-semibold">{state.message}</p>}
+    </form>
+  );
+}
+
+export function StartupFollowButton({ slug, startups }: {
+  slug: string;
+  startups: Awaited<ReturnType<typeof getStartupFollowOptions>>;
+}) {
+  const [selectedSlug, setSelectedSlug] = useState(startups[0]?.slug ?? "");
+  const [state, action, pending] = useActionState(updateFollowAsStartup.bind(null, slug), initialFollowState);
+  const selectId = useId();
+  const selected = startups.find((startup) => startup.slug === selectedSlug) ?? startups[0];
+  if (!selected) return null;
+  const following = selected.memberNo !== null;
+
+  return (
+    <form action={action} aria-busy={pending} className="flex w-full min-w-0 flex-col gap-3">
+      {startups.length > 1 ? (
+        <>
+          <label htmlFor={selectId} className="font-bold">Follow as</label>
+          <select id={selectId} name="followerSlug" value={selected.slug} disabled={pending}
+            onChange={(event) => setSelectedSlug(event.target.value)}
+            className="min-h-11 w-full min-w-0 rounded-xl border-2 border-ink bg-white px-3 py-2 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ink">
+            {startups.map((startup) => <option key={startup.slug} value={startup.slug}>{startup.name}</option>)}
+          </select>
+        </>
+      ) : <input type="hidden" name="followerSlug" value={selected.slug} />}
+      <SubmitButton name="intent" value={following ? "unfollow" : "follow"}
+        pending={pending} pendingLabel="Updating…" className={`${fullWidthButtonClass.replace("bg-pink", "bg-sky")} whitespace-normal break-words sm:w-full`}>
+        {following ? `${selected.name} is a fan · Unfollow` : `Follow as ${selected.name}`}
+      </SubmitButton>
+      {state.status === "error" && <p role="alert" className="text-sm font-semibold">{state.message}</p>}
     </form>
   );
 }
@@ -65,7 +100,7 @@ export function StartupForm({ children }: { children: ReactNode }) {
       {state.status === "error" && (
         <p role="alert" className="rounded-xl border-2 border-ink bg-sun p-4 font-semibold">{state.message}</p>
       )}
-      <SubmitButton pending={pending} pendingLabel="Creating…" className={`${buttonClass} sm:w-full`}>
+      <SubmitButton pending={pending} pendingLabel="Creating…" className={`${fullWidthButtonClass} sm:w-full`}>
         Create your page
       </SubmitButton>
     </form>

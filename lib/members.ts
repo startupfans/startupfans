@@ -1,12 +1,13 @@
 import "server-only";
 
-import { and, count, desc, eq } from "drizzle-orm";
+import { and, desc, eq } from "drizzle-orm";
 import { notFound } from "next/navigation";
 import { db } from "@/db";
 import { follows, startupMembers, startups, users } from "@/db/schema";
 import { getCurrentUser } from "@/lib/auth";
 import { isAdmin } from "@/lib/admin";
 import { captureServerEvent } from "@/lib/posthog-server";
+import { startupFanCount } from "@/lib/startups";
 
 type Transaction = Parameters<Parameters<typeof db.transaction>[0]>[0];
 
@@ -95,12 +96,10 @@ export async function getMemberStartups(userId: string) {
     tagline: startups.tagline,
     logoUrl: startups.logoUrl,
     role: startupMembers.role,
-    fanCount: count(follows.userId),
+    fanCount: startupFanCount,
   }).from(startupMembers)
     .innerJoin(startups, eq(startups.id, startupMembers.startupId))
-    .leftJoin(follows, eq(follows.startupId, startups.id))
     .where(eq(startupMembers.userId, userId))
-    .groupBy(startups.id, startupMembers.role, startupMembers.createdAt)
     .orderBy(desc(startupMembers.createdAt), desc(startups.id));
 }
 

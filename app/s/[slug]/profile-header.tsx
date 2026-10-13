@@ -1,7 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import type { ReactNode } from "react";
-import type { getStartupBySlug } from "@/lib/startups";
+import { formatStartupCount, type getStartupBySlug } from "@/lib/startups";
 import { GitHubIcon, GlobeIcon, InstagramIcon, LinkedInIcon, PinIcon, TikTokIcon, XIcon, YouTubeIcon } from "@/app/components/icons";
 import { Star } from "@/app/components/sticker";
 import { getSocialUrl, socialNetworks, type SocialNetwork } from "@/lib/socials";
@@ -16,8 +16,9 @@ function websiteDomain(website: string) {
   catch { return website; }
 }
 
-export function ProfileHeader({ startup, followPanel, isOwner, children }: {
+export function ProfileHeader({ startup, fanCount, followPanel, isOwner, children }: {
   startup: NonNullable<Awaited<ReturnType<typeof getStartupBySlug>>>;
+  fanCount: number;
   followPanel: ReactNode;
   isOwner: boolean;
   children: ReactNode;
@@ -66,6 +67,15 @@ export function ProfileHeader({ startup, followPanel, isOwner, children }: {
                 </a>;
               })}
             </nav>}
+            <nav aria-label="Fan stats" className="mt-4 flex flex-wrap items-center gap-x-3 font-mono text-sm font-bold">
+              <Link href={`/s/${startup.slug}/fans`} className="inline-flex min-h-11 items-center underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ink">
+                {formatStartupCount(fanCount, "fan")}
+              </Link>
+              <span aria-hidden="true">·</span>
+              <Link href={`/s/${startup.slug}/following`} className="inline-flex min-h-11 items-center underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ink">
+                Following {formatStartupCount(startup.followingCount, "startup")}
+              </Link>
+            </nav>
             {startup.description && <p className="mt-6 max-w-[65ch] whitespace-pre-wrap break-words leading-relaxed text-ink/80">{startup.description}</p>}
             {isOwner && <Link href={`/s/${startup.slug}/settings`} className="mt-4 inline-flex min-h-11 items-center py-2 font-bold underline underline-offset-4">Edit profile</Link>}
           </div>

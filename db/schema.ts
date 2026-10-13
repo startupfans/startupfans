@@ -175,6 +175,17 @@ export const follows = pgTable(
   ],
 );
 
+export const startupFollows = pgTable("startup_follows", {
+  followerStartupId: uuid("follower_startup_id").notNull().references(() => startups.id, { onDelete: "cascade" }),
+  startupId: uuid("startup_id").notNull().references(() => startups.id, { onDelete: "cascade" }),
+  memberNo: integer("member_no").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [
+  primaryKey({ columns: [table.followerStartupId, table.startupId] }),
+  check("startup_follows_no_self_follow", sql`${table.followerStartupId} <> ${table.startupId}`),
+  unique("startup_follows_startup_id_member_no_unique").on(table.startupId, table.memberNo),
+]);
+
 export const emailEvents = pgTable(
   "email_events",
   {
