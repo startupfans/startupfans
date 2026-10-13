@@ -67,7 +67,7 @@ export async function WaitlistPage({ searchParams }: {
           <caption className="sr-only">Waitlist entries in signup order</caption>
           <thead className="border-b-2 border-ink bg-sky">
             <tr>{["Email", "Position", "Signed up", "Status", "Actions"].map((heading) =>
-              <th key={heading} scope="col" className="px-3 py-4 font-bold">{heading}</th>)}</tr>
+              <th key={heading} scope="col" className={`px-3 py-4 font-bold${heading === "Actions" ? " text-right" : ""}`}>{heading}</th>)}</tr>
           </thead>
           <tbody>
             {entries.map((entry) => (
@@ -87,12 +87,14 @@ export async function WaitlistPage({ searchParams }: {
                     </a>}
                   </>}
                 </td>
-                <td className="px-3 py-4">
+                <td className="px-3 py-4 text-right">
+                  <div className="flex justify-end gap-2">
                   <form action={entry.invitedAt ? resendEntryAction.bind(null, entry.id) : letInEntryAction.bind(null, entry.id)}>
                     <button type="submit" className={`${buttonClass} ${entry.invitedAt ? "bg-cream" : "bg-lime"}`}>
                       {entry.invitedAt ? "Resend" : "Let in"}
                     </button>
                   </form>
+                  </div>
                 </td>
               </tr>
             ))}
