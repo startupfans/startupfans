@@ -17,7 +17,7 @@ export function AppHeader({ signedIn, next, subNav }: {
   subNav?: ReactNode;
 }) {
   return (
-    <header className={`${appBandClass} pt-10 pb-10 sm:pt-16 [&+main>*:first-child]:mt-0`}>
+    <header className={`${appBandClass} pt-10 pb-10 sm:pt-16`}>
       <TopNav signedIn={signedIn} next={next} />
       {subNav && <div className="mt-8 [&>nav]:m-0">{subNav}</div>}
     </header>

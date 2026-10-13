@@ -45,7 +45,7 @@ async function TeamPage({ params }: TeamPageProps) {
               <Image src={startup.logoUrl} alt={`${startup.name} logo`} width={48} height={48} unoptimized
                 className="h-12 w-12 shrink-0 -rotate-3 rounded-xl border-[3px] border-ink bg-cream object-contain p-1 shadow-sticker" />
             ) : (
-              <span role="img" aria-label={startup.name} className="flex h-12 w-12 shrink-0 -rotate-3 items-center justify-center rounded-xl border-[3px] border-ink bg-sky font-display text-2xl font-extrabold shadow-sticker">
+              <span aria-hidden="true" className="flex h-12 w-12 shrink-0 -rotate-3 items-center justify-center rounded-xl border-[3px] border-ink bg-sky font-display text-2xl font-extrabold shadow-sticker">
                 {startup.name.charAt(0).toUpperCase()}
               </span>
             )}

@@ -48,7 +48,7 @@ async function MePage({ searchParams }: { searchParams: Promise<{ message?: stri
         } />
         <YourStartups startups={memberStartups} />
         <section className="mt-10 rounded-3xl border-[3px] border-ink bg-sky p-6 shadow-sticker-lg sm:p-10">
-          <p className="mt-5 break-words text-lg">Signed in as <strong>{user.email}</strong></p>
+          <p className="break-words text-lg">Signed in as <strong>{user.email}</strong></p>
           {message && <p role="status" className="mt-5 rounded-xl border-2 border-ink bg-sun p-4">{message}</p>}
           <form action={updateProfileAction} className="mt-8 space-y-5">
             <label htmlFor="name" className="block font-bold">Your name <span className="font-normal">(optional)</span>

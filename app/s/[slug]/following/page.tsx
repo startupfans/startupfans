@@ -35,7 +35,9 @@ async function FollowingPage({ params, searchParams }: FollowingPageProps) {
     <div className="min-h-screen min-w-0">
       <AppHeader signedIn={user !== null} next={`/s/${slug}/following`} />
       <AppShell className="max-w-3xl">
-        <PageHeader title={<><span className="min-w-0 max-w-full">{startup.name} is following</span><span className="font-mono text-sm font-bold">{formatStartupCount(startup.followingCount, "startup")}</span></>} tabs={{ label: "Startup navigation", items: [
+        <PageHeader title={<span className="min-w-0 max-w-full">{startup.name}</span>} metadata={
+          <span className="font-mono text-sm font-bold">following {formatStartupCount(startup.followingCount, "startup")}</span>
+        } tabs={{ label: "Startup navigation", items: [
           { href: `/s/${slug}`, label: "Page" },
           { href: `/s/${slug}/team`, label: "Team" },
           ...(member?.role === "owner" || isAdmin(user) ? [{ href: `/s/${slug}/settings`, label: "Settings" }] : []),
