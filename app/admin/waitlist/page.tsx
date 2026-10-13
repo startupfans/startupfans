@@ -1,9 +1,10 @@
 import Link from "next/link";
 import { SiteFooter, TopNav } from "@/app/components/sticker";
 import { requireAdmin } from "@/lib/admin";
-import { listWaitlist, MAX_WAITLIST_BATCH } from "@/lib/waitlist";
+import { getWaitlistSyncState, listWaitlist, MAX_WAITLIST_BATCH, syncGetWaitlistIfStale } from "@/lib/waitlist";
 import { letInEntryAction, letInFirstAction, resendEntryAction, syncWaitlistAction } from "./actions";
-import { WaitlistUpload } from "./upload";
+
+export const maxDuration = 60;
 
 const buttonClass = "inline-flex min-h-11 items-center justify-center rounded-xl border-2 border-ink px-4 py-2 font-bold";
 const dateFormat = new Intl.DateTimeFormat("en-GB", {
@@ -18,6 +19,9 @@ export async function WaitlistPage({ searchParams }: {
   searchParams: Promise<{ message?: string | string[] }>
 }) {
   await requireAdmin();
+  await syncGetWaitlistIfStale();
+  const sync = getWaitlistSyncState();
+  const syncConfigured = Boolean(process.env.GETWAITLIST_API_KEY);
   const [entries, query] = await Promise.all([listWaitlist(), searchParams]);
   const counts = { waiting: 0, invited: 0, joined: 0 };
   for (const entry of entries) counts[entry.status]++;
@@ -35,7 +39,11 @@ export async function WaitlistPage({ searchParams }: {
         ))}
       </dl>
       {message && <p role="status" className="mt-6 rounded-xl border-2 border-ink bg-lime p-4">{message}</p>}
-      <section aria-label="Manage waitlist" className="mt-8 grid min-w-0 gap-6 rounded-2xl border-[3px] border-ink bg-white p-5 shadow-sticker sm:p-6 lg:grid-cols-2">
+      {syncConfigured && sync.error && <div role="status" className="mt-6 rounded-xl border-[3px] border-ink bg-sun p-4 shadow-sticker">
+        <p className="font-bold">Could not reach GetWaitlist, showing the last synced list.</p>
+        <p className="mt-2 text-sm">{sync.error}</p>
+      </div>}
+      <section aria-label="Manage waitlist" className="mt-8 grid min-w-0 gap-6 rounded-2xl border-[3px] border-ink bg-white p-5 shadow-sticker sm:p-6">
         <div className="space-y-6">
           <form action={letInFirstAction} className="space-y-3">
             <label htmlFor="waitlist-count" className="block font-bold">Let in the first N waiting</label>
@@ -44,13 +52,14 @@ export async function WaitlistPage({ searchParams }: {
                 step={1} defaultValue={10} required className="min-h-11 w-24 rounded-xl border-2 border-ink bg-cream px-3 py-2" />
               <button type="submit" className={`${buttonClass} bg-lime`}>Let in</button>
             </div>
-            <p className="text-sm">Up to 50 at a time, in signup order. Team members are skipped.</p>
+            <p className="text-sm">Up to {MAX_WAITLIST_BATCH} at a time, in signup order. Team members are marked as invited without an email.</p>
           </form>
-          {process.env.GETWAITLIST_API_KEY && <form action={syncWaitlistAction}>
-            <button type="submit" className={`${buttonClass} bg-sun`}>Sync from GetWaitlist</button>
-          </form>}
+          {syncConfigured ? <form action={syncWaitlistAction} className="flex flex-wrap items-center gap-3">
+            <button type="submit" className={`${buttonClass} bg-sun`}>Sync now</button>
+            <p className="text-sm">Last synced {sync.secondsAgo === null ? "never" :
+              `${sync.secondsAgo} seconds ago`}</p>
+          </form> : <p className="text-sm">GetWaitlist sync is not configured.</p>}
         </div>
-        <WaitlistUpload />
       </section>
       <p className="mt-8 text-sm">Dates are shown in UTC. Unverified signups can still be let in.</p>
       <div className="mt-3 overflow-x-auto rounded-2xl border-[3px] border-ink bg-white shadow-sticker">
@@ -87,7 +96,7 @@ export async function WaitlistPage({ searchParams }: {
                 </td>
               </tr>
             ))}
-            {entries.length === 0 && <tr><td colSpan={5} className="p-6">No entries yet. Import a CSV or sync from GetWaitlist.</td></tr>}
+            {entries.length === 0 && <tr><td colSpan={5} className="p-6">No signups yet.</td></tr>}
           </tbody>
         </table>
       </div>

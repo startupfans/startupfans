@@ -9,7 +9,6 @@
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
     "seed": "node --env-file-if-exists=.env --conditions=react-server --import tsx scripts/seed.ts",
-    "import:waitlist": "node --env-file-if-exists=.env --conditions=react-server --import tsx scripts/import-waitlist.ts",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:studio": "drizzle-kit studio"

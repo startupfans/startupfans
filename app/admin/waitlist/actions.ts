@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireAdmin } from "@/lib/admin";
-import { importWaitlistCsv, letInWaitlist, MAX_WAITLIST_CSV_BYTES, syncGetWaitlist } from "@/lib/waitlist";
+import { letInWaitlist, syncGetWaitlist } from "@/lib/waitlist";
 
 function finish(message: string) {
   revalidatePath("/admin/waitlist");
@@ -16,8 +16,8 @@ async function admit(selection: Parameters<typeof letInWaitlist>[0]) {
   let message: string;
   try {
     const result = await letInWaitlist(selection);
-    message = `Sent ${result.sent} welcome emails. ${result.previewed} development previews, ${result.skipped} skipped, ${result.failed} failed.`;
-    if (result.error) message += ` ${result.error}`;
+    message = `Sent ${result.sent} welcome emails. ${result.previewed} development previews, ${result.skipped} skipped, ${result.alreadyOnTeam} already on a team, ${result.failed} failed.`;
+    if (result.errors.length) message += ` ${result.errors.join(" ")}`;
   } catch (error) {
     message = error instanceof Error ? error.message : "Could not let people in.";
   }
@@ -48,22 +48,6 @@ export async function syncWaitlistAction() {
     message = `Synced ${result.imported} entries. ${result.skipped} spam or invalid entries skipped.`;
   } catch (error) {
     message = error instanceof Error ? error.message : "Could not sync the waitlist.";
-  }
-  finish(message);
-}
-
-export async function uploadWaitlistAction(formData: FormData) {
-  await requireAdmin();
-  let message: string;
-  try {
-    const file = formData.get("csv");
-    if (!(file instanceof File) || file.size === 0 || file.size > MAX_WAITLIST_CSV_BYTES) {
-      throw new Error("Choose a CSV smaller than 500 KB.");
-    }
-    const result = await importWaitlistCsv(await file.text());
-    message = `Imported ${result.imported} entries. ${result.skipped} rows skipped. No emails sent.`;
-  } catch (error) {
-    message = error instanceof Error ? error.message : "Could not import the CSV.";
   }
   finish(message);
 }
