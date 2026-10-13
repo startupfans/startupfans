@@ -76,6 +76,8 @@ export async function toggleCommentLike(commentId: string, desiredLiked?: boolea
   const result = await setCommentLike(commentId, user.id, desiredLiked);
   if (result.status === "error") throw new Error(result.message);
   revalidatePath(`/s/${result.slug}/p/${result.postId}`);
+  revalidatePath(`/s/${result.slug}`);
+  revalidatePath("/feed");
   if (result.changed) {
     await captureServerEvent({ distinctId: user.id, event: result.liked ? "comment_liked" : "comment_unliked",
       properties: { post_id: result.postId, startup_id: result.startupId } });

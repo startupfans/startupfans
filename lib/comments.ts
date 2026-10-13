@@ -1,6 +1,6 @@
 import "server-only";
 
-import { and, asc, eq, isNull, sql } from "drizzle-orm";
+import { and, asc, desc, eq, inArray, isNull, or, sql } from "drizzle-orm";
 import { db } from "@/db";
 import { commentLikes, follows, postComments, posts, startupMembers, startups, users } from "@/db/schema";
 import { isAdmin } from "@/lib/admin";
@@ -23,7 +23,7 @@ export async function getCommentAccess(startupId: string, user: CommentUser, tx?
   return { canReply: isAdmin(user) || Boolean(member || follow), canModerate: isAdmin(user) || member?.role === "owner" };
 }
 
-export async function getPublicComments(postId: string, viewerId: string | null = null) {
+function commentQuery(postId: string, viewerId: string | null = null, threadIds?: string[]) {
   return db.select({
     id: postComments.id,
     parentId: postComments.parentId,
@@ -40,12 +40,47 @@ export async function getPublicComments(postId: string, viewerId: string | null 
     .innerJoin(users, eq(users.id, postComments.userId))
     .innerJoin(posts, eq(posts.id, postComments.postId))
     .leftJoin(commentLikes, eq(commentLikes.commentId, postComments.id))
-    .where(and(eq(postComments.postId, postId), eq(posts.visibility, "public"), isNull(postComments.deletedAt)))
+    .where(and(eq(postComments.postId, postId), eq(posts.visibility, "public"), isNull(postComments.deletedAt),
+      threadIds ? or(inArray(postComments.id, threadIds), inArray(postComments.parentId, threadIds)) : undefined))
     .groupBy(postComments.id, users.id)
     .orderBy(asc(postComments.createdAt), asc(postComments.id));
 }
 
+export async function getPublicComments(postId: string, viewerId: string | null = null) {
+  return commentQuery(postId, viewerId);
+}
+
 export type PublicComment = Awaited<ReturnType<typeof getPublicComments>>[number];
+
+export type ReplyComment = Omit<PublicComment, "createdAt"> & { createdAt: string };
+export type RepliesPreview = {
+  comments: ReplyComment[];
+  total: number;
+  hasMore: boolean;
+  viewerId: string | null;
+  canReply: boolean;
+  canModerate: boolean;
+};
+
+export async function getRepliesPreview(postId: string, viewerId: string | null, limit: number) {
+  const [post] = await db.select({ startupId: posts.startupId }).from(posts)
+    .where(and(eq(posts.id, postId), eq(posts.visibility, "public"))).limit(1);
+  if (!post) return null;
+  const previewLimit = Number.isFinite(limit) ? Math.max(1, Math.min(20, Math.trunc(limit))) : 3;
+  const [roots, counts] = await Promise.all([
+    db.select({ id: postComments.id }).from(postComments)
+      .where(and(eq(postComments.postId, postId), isNull(postComments.parentId),
+        or(isNull(postComments.deletedAt), sql`exists (
+          select 1 from post_comments child where child.parent_id = ${postComments.id}
+          and child.post_id = ${postId} and child.deleted_at is null
+        )`)))
+      .orderBy(desc(postComments.createdAt), desc(postComments.id)).limit(previewLimit + 1),
+    db.select({ total: sql<number>`count(*)::int` }).from(postComments)
+      .where(and(eq(postComments.postId, postId), isNull(postComments.deletedAt))),
+  ]);
+  const comments = roots.length ? await commentQuery(postId, viewerId, roots.slice(0, previewLimit).map((root) => root.id)) : [];
+  return { startupId: post.startupId, comments, total: counts[0]?.total ?? 0, hasMore: roots.length > previewLimit };
+}
 
 async function getCommentPost(tx: CommentTransaction, slug: string, postId: string) {
   const [post] = await tx.select({ startupId: posts.startupId }).from(posts)
