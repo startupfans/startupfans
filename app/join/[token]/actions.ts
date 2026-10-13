@@ -1,13 +1,15 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { redirect } from "next/navigation";
-import { requireUser } from "@/lib/auth";
-import { acceptStartupInvite } from "@/lib/invites";
+import { notFound, redirect } from "next/navigation";
+import { getCurrentUser } from "@/lib/auth";
+import { acceptStartupInvite, isInviteToken } from "@/lib/invites";
 import { captureServerEvent } from "@/lib/posthog-server";
 
 export async function acceptInviteAction(token: string) {
-  const user = await requireUser(`/join/${token}`);
+  if (typeof token !== "string" || !isInviteToken(token)) notFound();
+  const user = await getCurrentUser();
+  if (!user) redirect(`/login?${new URLSearchParams({ next: `/join/${token}`, invite: token })}`);
   const startup = await acceptStartupInvite(token, user.id);
   revalidatePath(`/join/${token}`);
   if (!startup) redirect(`/join/${token}?invalid=1`);

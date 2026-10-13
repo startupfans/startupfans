@@ -100,6 +100,7 @@ export const startupMembers = pgTable(
 
 export const startupInvites = pgTable("startup_invites", {
   tokenHash: text("token_hash").primaryKey(),
+  invitedEmail: text("invited_email"),
   startupId: uuid("startup_id").notNull().references(() => startups.id, { onDelete: "cascade" }),
   createdBy: uuid("created_by").notNull().references(() => users.id),
   expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),

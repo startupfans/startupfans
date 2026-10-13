@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { requireUser } from "@/lib/auth";
+import { redirect } from "next/navigation";
+import { getCurrentUser } from "@/lib/auth";
 import { getValidStartupInvite } from "@/lib/invites";
 import { acceptInviteAction } from "./actions";
 
@@ -11,7 +12,10 @@ async function JoinPage({ params, searchParams }: {
 }) {
   const [{ token }, query] = await Promise.all([params, searchParams]);
   const invalid = query.invalid === "1";
-  await requireUser(`/join/${token}${invalid ? "?invalid=1" : ""}`);
+  if (!await getCurrentUser()) {
+    const next = `/join/${encodeURIComponent(token)}${invalid ? "?invalid=1" : ""}`;
+    redirect(`/login?${new URLSearchParams({ next, invite: token })}`);
+  }
   const invite = invalid ? null : await getValidStartupInvite(token);
 
   return (

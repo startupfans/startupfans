@@ -2,6 +2,7 @@ import Link from "next/link";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { getCurrentUser, getSafeNextPath } from "@/lib/auth";
+import { isInviteToken } from "@/lib/invites";
 import { requestMagicLink } from "./actions";
 import { CopyMagicLinkButton } from "./dev-inbox";
 
@@ -31,7 +32,7 @@ async function getDevLink(value: unknown): Promise<string | null> {
   }
 }
 
-export default async function LoginPage({
+export async function LoginPage({
   searchParams,
 }: {
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
@@ -40,11 +41,14 @@ export default async function LoginPage({
 
   const query = await searchParams;
   const next = getSafeNextPath(query.next);
+  const invite = typeof query.invite === "string" && isInviteToken(query.invite) ? query.invite : "";
   const sent = typeof query.sent === "string" ? query.sent : null;
   const devLink = sent && process.env.NODE_ENV !== "production"
     ? await getDevLink(query.dev_link)
     : null;
-  const error = query.error === "rate-limit"
+  const error = query.error === "invite-only"
+    ? "startupfans is invite-only for now. Join the waitlist and we'll let you in."
+    : query.error === "rate-limit"
     ? "Too many sign-in links requested. Try again in a few minutes."
     : query.error === "expired"
     ? "That link has expired or has already been used. Request a fresh one below."
@@ -64,12 +68,12 @@ export default async function LoginPage({
           Your fan club pass
         </span>
         <h1 className="mt-8 font-display text-4xl font-extrabold tracking-tight sm:text-5xl">
-          {sent ? "Check your inbox" : "Welcome to the club."}
+          {sent ? "Check your inbox" : "Sign in"}
         </h1>
         {sent ? (
           <p role="status" className="mt-5 break-words text-lg">We sent a sign-in link to <strong>{sent}</strong>. It expires in 15 minutes.</p>
         ) : (
-          <p className="mt-5 text-lg text-ink/80">Sign in with your email. No password to remember.</p>
+          <p className="mt-5 text-lg text-ink/80">Use the email your invite went to.</p>
         )}
         {devLink && (
           <aside className="mt-6 rounded-2xl border-[3px] border-ink bg-sun p-5 shadow-sticker">
@@ -94,8 +98,14 @@ export default async function LoginPage({
             {error}
           </p>
         )}
+        {query.error === "invite-only" && (
+          <Link href="/#join" className="mt-6 inline-flex min-h-11 w-full items-center justify-center rounded-xl border-[3px] border-ink bg-lime px-5 py-3 font-bold shadow-sticker sm:w-auto">
+            Join the waitlist
+          </Link>
+        )}
         <form action={requestMagicLink} className="mt-8 space-y-4">
           <input type="hidden" name="next" value={next} />
+          <input type="hidden" name="invite" value={invite} />
           <label htmlFor="email" className="block font-bold">Email address</label>
           <input
             id="email"
@@ -112,10 +122,12 @@ export default async function LoginPage({
             type="submit"
             className="min-h-11 w-full min-w-0 rounded-xl border-[3px] border-ink bg-pink px-5 py-4 font-display text-lg font-extrabold shadow-sticker transition hover:-translate-y-0.5 active:translate-y-0 active:shadow-none"
           >
-            Send me a magic link
+            Send me a sign-in link
           </button>
         </form>
       </section>
     </main>
   );
 }
+
+export { LoginPage as default };

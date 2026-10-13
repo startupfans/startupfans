@@ -283,6 +283,7 @@ Built:
 - Slack publishing: owners connect a workspace in settings; a 📣 reaction publishes a human message and its first supported image, with email-matched team attribution, encrypted tokens, deduplication and a thread confirmation.
 - Landing page (`app/page.tsx`): hero "Get the inside track on startups." with waitlist form, a "For fans" section and a "For startups" section (three value props each), and a second waitlist form at the bottom.
 - Waitlist: email only, via GetWaitlist (`app/waitlist-form.tsx`).
+- Invite-only sign-up: existing accounts can sign in; new accounts need an admin waitlist admission, an active email or link team invite, or an `ADMIN_EMAILS` entry. Unknown emails see an invite-only message and a waitlist link. Link eligibility is rechecked before account creation.
 - Manual seed and waitlist import: `pnpm seed` upserts startupfans with owners from `SEED_OWNER_EMAILS` and its first post; `pnpm import:waitlist <path.csv>` stages CSV emails in the admin waitlist without sending emails or allocating fan numbers.
 - Waitlist admissions (`/admin/waitlist`): admins import CSVs or sync GetWaitlist, see waiting, invited and joined counts, and send individual or ordered batches of up to 50 welcome emails. Seven-day single-use sign-in links and repeat sends preserve existing fan numbers; unverified signups are flagged and team members are skipped. Sessions or follows created after the invitation mark entries as joined on page load.
 - Startup creation (`app/start/`): signed-in users create a public page and become its owner, with optional stage and team size.
@@ -326,6 +327,7 @@ Site copy only promises what exists. No pricing on the site (for fans or startup
 - `scripts/seed.ts` and `scripts/import-waitlist.ts`: manual, idempotent startupfans seed and CSV staging through `lib/waitlist.ts`. Commands load `.env` with Node 24 and run through `tsx` with the `react-server` condition for server-only imports.
 - `db/`: Drizzle schema, migrations, and the lazy Postgres client exported as `db`. Everyone uses the shared hosted Postgres through `DATABASE_URL` in the team's `.env`. Without it, database access throws a clear setup error; imports and builds do not need a connection.
 - `lib/`: server-only auth and session helpers (`lib/auth.ts`) and Resend email delivery with a console fallback (`lib/email.ts`).
+- `lib/signup.ts`: shared `canSignUp(email, { inviteToken? })` eligibility and `existingUser(email)` lookup, with trimmed, case-insensitive emails. The mobile auth request API should call `canSignUp` after its branch merges; it is not present on this branch.
 - `lib/ratelimit.ts`, `lib/reports.ts`, `lib/admin.ts`: atomic hashed sign-in counters, private post report submission and resolution, and site admin authorization/deletion. Reports retain their resolved timestamp so signed-in users cannot report a post twice.
 - `app/admin/`: admin-only open report queue with post excerpts, reasons, counts, resolution and confirmed deletion. `ADMIN_EMAILS` grants access through comma-separated email addresses or `@domain` entries (case-insensitive, whitespace tolerant, exact domains only); other visitors receive a 404.
 - `app/admin/waitlist/` and `lib/waitlist.ts`: admin-gated CSV upload, optional authenticated GetWaitlist sync via `GETWAITLIST_API_KEY`, ordered admission batches and resends using the follow allocator, and persisted join detection. Dates are shown in UTC; signup verification and detected join timestamps live alongside waitlist entries.
@@ -347,9 +349,9 @@ Site copy only promises what exists. No pricing on the site (for fans or startup
 - `lib/posts.ts`: public post queries with author and startup details, cursor-paginated global and following feeds, membership lookup, and startup media URL validation.
 - `lib/members.ts` and `lib/invites.ts`: owner authorization, serialized team changes, profiles and followed startups, plus hashed single-use invite creation, revocation and acceptance.
 - `app/s/[slug]/settings/`: owner-only page editing, member management and unused invites; `invite-link.tsx` creates and copies invite links and offers email invites through the settings action.
-- `app/join/[token]/`: signed-in invite confirmation with atomic editor membership creation and friendly invalid-link messages.
+- `app/join/[token]/`: signed-in invite confirmation with atomic editor membership creation and friendly invalid-link messages; signed-out visitors carry the invite token through login and return to the confirmation page. Email invites also store the invited address for sign-up eligibility.
 - `app/components/markdown.tsx` and `post-media.tsx`: safe markdown rendering and sticker-framed images and videos.
-- `app/login/`: magic-link request form and its server action.
+- `app/login/`: sign-in link request form, development inbox and server action with shared invite-only eligibility checks and a waitlist link for unknown emails.
 - `app/auth/`: magic-link verification route that creates a session and sets the `sf_session` cookie.
 - `app/me/`: profile name and avatar editing, followed startups with member numbers, and sign out, protected by `requireUser`.
 - `app/page.tsx`: the landing page (server components; the only client component is the waitlist form). Copy and data are typed arrays at the top (`FAN_PROPS`, `STARTUP_PROPS`, `TICKER_WORDS`); edit those to change content. Both audience sections render through `AudienceSection` (`#fans` light, `#startups` dark), linked from the nav.

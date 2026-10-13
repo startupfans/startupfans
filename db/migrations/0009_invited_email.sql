@@ -1,0 +1,1 @@
+ALTER TABLE "startup_invites" ADD COLUMN "invited_email" text;

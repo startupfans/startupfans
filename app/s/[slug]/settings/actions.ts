@@ -130,7 +130,7 @@ export async function sendInviteAction(slug: string, formData: FormData) {
     settingsMessage(slug, "invalid-email");
   }
 
-  const url = await createStartupInvite(slug, user.id);
+  const url = await createStartupInvite(slug, user.id, email);
   try {
     await sendEmail({
       to: email,

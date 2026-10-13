@@ -64,6 +64,13 @@
       "when": 1791891788471,
       "tag": "0008_waitlist_entries",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1791892187005,
+      "tag": "0009_invited_email",
+      "breakpoints": true
     }
   ]
 }
