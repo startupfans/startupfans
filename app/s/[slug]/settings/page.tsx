@@ -2,12 +2,15 @@ import { SubmitButton } from "@/app/components/submit-button";
 import { AppHeader, AppShell } from "@/app/components/app-shell";
 import { SubNav } from "@/app/components/sub-nav";
 import { ConfirmSubmit } from "@/app/components/confirm-dialog";
+import { Handle } from "@/app/components/handle";
+import Link from "next/link";
 import { ProfileImage } from "@/app/components/profile-image";
 import { getUnusedStartupInvites, hasExpiredStartupInvites } from "@/lib/invites";
 import { requireStartupOwner } from "@/lib/members";
+import { formatRequestTime, listPendingTeamJoinRequests } from "@/lib/team-requests";
 import { getStartupMembers } from "@/lib/startups";
 import { getSlackConnection, isSlackConfigured } from "@/lib/slack";
-import { clearExpiredInvitesAction, disconnectSlackAction, removeMemberAction, revokeInviteAction, setMemberRoleAction } from "./actions";
+import { acceptJoinRequestAction, clearExpiredInvitesAction, declineJoinRequestAction, disconnectSlackAction, removeMemberAction, revokeInviteAction, setMemberRoleAction } from "./actions";
 import { InviteByEmail, InviteLink } from "./invite-link";
 import { PageDetailsForm } from "./page-details-form";
 import { DangerZone } from "./danger-zone";
@@ -30,6 +33,10 @@ const messages = new Map([
   ["invalid-email", "Enter a valid email address for your teammate."],
   ["invite-sent", "Invite sent."],
   ["invite-send-failed", "We couldn't send the email. Try again or create a link to share."],
+  ["invalid-request", "Choose a request from the list."],
+  ["request-missing", "That request is already handled."],
+  ["request-accepted", "They're on the team."],
+  ["request-declined", "Request declined."],
 ]);
 
 async function SettingsPage({ params, searchParams }: {
@@ -39,8 +46,8 @@ async function SettingsPage({ params, searchParams }: {
   const { slug } = await params;
   const { startup, user, isSiteAdmin, isOwner, isMember } = await requireStartupOwner(slug);
   const slackConfigured = isSlackConfigured();
-  const [members, invites, query, slackConnection, hasExpiredInvites] = await Promise.all([
-    getStartupMembers(startup.id), getUnusedStartupInvites(startup.id), searchParams,
+  const [members, invites, joinRequests, query, slackConnection, hasExpiredInvites] = await Promise.all([
+    getStartupMembers(startup.id), getUnusedStartupInvites(startup.id), listPendingTeamJoinRequests(startup.id), searchParams,
     isOwner && slackConfigured ? getSlackConnection(startup.id) : Promise.resolve(null),
     hasExpiredStartupInvites(startup.id),
   ]);
@@ -146,6 +153,44 @@ async function SettingsPage({ params, searchParams }: {
             </div>
           </section>
         </div>
+        <section id="join-requests" className="mt-10 scroll-mt-8 rounded-3xl border-[3px] border-ink bg-sun p-6 shadow-sticker-lg sm:p-8" aria-labelledby="join-requests-heading">
+          <h2 id="join-requests-heading" className="font-display text-2xl font-extrabold">Join requests</h2>
+          <p className="mt-2 text-ink/70">People who asked to join from the team page. Adding someone makes them an editor.</p>
+          {joinRequests.length === 0 ? <p className="mt-4">No one is waiting to join.</p> : (
+            <ul className="mt-5 space-y-4">
+              {joinRequests.map((request) => {
+                const name = request.name?.trim() || request.handle;
+                return (
+                  <li key={request.id} className="flex flex-wrap items-center gap-3 rounded-xl border-2 border-ink bg-white p-4">
+                    {request.avatarUrl ? (
+                      <ProfileImage src={request.avatarUrl} alt={`${name}'s avatar`} width={40} height={40} sizes="40px" referrerPolicy="no-referrer"
+                        className="h-10 w-10 shrink-0 rounded-full border-2 border-ink object-cover" />
+                    ) : <span aria-hidden="true" className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border-2 border-ink bg-lime font-bold">{name.charAt(0).toUpperCase()}</span>}
+                    <div className="min-w-0 flex-1 break-words">
+                      <p className="font-bold"><Link href={`/u/${request.handle}`} className="underline">{name}</Link></p>
+                      <Handle handle={request.handle} />
+                      <p className="mt-1 text-sm text-ink/70">Requested {formatRequestTime(request.createdAt)}</p>
+                    </div>
+                    <div className="flex w-full flex-wrap gap-3">
+                      <form action={acceptJoinRequestAction.bind(null, slug)} className="w-full sm:w-auto">
+                        <input type="hidden" name="requestId" value={request.id} />
+                        <ConfirmSubmit danger={false} pendingLabel="Adding…" className={buttonClass} aria-label={`Add ${name} to the team`}
+                          description={`This adds ${name} to the team as an editor.`}
+                          confirmLabel="Yes, add them">Add to team</ConfirmSubmit>
+                      </form>
+                      <form action={declineJoinRequestAction.bind(null, slug)} className="w-full sm:w-auto">
+                        <input type="hidden" name="requestId" value={request.id} />
+                        <ConfirmSubmit pendingLabel="Declining…" className={buttonClass} aria-label={`Decline ${name}'s request`}
+                          description={`This declines ${name}'s request to join.`}
+                          confirmLabel="Yes, decline">Decline</ConfirmSubmit>
+                      </form>
+                    </div>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </section>
         <section className="mt-10 rounded-3xl border-[3px] border-ink bg-white p-6 shadow-sticker-lg sm:p-8" aria-labelledby="invites-heading">
           <h2 id="invites-heading" className="font-display text-2xl font-extrabold">Active invites</h2>
           {hasExpiredInvites && <form action={clearExpiredInvitesAction.bind(null, slug)} className="mt-4">

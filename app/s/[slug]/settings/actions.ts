@@ -8,6 +8,7 @@ import { isValidSessionId } from "@/lib/auth";
 import { sendEmail } from "@/lib/email";
 import { inviteEmail } from "@/lib/emails/invite";
 import { clearExpiredStartupInvites, createStartupInvite, revokeStartupInvite } from "@/lib/invites";
+import { acceptTeamJoinRequest, declineTeamJoinRequest } from "@/lib/team-requests";
 import { removeStartupMember, requireStartupOwner, setStartupMemberRole, textField, withOwnedStartup } from "@/lib/members";
 import { captureServerEvent } from "@/lib/posthog-server";
 import { isStartupProfileImageUrl, normalizeWebsiteUrl } from "@/lib/startups";
@@ -247,6 +248,38 @@ export async function sendInviteAction(slug: string, formData: FormData) {
   await captureServerEvent({ distinctId: user.id, event: "startup_invite_sent" });
   revalidatePath(`/s/${slug}/settings`);
   settingsMessage(slug, "invite-sent");
+}
+
+export async function acceptJoinRequestAction(slug: string, formData: FormData) {
+  const { user } = await requireStartupOwner(slug);
+  const requestId = textField(formData, "requestId");
+  if (!isValidSessionId(requestId)) settingsMessage(slug, "invalid-request");
+  const result = await acceptTeamJoinRequest(slug, user.id, requestId);
+  switch (result.status) {
+    case "missing":
+      settingsMessage(slug, "request-missing");
+    case "accepted":
+      refreshStartup(slug);
+      settingsMessage(slug, "request-accepted");
+    default:
+      result satisfies never;
+  }
+}
+
+export async function declineJoinRequestAction(slug: string, formData: FormData) {
+  const { user } = await requireStartupOwner(slug);
+  const requestId = textField(formData, "requestId");
+  if (!isValidSessionId(requestId)) settingsMessage(slug, "invalid-request");
+  const result = await declineTeamJoinRequest(slug, user.id, requestId);
+  switch (result.status) {
+    case "missing":
+      settingsMessage(slug, "request-missing");
+    case "declined":
+      refreshStartup(slug);
+      settingsMessage(slug, "request-declined");
+    default:
+      result satisfies never;
+  }
 }
 
 export async function revokeInviteAction(slug: string, formData: FormData) {

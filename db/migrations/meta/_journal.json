@@ -169,6 +169,13 @@
       "when": 1791986054557,
       "tag": "0023_reshare_image",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1791987684758,
+      "tag": "0024_amused_ricochet",
+      "breakpoints": true
     }
   ]
 }
