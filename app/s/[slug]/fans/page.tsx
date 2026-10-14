@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import Image from "next/image";
+import { ProfileImage } from "@/app/components/profile-image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { PageHeader, SiteFooter } from "@/app/components/sticker";
@@ -48,7 +48,7 @@ async function FansPage({ params, searchParams }: FansPageProps) {
               const name = fan.name?.trim() || "A fan";
               const details = <>
                 {fan.imageUrl ? (
-                  <Image src={fan.imageUrl} alt="" width={56} height={56} unoptimized referrerPolicy="no-referrer"
+                  <ProfileImage src={fan.imageUrl} alt="" width={56} height={56} sizes="56px" referrerPolicy="no-referrer"
                     className={`h-14 w-14 shrink-0 border-2 border-ink bg-cream ${fan.kind === "startup" ? "rounded-xl object-contain p-1" : "rounded-full object-cover"}`} />
                 ) : <span aria-hidden="true" className={`flex h-14 w-14 shrink-0 items-center justify-center border-2 border-ink bg-sky font-display text-2xl font-extrabold ${fan.kind === "startup" ? "rounded-xl" : "rounded-full"}`}>{name.charAt(0).toUpperCase()}</span>}
                 <span className="min-w-0">

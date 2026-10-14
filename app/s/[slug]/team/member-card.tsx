@@ -1,4 +1,4 @@
-import Image from "next/image";
+import { ProfileImage } from "@/app/components/profile-image";
 import { Handle } from "@/app/components/handle";
 import type { TeamMember } from "@/lib/startups";
 
@@ -15,7 +15,7 @@ export function MemberCard({ member }: { member: TeamMember }) {
   return (
     <article className="min-w-0 rounded-2xl border-[3px] border-ink bg-white p-6 shadow-sticker">
       {member.avatarUrl ? (
-        <Image src={member.avatarUrl} alt={`${name}'s avatar`} width={72} height={72} unoptimized referrerPolicy="no-referrer"
+        <ProfileImage src={member.avatarUrl} alt={`${name}'s avatar`} width={72} height={72} sizes="72px" referrerPolicy="no-referrer"
           className="h-18 w-18 rounded-full border-[3px] border-ink bg-cream object-cover" />
       ) : (
         <span aria-hidden="true" className="flex h-18 w-18 items-center justify-center rounded-full border-[3px] border-ink bg-lime font-display text-3xl font-extrabold">

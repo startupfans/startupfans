@@ -1,6 +1,6 @@
 import { SubmitButton } from "@/app/components/submit-button";
 import { Handle } from "@/app/components/handle";
-import Image from "next/image";
+import { ProfileImage } from "@/app/components/profile-image";
 import Link from "next/link";
 import { FlagIcon, LinkIcon, postIconButtonClass } from "@/app/components/icons";
 import { Markdown } from "@/app/components/markdown";
@@ -33,7 +33,7 @@ export async function PostCard({ post, showStartup = false, canDelete = false, o
     <article className="min-w-0 rounded-2xl border-[3px] border-ink bg-white p-5 shadow-sticker [&>footer>div:last-child]:flex-1 [&>footer>div:last-child]:justify-start">
       <header className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-sm text-ink/60">
         {post.authorAvatarUrl ? (
-          <Image src={post.authorAvatarUrl} alt="" width={32} height={32} unoptimized referrerPolicy="no-referrer"
+          <ProfileImage src={post.authorAvatarUrl} alt="" width={32} height={32} sizes="32px" referrerPolicy="no-referrer"
             className="h-8 w-8 shrink-0 rounded-full border-2 border-ink object-cover" />
         ) : (
           <span aria-hidden="true" className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border-2 border-ink bg-sun font-bold text-ink">
@@ -46,7 +46,7 @@ export async function PostCard({ post, showStartup = false, canDelete = false, o
         {showStartup && <>
           <Link href={`/s/${post.startupSlug}`} className="inline-flex min-w-0 max-w-full items-center gap-1.5 font-semibold text-ink hover:underline">
             {post.startupLogoUrl ? (
-              <Image src={post.startupLogoUrl} alt="" width={20} height={20} unoptimized
+              <ProfileImage src={post.startupLogoUrl} alt="" width={20} height={20} sizes="20px"
                 className="h-5 w-5 shrink-0 -rotate-3 rounded border border-ink bg-cream object-contain" />
             ) : (
               <span aria-hidden="true" className="flex h-5 w-5 shrink-0 -rotate-3 items-center justify-center rounded border border-ink bg-sky font-display text-xs font-extrabold">
@@ -108,7 +108,7 @@ export async function ReshareItem({ item }: { item: Extract<TimelineItem, { kind
   return <section aria-label={`${name} reshared`} className="min-w-0 space-y-3">
     <header className="flex min-w-0 flex-wrap items-center gap-2 rounded-xl border-2 border-ink bg-cream px-3 py-2 text-sm shadow-sticker">
       <Link href={`/u/${item.resharer.handle}`} className="flex min-w-0 max-w-full flex-wrap items-center gap-2 hover:underline">
-        {item.resharer.avatarUrl ? <Image src={item.resharer.avatarUrl} alt="" width={28} height={28} unoptimized referrerPolicy="no-referrer"
+        {item.resharer.avatarUrl ? <ProfileImage src={item.resharer.avatarUrl} alt="" width={28} height={28} sizes="28px" referrerPolicy="no-referrer"
           className="h-7 w-7 shrink-0 rounded-full border-2 border-ink object-cover" />
           : <span aria-hidden="true" className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border-2 border-ink bg-sun font-bold">{name.charAt(0).toUpperCase()}</span>}
         <span className="min-w-0 break-words font-bold">{name}</span><Handle handle={item.resharer.handle} />

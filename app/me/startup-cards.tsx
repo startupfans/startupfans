@@ -1,4 +1,4 @@
-import Image from "next/image";
+import { ProfileImage } from "@/app/components/profile-image";
 import Link from "next/link";
 import type { getMemberStartups } from "@/lib/members";
 import type { listAllStartups } from "@/lib/startups";
@@ -10,7 +10,7 @@ const linkClass = "inline-flex min-h-11 items-center py-2 font-bold underline un
 
 function StartupLogo({ startup }: { startup: { name: string; logoUrl: string | null } }) {
   return startup.logoUrl ? (
-    <Image src={startup.logoUrl} alt="" width={48} height={48} unoptimized referrerPolicy="no-referrer"
+    <ProfileImage src={startup.logoUrl} alt="" width={48} height={48} sizes="48px" referrerPolicy="no-referrer"
       className="h-12 w-12 shrink-0 rounded-xl border-2 border-ink bg-white object-cover" />
   ) : (
     <span aria-hidden="true" className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border-2 border-ink bg-sun font-display text-xl font-extrabold">

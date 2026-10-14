@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import Image from "next/image";
+import { ProfileImage } from "@/app/components/profile-image";
 import Link from "next/link";
 import { PageHeader } from "@/app/components/sticker";
 import { AppHeader, AppShell } from "@/app/components/app-shell";
@@ -39,7 +39,7 @@ function LeaderboardList({ startups, singular, plural, suffix = "", emptyMessage
             #{index + 1}
           </span>
           {startup.logoUrl ? (
-            <Image src={startup.logoUrl} alt="" width={44} height={44} unoptimized
+            <ProfileImage src={startup.logoUrl} alt="" width={44} height={44} sizes="44px"
               className="h-11 w-11 shrink-0 rotate-3 rounded-xl border-2 border-ink bg-cream object-contain p-1" />
           ) : (
             <span aria-hidden="true" className="flex h-11 w-11 shrink-0 rotate-3 items-center justify-center rounded-xl border-2 border-ink bg-sky font-display text-xl font-extrabold">

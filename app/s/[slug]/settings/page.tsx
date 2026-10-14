@@ -2,7 +2,7 @@ import { SubmitButton } from "@/app/components/submit-button";
 import { AppHeader, AppShell } from "@/app/components/app-shell";
 import { SubNav } from "@/app/components/sub-nav";
 import { ConfirmSubmit } from "@/app/components/confirm-dialog";
-import Image from "next/image";
+import { ProfileImage } from "@/app/components/profile-image";
 import { getUnusedStartupInvites, hasExpiredStartupInvites } from "@/lib/invites";
 import { requireStartupOwner } from "@/lib/members";
 import { getStartupMembers } from "@/lib/startups";
@@ -110,7 +110,7 @@ async function SettingsPage({ params, searchParams }: {
                 return (
                   <li key={member.id} className="flex flex-wrap items-center gap-3 rounded-xl border-2 border-ink bg-white p-4">
                     {member.avatarUrl ? (
-                      <Image src={member.avatarUrl} alt={`${name}'s avatar`} width={40} height={40} unoptimized referrerPolicy="no-referrer"
+                      <ProfileImage src={member.avatarUrl} alt={`${name}'s avatar`} width={40} height={40} sizes="40px" referrerPolicy="no-referrer"
                         className="h-10 w-10 shrink-0 rounded-full border-2 border-ink object-cover" />
                     ) : <span aria-hidden="true" className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border-2 border-ink bg-sun font-bold">{name.charAt(0).toUpperCase()}</span>}
                     <div className="min-w-0 flex-1 break-words"><p className="font-bold">{name}</p>

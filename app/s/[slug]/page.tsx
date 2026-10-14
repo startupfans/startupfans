@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import Image from "next/image";
+import { ProfileImage } from "@/app/components/profile-image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { SiteFooter } from "@/app/components/sticker";
@@ -68,7 +68,7 @@ async function StartupPage({ params }: StartupPageProps) {
                 return (
                   <li key={member.id} className="shrink-0" title={label}>
                     {member.avatarUrl ? (
-                      <Image src={member.avatarUrl} alt={label} width={44} height={44} unoptimized referrerPolicy="no-referrer"
+                      <ProfileImage src={member.avatarUrl} alt={label} width={44} height={44} sizes="44px" referrerPolicy="no-referrer"
                         className="h-11 w-11 rounded-full border-[3px] border-ink bg-cream object-cover" />
                     ) : <span aria-label={label} className="flex h-11 w-11 items-center justify-center rounded-full border-[3px] border-ink bg-sun font-bold">{name.charAt(0).toUpperCase()}</span>}
                   </li>

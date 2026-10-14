@@ -1,6 +1,6 @@
 "use client";
 
-import Image from "next/image";
+import { ProfileImage } from "@/app/components/profile-image";
 import { useRouter } from "next/navigation";
 import { useState, useSyncExternalStore } from "react";
 import { Composer } from "@/app/s/[slug]/composer";
@@ -51,7 +51,7 @@ export function FeedComposer({ startups, userId, name, avatarUrl }: {
   }
 
   const logo = startup.logoUrl ? (
-    <Image src={startup.logoUrl} alt="" width={20} height={20} unoptimized referrerPolicy="no-referrer"
+    <ProfileImage src={startup.logoUrl} alt="" width={20} height={20} sizes="20px" referrerPolicy="no-referrer"
       className="h-5 w-5 shrink-0 rounded-full border border-ink object-cover" />
   ) : (
     <span aria-hidden="true" className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full border border-ink bg-sun text-xs font-bold">

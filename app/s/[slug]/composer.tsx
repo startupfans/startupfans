@@ -3,6 +3,7 @@
 import { upload } from "@vercel/blob/client";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
+import { ProfileImage } from "@/app/components/profile-image";
 import { useActionState, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { CloseIcon, ImageIcon, SendIcon, TrashIcon, VideoIcon, postIconButtonBaseClass, postIconButtonClass } from "@/app/components/icons";
 import { MentionAutocomplete } from "@/app/components/mention-autocomplete";
@@ -224,7 +225,7 @@ export function Composer({ slug, name, avatarUrl, onPosted, onBusyChange }: {
         <div className="flex min-w-0 items-start gap-3 p-5 pb-3">
           <div className="hidden shrink-0 sm:block">
             {avatarUrl ? (
-              <Image src={avatarUrl} alt="" width={40} height={40} unoptimized referrerPolicy="no-referrer"
+              <ProfileImage src={avatarUrl} alt="" width={40} height={40} sizes="40px" referrerPolicy="no-referrer"
                 className="h-10 w-10 rounded-full border-2 border-ink object-cover" />
             ) : (
               <span aria-hidden="true" className="flex h-10 w-10 items-center justify-center rounded-full border-2 border-ink bg-sun font-bold">

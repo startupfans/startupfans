@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import Image from "next/image";
+import { ProfileImage } from "@/app/components/profile-image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Handle } from "@/app/components/handle";
@@ -35,7 +35,7 @@ export async function UserPage({ params }: UserPageProps) {
       <AppShell className="max-w-3xl">
         <PageHeader title={<><span className="min-w-0 max-w-full">{name}</span><Handle handle={profile.handle} /></>} identity={
           <>
-            {profile.avatarUrl ? <Image src={profile.avatarUrl} alt="" width={80} height={80} unoptimized referrerPolicy="no-referrer"
+            {profile.avatarUrl ? <ProfileImage src={profile.avatarUrl} alt="" width={80} height={80} sizes="80px" referrerPolicy="no-referrer"
               className="h-20 w-20 shrink-0 rounded-full border-[3px] border-ink object-cover" />
               : <span aria-hidden="true" className="flex h-20 w-20 shrink-0 items-center justify-center rounded-full border-[3px] border-ink bg-sun font-display text-3xl font-extrabold">{name.charAt(0).toUpperCase()}</span>}
           </>

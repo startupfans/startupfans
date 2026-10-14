@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import Image from "next/image";
+import { ProfileImage } from "@/app/components/profile-image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { PageHeader, SiteFooter } from "@/app/components/sticker";
@@ -50,7 +50,7 @@ async function FollowingPage({ params, searchParams }: FollowingPageProps) {
               <li key={fanClub.id} className="rounded-2xl border-[3px] border-ink bg-white shadow-sticker">
                 <Link href={`/s/${fanClub.slug}`} className="flex min-h-11 min-w-0 items-start gap-4 rounded-xl p-5 hover:bg-cream focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ink">
                   {fanClub.logoUrl ? (
-                    <Image src={fanClub.logoUrl} alt="" width={56} height={56} unoptimized
+                    <ProfileImage src={fanClub.logoUrl} alt="" width={56} height={56} sizes="56px"
                       className="h-14 w-14 shrink-0 rounded-xl border-2 border-ink bg-cream object-contain p-1" />
                   ) : <span aria-hidden="true" className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl border-2 border-ink bg-sky font-display text-2xl font-extrabold">{fanClub.name.charAt(0).toUpperCase()}</span>}
                   <span className="min-w-0">

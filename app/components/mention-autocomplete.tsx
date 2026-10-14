@@ -1,6 +1,6 @@
 "use client";
 
-import Image from "next/image";
+import { ProfileImage } from "@/app/components/profile-image";
 import { useEffect, useId, useLayoutEffect, useRef, useState, type RefObject, type TextareaHTMLAttributes } from "react";
 import type { MentionSuggestion } from "@/lib/mentions";
 
@@ -158,7 +158,7 @@ export function MentionAutocomplete({ value, onValueChange, startup, textareaRef
           return <li key={suggestion.handle} id={`${listId}-${index}`} role="option" aria-selected={active === index}
             onMouseDown={(event) => event.preventDefault()} onClick={() => select(suggestion)}
             className={`flex min-h-11 cursor-pointer items-center gap-3 rounded-xl px-3 py-2 ${active === index ? "bg-sun" : "hover:bg-cream"}`}>
-            {suggestion.avatarUrl ? <Image src={suggestion.avatarUrl} alt="" width={32} height={32} unoptimized referrerPolicy="no-referrer"
+            {suggestion.avatarUrl ? <ProfileImage src={suggestion.avatarUrl} alt="" width={32} height={32} sizes="32px" referrerPolicy="no-referrer"
               className="h-8 w-8 shrink-0 rounded-full border-2 border-ink object-cover" />
               : <span aria-hidden="true" className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border-2 border-ink bg-sky font-bold">{name.charAt(0).toUpperCase()}</span>}
             <span className="min-w-0 flex-1 break-words text-sm"><span className="font-bold">{name}</span><span className="block text-ink/60">@{suggestion.handle}</span></span>

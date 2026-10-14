@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState, useEffect, useId, useRef, useState } from "react";
-import Image from "next/image";
+import { ProfileImage } from "@/app/components/profile-image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type { PublicComment, ReplyComment } from "@/lib/comments";
@@ -149,7 +149,7 @@ export function CommentContent({ comment, slug, postId, canDelete, canReply, vie
   return (
     <article id={`comment-${comment.id}`} className="min-w-0">
       <div className="flex min-w-0 flex-wrap items-center gap-2 text-sm text-ink/60">
-        {comment.avatarUrl ? <Image src={comment.avatarUrl} alt="" width={32} height={32} unoptimized referrerPolicy="no-referrer"
+        {comment.avatarUrl ? <ProfileImage src={comment.avatarUrl} alt="" width={32} height={32} sizes="32px" referrerPolicy="no-referrer"
           className="h-8 w-8 shrink-0 rounded-full border-2 border-ink object-cover" /> : (
           <span aria-hidden="true" className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border-2 border-ink bg-sun font-bold text-ink">
             {comment.displayName.charAt(0).toUpperCase()}

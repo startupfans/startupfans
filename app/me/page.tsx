@@ -1,4 +1,4 @@
-import Image from "next/image";
+import { ProfileImage } from "@/app/components/profile-image";
 import Link from "next/link";
 import { Handle } from "@/app/components/handle";
 import { PageHeader, SiteFooter } from "@/app/components/sticker";
@@ -36,7 +36,7 @@ async function MePage({ searchParams }: { searchParams: Promise<{ message?: stri
         } identity={
           <>
             {user.avatarUrl ? (
-              <Image src={user.avatarUrl} alt={`${name}'s avatar`} width={64} height={64} unoptimized referrerPolicy="no-referrer"
+              <ProfileImage src={user.avatarUrl} alt={`${name}'s avatar`} width={64} height={64} sizes="64px" referrerPolicy="no-referrer"
                 className="h-16 w-16 shrink-0 rounded-full border-[3px] border-ink object-cover" />
             ) : <span aria-hidden="true" className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full border-[3px] border-ink bg-sun font-display text-2xl font-extrabold">{name.charAt(0).toUpperCase()}</span>}
           </>

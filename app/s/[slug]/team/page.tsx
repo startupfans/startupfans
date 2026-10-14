@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import Image from "next/image";
+import { ProfileImage } from "@/app/components/profile-image";
 import { notFound } from "next/navigation";
 import { PageHeader, SiteFooter } from "@/app/components/sticker";
 import { AppHeader, AppShell } from "@/app/components/app-shell";
@@ -42,7 +42,7 @@ async function TeamPage({ params }: TeamPageProps) {
         ] }} identity={
           <div className="hidden shrink-0 sm:block">
             {startup.logoUrl ? (
-              <Image src={startup.logoUrl} alt={`${startup.name} logo`} width={48} height={48} unoptimized
+              <ProfileImage src={startup.logoUrl} alt={`${startup.name} logo`} width={48} height={48} sizes="48px"
                 className="h-12 w-12 shrink-0 -rotate-3 rounded-xl border-[3px] border-ink bg-cream object-contain p-1 shadow-sticker" />
             ) : (
               <span aria-hidden="true" className="flex h-12 w-12 shrink-0 -rotate-3 items-center justify-center rounded-xl border-[3px] border-ink bg-sky font-display text-2xl font-extrabold shadow-sticker">
