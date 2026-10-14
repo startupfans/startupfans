@@ -13,6 +13,7 @@ Launch and distribution drafts from Grok bot plus team edits. Not public site co
 | `outreach.md` | Founder / startup outreach |
 | `startup-list.csv` | Outreach target list |
 | `investor-dms.md` | Investor / scout DMs |
+| `investor-emails.md` | VC email campaign (sign up + nominate) + target list |
 | `newsletters.md` | Newsletter pitch targets |
 | `launch-sites.md` | Product Hunt and other launch directories |
 | `bait-post.md` | Engagement bait post draft |
