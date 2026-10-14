@@ -28,6 +28,7 @@ export async function createStartupAction(
   const description = textField(formData, "description");
   const bio = textField(formData, "bio");
   const logoUrl = textField(formData, "logoUrl");
+  const coverUrl = textField(formData, "coverUrl");
   const websiteResult = normalizeWebsiteUrl(textField(formData, "website"));
   const stage = textField(formData, "stage");
 
@@ -46,6 +47,12 @@ export async function createStartupAction(
   if (!isStartupProfileImageUrl(logoUrl, slug, user.id)) {
     return { status: "error", message: "Upload a logo for this page address or use a full https:// image URL." };
   }
+  if (coverUrl.length > 500) {
+    return { status: "error", message: "Use up to 500 characters for your cover address." };
+  }
+  if (!isStartupProfileImageUrl(coverUrl, slug, user.id)) {
+    return { status: "error", message: "Upload a cover for this page address or use a full https:// image URL." };
+  }
   if (websiteResult.status === "invalid") {
     return { status: "error", message: "Use a website address like yourstartup.com." };
   }
@@ -60,7 +67,7 @@ export async function createStartupAction(
     startup = await createStartup({
       name, slug, tagline: tagline || null, description: description || null,
       bio: bio || null,
-      logoUrl: logoUrl || null, website, stage: stage || null,
+      logoUrl: logoUrl || null, coverUrl: coverUrl || null, website, stage: stage || null,
       createdBy: user.id,
     });
   } catch (error) {

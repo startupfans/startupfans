@@ -20,7 +20,7 @@ const allowedTypes = new Map([
 
 export async function POST(request: Request) {
   const user = await getCurrentUser();
-  if (!user) return Response.json({ message: "Sign in to save a logo." }, { status: 401, headers });
+  if (!user) return Response.json({ message: "Sign in to save an image." }, { status: 401, headers });
   if (!process.env.BLOB_READ_WRITE_TOKEN) {
     return Response.json({ message: "Uploads are off here." }, { status: 503, headers });
   }
@@ -29,15 +29,15 @@ export async function POST(request: Request) {
   try {
     body = await request.json();
   } catch {
-    return Response.json({ message: "Send a logo address and page address." }, { status: 400, headers });
+    return Response.json({ message: "Send an image address and page address." }, { status: 400, headers });
   }
   if (!body || typeof body !== "object") {
-    return Response.json({ message: "Send a logo address and page address." }, { status: 400, headers });
+    return Response.json({ message: "Send an image address and page address." }, { status: 400, headers });
   }
   const imageUrl = "imageUrl" in body && typeof body.imageUrl === "string" ? body.imageUrl.trim() : "";
   const slug = "slug" in body && typeof body.slug === "string" ? body.slug.trim() : "";
   if (!imageUrl || imageUrl.length > 2000 || !isValidSlug(slug)) {
-    return Response.json({ message: "Choose a valid page address and logo first." }, { status: 400, headers });
+    return Response.json({ message: "Choose a valid page address and image first." }, { status: 400, headers });
   }
 
   const windowStart = new Date(Math.floor(Date.now() / 60_000) * 60_000);
@@ -56,7 +56,7 @@ export async function POST(request: Request) {
     const extension = allowedTypes.get(contentType)
       ?? (pathFormat?.type === "image" ? pathFormat.extensions[0] : null);
     if (!extension) {
-      return Response.json({ message: "Use a JPEG, PNG, WebP, GIF or AVIF logo." }, { status: 400, headers });
+      return Response.json({ message: "Use a JPEG, PNG, WebP, GIF or AVIF image." }, { status: 400, headers });
     }
     const storedType = contentType === "image/jpg" || extension === "jpg"
       ? "image/jpeg"
@@ -70,7 +70,7 @@ export async function POST(request: Request) {
     });
     return Response.json({ url: blob.url }, { headers });
   } catch (error) {
-    console.error("[startupfans] Brand logo import failed.", error);
-    return Response.json({ message: "We couldn't save that logo. Try another or upload your own." }, { status: 502, headers });
+    console.error("[startupfans] Brand image import failed.", error);
+    return Response.json({ message: "We couldn't save that image. Try another or upload your own." }, { status: 502, headers });
   }
 }
