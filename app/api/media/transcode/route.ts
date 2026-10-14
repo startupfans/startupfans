@@ -5,7 +5,7 @@ import { posts } from "@/db/schema";
 import { verifyMediaJobToken } from "@/lib/video-jobs";
 
 export const runtime = "nodejs";
-export const maxDuration = 300;
+export const maxDuration = 800;
 
 export async function POST(request: Request) {
   const authorization = request.headers.get("authorization") ?? "";

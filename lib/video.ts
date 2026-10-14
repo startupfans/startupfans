@@ -9,7 +9,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { pipeline } from "node:stream/promises";
 import { del, put } from "@vercel/blob";
-import { mediaLimits, videoMaximumPixels, videoMaximumSeconds } from "@/lib/media";
+import { mediaLimits, videoFastPresetPixels, videoMaximumSeconds } from "@/lib/media";
 import { claimVideoJob, completeVideoJob, failVideoJob, validateVideoJobSource } from "@/lib/video-jobs";
 
 const require = createRequire(import.meta.url);
@@ -65,9 +65,9 @@ export async function probeVideoFile(input: string, signal = AbortSignal.timeout
   // The allowed FFmpeg package has no ffprobe executable. Its demuxer reports the
   // same container duration without decoding frames or fetching remote resources.
   const info = await runFfmpeg(["-protocol_whitelist", "file,pipe", "-threads", "1", "-i", input,
-    "-map", "0:v:0", "-frames:v", "0", "-f", "null", "-"], signal);
+    "-map", "0:v:0", "-c:v", "copy", "-frames:v", "0", "-f", "null", "-"], signal);
   const duration = /Duration: (\d+):(\d+):(\d+\.\d+)/.exec(info);
-  const dimensions = /Video:[^\n]*?\b(\d{2,5})x(\d{2,5})\b/.exec(info);
+  const dimensions = /Video:[^\n]*?\b([1-9]\d*)x([1-9]\d*)\b/.exec(info);
   if (!duration || !dimensions) throw new Error("Video metadata is unavailable.");
   return {
     duration: Number(duration[1]) * 3600 + Number(duration[2]) * 60 + Number(duration[3]),
@@ -76,29 +76,32 @@ export async function probeVideoFile(input: string, signal = AbortSignal.timeout
 }
 
 export async function transcodeVideoFile(input: string, directory: string, {
-  signal = AbortSignal.timeout(240000), enforceLimits = true,
-}: { signal?: AbortSignal; enforceLimits?: boolean } = {}) {
+  signal = AbortSignal.timeout(720000), enforceLimits = true, removeInput = false,
+  onInputMetadata,
+}: { signal?: AbortSignal; enforceLimits?: boolean; removeInput?: boolean;
+  onInputMetadata?: (metadata: { width: number; height: number; duration: number; bytes: number }) => void } = {}) {
   const size = (await stat(input)).size;
   if (enforceLimits && size > mediaLimits.video) throw new Error("Video exceeds the byte limit.");
   const metadata = await probeVideoFile(input, signal);
+  onInputMetadata?.({ ...metadata, bytes: size });
   if (metadata.duration <= 0 || (enforceLimits && metadata.duration > videoMaximumSeconds)) {
     throw new Error("Video exceeds the duration limit.");
   }
-  // Cap input pixel count at 4K; single-threaded decoding bounds frame buffers.
-  if (enforceLimits && metadata.width * metadata.height > videoMaximumPixels) throw new Error("Video exceeds the resolution limit.");
+  const preset = metadata.width * metadata.height > videoFastPresetPixels || metadata.duration > 120 ? "fast" : "slow";
   const posterFormat = getPosterFormat();
   const videoPath = join(directory, "rendition.mp4");
   const posterPath = join(directory, `poster.${posterFormat.extension}`);
   const start = performance.now();
   await runFfmpeg(["-protocol_whitelist", "file,pipe", "-threads", "1", "-i", input,
     "-map", "0:v:0", "-map", "0:a:0?", "-vf", scale, "-filter_threads", "1",
-    "-c:v", "libx264", "-crf", "21", "-preset", "fast", "-threads", "1", "-pix_fmt", "yuv420p",
+    "-c:v", "libx264", "-crf", "21", "-preset", preset, "-threads", "1", "-pix_fmt", "yuv420p",
     "-vsync", "0", "-c:a", "aac", "-b:a", "128k", "-map_metadata", "-1", "-movflags", "+faststart", videoPath], signal);
   const encodeSeconds = (performance.now() - start) / 1000;
+  if (removeInput) await rm(input, { force: true });
   await runFfmpeg(["-protocol_whitelist", "file,pipe", "-ss", String(metadata.duration * 0.1),
     "-threads", "1", "-i", videoPath, "-map", "0:v:0", "-frames:v", "1", "-vf", scale,
     "-filter_threads", "1", ...posterFormat.args, "-update", "1", posterPath], signal);
-  return { videoPath, posterPath, posterExtension: posterFormat.extension, posterContentType: posterFormat.contentType, encodeSeconds, metadata,
+  return { videoPath, posterPath, posterExtension: posterFormat.extension, posterContentType: posterFormat.contentType, encodeSeconds, metadata, preset,
     videoBytes: (await stat(videoPath)).size, posterBytes: (await stat(posterPath)).size };
 }
 
@@ -127,11 +130,12 @@ async function downloadRawVideo(url: string, path: string, signal: AbortSignal) 
 }
 
 export async function processVideoJob(postId: string) {
-  const signal = AbortSignal.timeout(270000);
+  const signal = AbortSignal.timeout(780000);
   const uploaded: string[] = [];
   let directory: string | null = null;
   let claimed = false;
   let published = false;
+  let inputMetadata: { width: number; height: number; duration: number; bytes: number } | undefined;
   try {
     const post = await claimVideoJob(postId);
     if (!post?.raw) return;
@@ -140,7 +144,10 @@ export async function processVideoJob(postId: string) {
     directory = await mkdtemp(join(tmpdir(), "startupfans-video-"));
     const input = join(directory, "original");
     await downloadRawVideo(post.raw, input, signal);
-    const output = await transcodeVideoFile(input, directory, { signal });
+    const output = await transcodeVideoFile(input, directory, {
+      signal: AbortSignal.any([signal, AbortSignal.timeout(720000)]), removeInput: true,
+      onInputMetadata: (metadata) => { inputMetadata = metadata; },
+    });
     const prefix = `startups/${post.slug}/${randomUUID()}`;
     const video = await put(`${prefix}.mp4`, createReadStream(/* turbopackIgnore: true */ output.videoPath), {
       access: "public", contentType: "video/mp4", addRandomSuffix: false, abortSignal: signal,
@@ -157,7 +164,7 @@ export async function processVideoJob(postId: string) {
       catch { console.error("[startupfans video] Raw cleanup failed.", { postId }); }
     }
   } catch {
-    console.error("[startupfans video] Processing failed; retaining original.", { postId });
+    console.error("[startupfans video] Processing failed; retaining original.", { postId, ...inputMetadata });
     try { await failVideoJob(postId, claimed ? "encoding" : "processing"); }
     catch { console.error("[startupfans video] Could not save processing fallback.", { postId }); }
   } finally {

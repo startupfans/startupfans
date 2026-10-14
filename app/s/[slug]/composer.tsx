@@ -44,7 +44,7 @@ async function validateVideoResolution(file: File, signal: AbortSignal) {
       const timeout = setTimeout(() => finish(new Error("Couldn't read this video. Try another file.")), 15000);
       signal.addEventListener("abort", abort, { once: true });
       video.onloadedmetadata = () => finish(video.videoWidth * video.videoHeight > videoMaximumPixels
-        ? new Error("Videos must be 4K or smaller. Export a smaller video and try again.") : undefined);
+        ? new Error("Couldn't read this video. Try another file.") : undefined);
       video.onerror = () => finish(new Error("Couldn't read this video. Try another file."));
       video.preload = "metadata";
       if (signal.aborted) abort(); else video.src = url;
@@ -284,7 +284,7 @@ export function Composer({ slug, name, avatarUrl, onPosted, onBusyChange }: {
               title={`Add image (up to ${mediaLimits.image / (1024 * 1024)} MB)`} aria-label="Add image" className={postIconButtonClass}><ImageIcon /></button>
             <button type="button" disabled={pending}
               onClick={() => openFilePicker(getMediaAccept("video"))}
-              title={`Add video (up to ${mediaLimits.video / (1024 * 1024)} MB, 60 seconds, 4K)`} aria-label="Add video" className={postIconButtonClass}><VideoIcon /></button>
+              title={`Add video (up to ${mediaLimits.video / (1024 * 1024)} MB, 3 minutes)`} aria-label="Add video" className={postIconButtonClass}><VideoIcon /></button>
           </div>
           <div className="flex min-w-0 items-center gap-3">
             {body.length > 4000 && <span className="text-xs tabular-nums text-ink/60">{body.length.toLocaleString("en-GB")}/5,000</span>}

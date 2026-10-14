@@ -32,9 +32,10 @@ export const imageTargets = {
 export const imageQuality = { webp: 0.82, jpeg: 0.85 };
 export const gifMaximumBytes = 4 * 1024 * 1024;
 export const graphicPngMaximumBytes = 1024 * 1024;
-export const videoMaximumSeconds = 60;
-export const videoMaximumPixels = 3840 * 2160;
-export const mediaLimits = { image: 10 * 1024 * 1024, video: 50 * 1024 * 1024 };
+export const videoMaximumSeconds = 180;
+export const videoMaximumPixels = Number.POSITIVE_INFINITY;
+export const videoFastPresetPixels = 3840 * 2160;
+export const mediaLimits = { image: 10 * 1024 * 1024, video: 500 * 1024 * 1024 };
 
 export function getImageUploadMaximum(role: ImageRole, contentType: string) {
   if (contentType === "image/gif") return gifMaximumBytes;
