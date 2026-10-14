@@ -6,7 +6,7 @@ import { Handle } from "@/app/components/handle";
 import { SocialLinks } from "@/app/components/social-links";
 import { PageHeader, SiteFooter } from "@/app/components/sticker";
 import { AppHeader, AppShell } from "@/app/components/app-shell";
-import { PostCard } from "@/app/s/[slug]/post-card";
+import { TimelineCard } from "@/app/s/[slug]/post-card";
 import { getCurrentUser } from "@/lib/auth";
 import { getPublicUser } from "@/lib/users";
 
@@ -20,7 +20,7 @@ export async function generateMetadata({ params }: UserPageProps): Promise<Metad
   if (!profile) notFound();
   const name = profile.name?.trim();
   const label = name ? `${name} (@${profile.handle})` : `@${profile.handle}`;
-  return { title: `${label} on startupfans`, description: `See ${label}'s startups, fan clubs and latest public posts.` };
+  return { title: `${label} on startupfans`, description: `See ${label}'s startups, fan clubs and latest public posts and reshares.` };
 }
 
 export async function UserPage({ params }: UserPageProps) {
@@ -67,9 +67,9 @@ export async function UserPage({ params }: UserPageProps) {
           </section>
         </div>
         <section className="mt-10" aria-labelledby="posts-heading">
-          <h2 id="posts-heading" className="font-display text-2xl font-extrabold">Latest posts</h2>
-          {profile.posts.length === 0 ? <p className="mt-4 text-ink/70">No public posts yet.</p> : <div className="mt-5 space-y-6">
-            {profile.posts.map((post) => <PostCard key={post.id} post={post} showStartup />)}
+          <h2 id="posts-heading" className="font-display text-2xl font-extrabold">Latest updates</h2>
+          {profile.timeline.length === 0 ? <p className="mt-4 text-ink/70">No public updates yet.</p> : <div className="mt-5 space-y-6">
+            {profile.timeline.map((item) => <TimelineCard key={`${item.kind}:${item.id}`} item={item} />)}
           </div>}
         </section>
         <SiteFooter />

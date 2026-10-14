@@ -7,20 +7,23 @@ import { Markdown } from "@/app/components/markdown";
 import { PostMedia } from "@/app/components/post-media";
 import { isAdmin } from "@/lib/admin";
 import { getCurrentUser } from "@/lib/auth";
-import type { PublicPost } from "@/lib/posts";
+import type { PublicPost, TimelineItem } from "@/lib/posts";
 import { relativeDate } from "@/lib/relative-date";
+import { mentionSegments, parseMentions, resolveMentionHandles } from "@/lib/mentions";
 import { DeletePostButton } from "./composer";
 import { RepliesPanel } from "./replies-panel";
 import { ReactionBar } from "./reaction-bar";
+import { ReshareButton, ReshareFollowButton, ResharePanel } from "./reshare-button";
 import { reportPost } from "./post-actions";
 
 export { relativeDate } from "@/lib/relative-date";
 
-export async function PostCard({ post, showStartup = false, canDelete = false, onPostPage = false }: {
+export async function PostCard({ post, showStartup = false, canDelete = false, onPostPage = false, instanceId = post.id }: {
   post: PublicPost;
   showStartup?: boolean;
   canDelete?: boolean;
   onPostPage?: boolean;
+  instanceId?: string;
 }) {
   const user = await getCurrentUser();
   const admin = isAdmin(user);
@@ -59,25 +62,64 @@ export async function PostCard({ post, showStartup = false, canDelete = false, o
       </header>
       <div className="mt-2 [&_p:first-child]:mt-0 [&_p:last-child]:mb-0"><Markdown body={post.body} /></div>
       <PostMedia mediaUrl={post.mediaUrl} mediaType={post.mediaType} mediaPosterUrl={post.mediaPosterUrl} />
-      <RepliesPanel slug={post.startupSlug} postId={post.id} snapshot={{ replyCount: post.replyCount }}
-        onPostPage={onPostPage}>
-        <ReactionBar postId={post.id} postUrl={postPath} signedIn={user !== null}
-          snapshot={{ kind: post.viewerReaction, counts: post.reactionCounts }} />
-        <div className="ml-auto flex min-w-0 flex-wrap justify-end gap-2">
-          <Link href={postPath} title="View post" aria-label="View post" className={postIconButtonClass}><LinkIcon /></Link>
-          <details className="min-w-0 max-w-full text-sm">
-            <summary title="Report post" aria-label="Report post"
-              className={`${postIconButtonClass} ml-auto cursor-pointer list-none [&::-webkit-details-marker]:hidden`}><FlagIcon /></summary>
-            <form action={reportPost.bind(null, post.startupSlug, post.id)} className="absolute top-full right-0 z-10 mt-2 w-full min-w-0 max-w-sm space-y-2 rounded-xl border-2 border-ink bg-cream p-3 shadow-sticker">
-              <label htmlFor={`report-${post.id}`} className="block">Reason (optional)</label>
-              <textarea id={`report-${post.id}`} name="reason" maxLength={500} rows={3}
-                className="block w-full min-w-0 resize-y rounded-lg border-2 border-ink bg-white p-3" />
-              <SubmitButton pendingLabel="Sending…" className="min-h-10 rounded-lg border-2 border-ink bg-white px-3 py-2 font-semibold">Send report</SubmitButton>
-            </form>
-          </details>
-          {(canDelete || admin) && <DeletePostButton slug={post.startupSlug} postId={post.id} returnToStartup={onPostPage} />}
-        </div>
-      </RepliesPanel>
+      <ResharePanel postId={post.id} postUrl={postPath} signedIn={user !== null} count={post.reshareCount} reshared={post.viewerReshared}>
+        <RepliesPanel slug={post.startupSlug} postId={post.id} snapshot={{ replyCount: post.replyCount }}
+          onPostPage={onPostPage}>
+          <ReactionBar postId={post.id} postUrl={postPath} signedIn={user !== null}
+            snapshot={{ kind: post.viewerReaction, counts: post.reactionCounts }} />
+          <ReshareButton />
+          <div className="ml-auto flex min-w-0 flex-wrap justify-end gap-2">
+            <Link href={postPath} title="View post" aria-label="View post" className={postIconButtonClass}><LinkIcon /></Link>
+            <details className="min-w-0 max-w-full text-sm">
+              <summary title="Report post" aria-label="Report post"
+                className={`${postIconButtonClass} ml-auto cursor-pointer list-none [&::-webkit-details-marker]:hidden`}><FlagIcon /></summary>
+              <form action={reportPost.bind(null, post.startupSlug, post.id)} className="absolute top-full right-0 z-10 mt-2 w-full min-w-0 max-w-sm space-y-2 rounded-xl border-2 border-ink bg-cream p-3 shadow-sticker">
+                <label htmlFor={`report-${instanceId}`} className="block">Reason (optional)</label>
+                <textarea id={`report-${instanceId}`} name="reason" maxLength={500} rows={3}
+                  className="block w-full min-w-0 resize-y rounded-lg border-2 border-ink bg-white p-3" />
+                <SubmitButton pendingLabel="Sending…" className="min-h-10 rounded-lg border-2 border-ink bg-white px-3 py-2 font-semibold">Send report</SubmitButton>
+              </form>
+            </details>
+            {(canDelete || admin) && <DeletePostButton slug={post.startupSlug} postId={post.id} returnToStartup={onPostPage} />}
+          </div>
+        </RepliesPanel>
+      </ResharePanel>
     </article>
   );
+}
+
+export async function TimelineCard({ item }: { item: TimelineItem }) {
+  switch (item.kind) {
+    case "post": return <PostCard post={item.post} showStartup />;
+    case "reshare": return <ReshareItem item={item} />;
+    default: {
+      const unreachable: never = item;
+      throw new Error(`Unknown timeline item: ${unreachable}`);
+    }
+  }
+}
+
+export async function ReshareItem({ item }: { item: Extract<TimelineItem, { kind: "reshare" }> }) {
+  const viewer = await getCurrentUser();
+  const name = item.resharer.name?.trim() || item.resharer.handle;
+  const tokens = parseMentions(item.note ?? "", false);
+  const resolved = await resolveMentionHandles(tokens.map((token) => token.handle));
+  const segments = mentionSegments(item.note ?? "", resolved, tokens);
+  return <section aria-label={`${name} reshared`} className="min-w-0 space-y-3">
+    <header className="flex min-w-0 flex-wrap items-center gap-2 rounded-xl border-2 border-ink bg-cream px-3 py-2 text-sm shadow-sticker">
+      <Link href={`/u/${item.resharer.handle}`} className="flex min-w-0 max-w-full flex-wrap items-center gap-2 hover:underline">
+        {item.resharer.avatarUrl ? <Image src={item.resharer.avatarUrl} alt="" width={28} height={28} unoptimized referrerPolicy="no-referrer"
+          className="h-7 w-7 shrink-0 rounded-full border-2 border-ink object-cover" />
+          : <span aria-hidden="true" className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border-2 border-ink bg-sun font-bold">{name.charAt(0).toUpperCase()}</span>}
+        <span className="min-w-0 break-words font-bold">{name}</span><Handle handle={item.resharer.handle} />
+      </Link>
+      <span>reshared</span>
+      <time dateTime={item.createdAt.toISOString()} title={item.createdAt.toLocaleString("en-GB", { timeZone: "UTC" })} className="text-ink/60">{relativeDate(item.createdAt)}</time>
+    </header>
+    {item.note && <p className="whitespace-pre-wrap break-words text-base leading-relaxed">{segments.map((segment, index) => segment.handle === null ? segment.text
+      : <Link key={index} href={`/u/${segment.handle}`} className="font-bold underline decoration-transparent decoration-4 underline-offset-4 hover:decoration-sun">{segment.text}</Link>)}</p>}
+    <PostCard post={item.post} showStartup instanceId={`reshare-${item.id}`} />
+    {!item.post.viewerMember && <ReshareFollowButton slug={item.post.startupSlug} name={item.post.startupName}
+      signedIn={viewer !== null} memberNo={item.post.viewerFanNo} />}
+  </section>;
 }

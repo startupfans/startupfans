@@ -5,7 +5,7 @@ import { cache } from "react";
 import { db } from "@/db";
 import { users } from "@/db/schema";
 import { getMemberStartups, getFollowedStartups } from "@/lib/members";
-import { getPublicUserPosts } from "@/lib/posts";
+import { listFeed } from "@/lib/posts";
 
 export const getPublicUser = cache(async (handle: string) => {
   if (!/^[a-z0-9_]{3,24}$/i.test(handle)) return null;
@@ -16,8 +16,8 @@ export const getPublicUser = cache(async (handle: string) => {
     tiktokHandle: users.tiktokHandle, createdAt: users.createdAt,
   }).from(users).where(eq(users.handle, handle.toLowerCase())).limit(1);
   if (!user) return null;
-  const [memberStartups, followedStartups, posts] = await Promise.all([
-    getMemberStartups(user.id), getFollowedStartups(user.id), getPublicUserPosts(user.id),
+  const [memberStartups, followedStartups, timeline] = await Promise.all([
+    getMemberStartups(user.id), getFollowedStartups(user.id), listFeed({ authorId: user.id }),
   ]);
-  return { ...user, memberStartups, followedStartups, posts };
+  return { ...user, memberStartups, followedStartups, timeline: timeline.items };
 });

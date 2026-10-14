@@ -165,6 +165,18 @@ export const commentLikes = pgTable("comment_likes", {
   index("comment_likes_comment_id_idx").on(table.commentId),
 ]);
 
+export const postReshares = pgTable("post_reshares", {
+  postId: uuid("post_id").notNull().references(() => posts.id, { onDelete: "cascade" }),
+  userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  note: text("note"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [
+  primaryKey({ columns: [table.postId, table.userId] }),
+  check("post_reshares_note_length", sql`${table.note} is null or char_length(${table.note}) between 1 and 280`),
+  index("post_reshares_created_at_post_id_idx").on(table.createdAt, table.postId),
+  index("post_reshares_user_id_idx").on(table.userId),
+]);
+
 export const postReactions = pgTable("post_reactions", {
   postId: uuid("post_id").notNull().references(() => posts.id, { onDelete: "cascade" }),
   userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),

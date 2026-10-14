@@ -2,16 +2,23 @@ import "server-only";
 
 import { and, desc, eq, inArray, sql } from "drizzle-orm";
 import { cache } from "react";
+import { alias } from "drizzle-orm/pg-core";
 import { db } from "@/db";
-import { follows, postComments, posts, startupMembers, startups, users } from "@/db/schema";
-import { resolveMentions } from "@/lib/mentions";
+import { follows, postComments, postReshares, posts, startupMembers, startups, users } from "@/db/schema";
+import { parseMentions, resolveMentionHandles, resolveMentions } from "@/lib/mentions";
 import { isMediaFilename } from "@/lib/media";
 import { getCurrentUser } from "@/lib/auth";
 import { postReactionFields } from "@/lib/reactions";
+import { postReshareFields } from "@/lib/reshares";
 
 function publicPostFields(viewerId: string | null) {
   return {
     ...postReactionFields(viewerId),
+    ...postReshareFields(viewerId),
+    viewerMember: viewerId === null ? sql<boolean>`false` : sql<boolean>`exists (
+      select 1 from ${startupMembers} where ${startupMembers.startupId} = ${posts.startupId} and ${startupMembers.userId} = ${viewerId})`,
+    viewerFanNo: viewerId === null ? sql<number | null>`null` : sql<number | null>`(
+      select ${follows.memberNo} from ${follows} where ${follows.startupId} = ${posts.startupId} and ${follows.userId} = ${viewerId})`,
     id: posts.id,
     startupId: posts.startupId,
     replyCount: sql<number>`(select count(*)::integer from ${postComments} where ${postComments.postId} = ${posts.id} and ${postComments.deletedAt} is null)`,
@@ -67,45 +74,89 @@ export async function getPublicStartupPosts(startupId: string) {
 
 export type PublicPost = Awaited<ReturnType<typeof getPublicStartupPosts>>[number];
 
+export type TimelineItem =
+  | { kind: "post"; id: string; timestamp: string; post: PublicPost }
+  | { kind: "reshare"; id: string; timestamp: string; post: PublicPost;
+      resharer: { name: string | null; handle: string; avatarUrl: string | null }; note: string | null; createdAt: Date };
+
+const resharers = alias(users, "resharers");
+const reshareId = sql<string>`(${postReshares.postId}::text || ':' || ${postReshares.userId}::text) collate "C"`;
+const postTimelineId = sql<string>`${posts.id}::text collate "C"`;
+
 function parseFeedCursor(cursor?: string) {
-  if (!cursor || cursor.length > 128) return null;
-  const match = /^(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{6}Z)\|([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$/i
+  if (!cursor || cursor.length > 256) return null;
+  const uuid = "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}";
+  const match = new RegExp(`^(\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{6}Z)\\|(post|reshare)\\|(${uuid}(?::${uuid})?)$`)
     .exec(Buffer.from(cursor, "base64url").toString("utf8"));
   if (!match) return null;
-  const timestamp = match[1];
+  const [, timestamp, kind, id] = match;
+  if ((kind === "reshare") !== id.includes(":")) return null;
   const date = new Date(timestamp);
   if (!Number.isFinite(date.getTime()) || date.toISOString() !== timestamp.replace(/(\.\d{3})\d{3}Z$/, "$1Z")) return null;
-  return { timestamp, id: match[2] };
+  return { timestamp, kind, id };
 }
 
-export async function listFeed({ userId, following = false, cursor }: {
+export async function listFeed({ userId, following = false, cursor, authorId }: {
   userId?: string;
   following?: boolean;
   cursor?: string;
-} = {}): Promise<{ posts: PublicPost[]; nextCursor: string | null }> {
-  if (following && !userId) return { posts: [], nextCursor: null };
+  authorId?: string;
+} = {}): Promise<{ items: TimelineItem[]; nextCursor: string | null }> {
+  if (following && !userId) return { items: [], nextCursor: null };
+  const viewerId = (await getCurrentUser())?.id ?? null;
   const before = parseFeedCursor(cursor);
-  const rows = await db.select({
-    ...publicPostFields((await getCurrentUser())?.id ?? null),
+  const postQuery = db.select({
+    ...publicPostFields(viewerId),
     cursorTimestamp: sql<string>`to_char(${posts.publishedAt} at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"')`,
   }).from(posts)
     .innerJoin(users, eq(users.id, posts.authorId))
     .innerJoin(startups, eq(startups.id, posts.startupId))
     .where(and(
       eq(posts.visibility, "public"),
+      authorId ? eq(posts.authorId, authorId) : undefined,
       following && userId ? inArray(posts.startupId,
         db.select({ startupId: follows.startupId }).from(follows).where(eq(follows.userId, userId))) : undefined,
-      before ? sql`(${posts.publishedAt}, ${posts.id}) < (${before.timestamp}::timestamptz, ${before.id}::uuid)` : undefined,
+      before ? sql`(${posts.publishedAt}, 'post'::text collate "C", ${postTimelineId}) <
+        (${before.timestamp}::timestamptz, ${before.kind}::text collate "C", ${before.id}::text collate "C")` : undefined,
     ))
-    .orderBy(desc(posts.publishedAt), desc(posts.id))
-    .limit(21);
-  const page = rows.slice(0, 20);
-  await resolveMentions(page.map((post) => post.body));
+    .orderBy(desc(posts.publishedAt), desc(postTimelineId)).limit(21);
+  const reshareQuery = following ? Promise.resolve([]) : db.select({
+    post: publicPostFields(viewerId),
+    id: reshareId,
+    cursorTimestamp: sql<string>`to_char(${postReshares.createdAt} at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"')`,
+    createdAt: postReshares.createdAt,
+    note: postReshares.note,
+    resharer: { name: resharers.name, handle: resharers.handle, avatarUrl: resharers.avatarUrl },
+  }).from(postReshares)
+    .innerJoin(posts, eq(posts.id, postReshares.postId))
+    .innerJoin(users, eq(users.id, posts.authorId))
+    .innerJoin(startups, eq(startups.id, posts.startupId))
+    .innerJoin(resharers, eq(resharers.id, postReshares.userId))
+    .where(and(
+      eq(posts.visibility, "public"),
+      authorId ? eq(postReshares.userId, authorId) : undefined,
+      before ? sql`(${postReshares.createdAt}, 'reshare'::text collate "C", ${reshareId}) <
+        (${before.timestamp}::timestamptz, ${before.kind}::text collate "C", ${before.id}::text collate "C")` : undefined,
+    ))
+    .orderBy(desc(postReshares.createdAt), desc(reshareId)).limit(21);
+  const [postRows, reshareRows] = await Promise.all([postQuery, reshareQuery]);
+  const merged: TimelineItem[] = [
+    ...postRows.map((post): TimelineItem => ({ kind: "post", id: post.id, timestamp: post.cursorTimestamp, post })),
+    ...reshareRows.map(({ cursorTimestamp, ...item }): TimelineItem => ({ kind: "reshare", timestamp: cursorTimestamp, ...item })),
+  ];
+  const compare = (a: string, b: string) => a < b ? 1 : a > b ? -1 : 0;
+  merged.sort((a, b) => compare(a.timestamp, b.timestamp) || compare(a.kind, b.kind) || compare(a.id, b.id));
+  const page = merged.slice(0, 20);
+  const handles = page.flatMap((item) => [
+    ...parseMentions(item.post.body).map((token) => token.handle),
+    ...(item.kind === "reshare" && item.note ? parseMentions(item.note, false).map((token) => token.handle) : []),
+  ]);
+  await resolveMentionHandles([...new Set(handles)]);
   const last = page.at(-1);
   return {
-    posts: page,
-    nextCursor: rows.length > 20 && last
-      ? Buffer.from(`${last.cursorTimestamp}|${last.id}`).toString("base64url") : null,
+    items: page,
+    nextCursor: merged.length > 20 && last
+      ? Buffer.from(`${last.timestamp}|${last.kind}|${last.id}`).toString("base64url") : null,
   };
 }
 

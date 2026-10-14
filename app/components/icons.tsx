@@ -1,4 +1,4 @@
-import { Flag, Globe, Heart, Image as LucideImage, Link2, Loader2, MapPin, MessageCircle, Plus, Send, Trash2, Video, X } from "lucide-react";
+import { Flag, Globe, Heart, Image as LucideImage, Link2, Loader2, MapPin, MessageCircle, Plus, Repeat2, Send, Trash2, Video, X } from "lucide-react";
 import { siGithub, siInstagram, siLinkedin, siTiktok, siX, siYoutube } from "simple-icons";
 
 const uiIconProps = {
@@ -33,6 +33,10 @@ export function PlusIcon() {
 
 export function SpinnerIcon() {
   return <Loader2 {...uiIconProps} className="h-5 w-5 shrink-0 animate-spin motion-reduce:animate-none" />;
+}
+
+export function ReshareIcon() {
+  return <Repeat2 {...uiIconProps} />;
 }
 
 export function ReplyIcon() {

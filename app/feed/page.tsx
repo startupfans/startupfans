@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { PageHeader, SiteFooter } from "@/app/components/sticker";
 import { AppHeader, AppShell } from "@/app/components/app-shell";
-import { PostCard } from "@/app/s/[slug]/post-card";
+import { TimelineCard } from "@/app/s/[slug]/post-card";
 import { getCurrentUser } from "@/lib/auth";
 import { listFeed } from "@/lib/posts";
 import { getMemberStartups } from "@/lib/members";
@@ -20,7 +20,7 @@ export default async function FeedPage({ searchParams }: {
   const following = query.filter === "following";
   const needsSignIn = following && !user;
   const followingLogin = `/login?next=${encodeURIComponent("/feed?filter=following")}`;
-  const { posts, nextCursor } = await listFeed({
+  const { items, nextCursor } = await listFeed({
     userId: user?.id,
     following,
     cursor: typeof query.before === "string" ? query.before : undefined,
@@ -49,14 +49,14 @@ export default async function FeedPage({ searchParams }: {
               <p className="mt-2">Sign in to see updates from the startups you follow.</p>
               <Link href={followingLogin} className="mt-4 inline-flex min-h-11 items-center py-2 font-bold underline underline-offset-4">Sign in</Link>
             </div>
-          ) : posts.length === 0 ? (
+          ) : items.length === 0 ? (
             <div className="rounded-2xl border-[3px] border-ink bg-sun p-6 shadow-sticker">
               <h2 className="font-display text-xl font-extrabold">No updates yet.</h2>
               <p className="mt-2">{following ? "Follow startups from their pages to see their updates here." : "Startup teams will share their updates here."}</p>
               {following && <Link href="/feed" className="mt-4 inline-flex min-h-11 items-center py-2 font-bold underline underline-offset-4">Find startups in Everyone</Link>}
               {!following && <Link href="/start" className="mt-4 inline-flex min-h-11 items-center py-2 font-bold underline underline-offset-4">Start your fan club</Link>}
             </div>
-          ) : posts.map((post) => <PostCard key={post.id} post={post} showStartup />)}
+          ) : items.map((item) => <TimelineCard key={`${item.kind}:${item.id}`} item={item} />)}
         </section>
         {nextCursor && (
           <div className="mt-8 text-center">
