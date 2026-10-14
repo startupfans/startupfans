@@ -17,7 +17,7 @@ const scale = "scale=w='max(2,trunc(iw*min(1,1080/max(iw,ih))/2)*2)':h='max(2,tr
 const diskInputLimit = 400 * 1024 * 1024;
 const diskOutputLimit = 60 * 1024 * 1024;
 const safetyMarginMs = 60000;
-const jobBudgetMs = 800000;
+const jobBudgetMs = 710000;
 
 // Single-thread local recipe measurements, multiplied by 2.5 for a 1 vCPU
 // function. See AGENTS.md for the corpus, compute timings and derivation.
@@ -35,18 +35,23 @@ export function videoDownloadEstimate(bytes: number) {
   return 60 + Math.ceil(bytes / (1024 * 1024));
 }
 
-export function planVideoEncoding(metadata: VideoMetadata, bytes: number, remainingSeconds = 800,
-  downloadEstimate = videoDownloadEstimate(bytes)): EncodingPlan {
+export function planVideoEncoding(metadata: VideoMetadata, bytes: number, remainingSeconds = jobBudgetMs / 1000,
+  downloadEstimate = videoDownloadEstimate(bytes), inputMode: VideoInput["kind"] = "file"): EncodingPlan {
   const pixels = metadata.width * metadata.height;
   const factors = pixels <= 1920 * 1080 ? videoEncodeFactors.hd : videoEncodeFactors.uhd;
   const fastFactor = pixels > videoFastPresetPixels
     ? videoEncodeFactors.eightK.fast * Math.max(1, pixels / (7680 * 4320)) : factors.fast;
   const fast = { preset: "fast", estimate: metadata.duration * fastFactor, downloadEstimate, remainingSeconds } satisfies EncodingEstimate;
+  const fitsBudget = (estimate: number) => {
+    const workSeconds = inputMode === "pipe"
+      ? Math.max(downloadEstimate, estimate) + 30 : downloadEstimate + estimate;
+    return workSeconds + safetyMarginMs / 1000 < remainingSeconds;
+  };
   if (pixels <= videoFastPresetPixels) {
     const slow = { ...fast, preset: "slow", estimate: metadata.duration * factors.slow } satisfies EncodingEstimate;
-    if (slow.estimate + downloadEstimate + safetyMarginMs / 1000 < remainingSeconds) return { ...slow, status: "encode" };
+    if (fitsBudget(slow.estimate)) return { ...slow, status: "encode" };
   }
-  if (fast.estimate + downloadEstimate + safetyMarginMs / 1000 < remainingSeconds) return { ...fast, status: "encode" };
+  if (fitsBudget(fast.estimate)) return { ...fast, status: "encode" };
   return { ...fast, status: "raw", reason: "budget" };
 }
 
@@ -185,9 +190,9 @@ async function transcodeVideoInput(input: VideoInput, directory: string, {
   if (!Number.isFinite(metadata.duration) || metadata.duration <= 0) {
     throw new Error("Video duration is unavailable.");
   }
-  // Disk transfer/probe time is already spent; stdin still needs its transfer.
+  // Disk transfer/probe time is already spent; stdin transfers while encoding.
   const plan = planVideoEncoding(metadata, size, (deadline - performance.now()) / 1000,
-    input.kind === "pipe" ? videoDownloadEstimate(size) : 0);
+    input.kind === "pipe" ? videoDownloadEstimate(size) : 0, input.kind);
   if (plan.status === "raw") throw new VideoBudgetError(plan);
   const { preset } = plan;
   const posterFormat = getPosterFormat();
