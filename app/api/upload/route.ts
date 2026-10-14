@@ -47,7 +47,7 @@ export async function POST(request: Request) {
     const result = await handleUpload({
       body,
       request,
-      onBeforeGenerateToken: async (pathname, clientPayload) => {
+      onBeforeGenerateToken: async (pathname, clientPayload, multipart) => {
         const user = await getCurrentUser();
         if (!user) throw new Error("Sign in before uploading.");
         if (pathname.startsWith("users/")) {
@@ -94,6 +94,11 @@ export async function POST(request: Request) {
           throw new Error("Upload an image or video to this startup's media folder.");
         }
         if (isRawVideo && !process.env.MEDIA_JOB_SECRET) throw new Error("Video processing is unavailable.");
+        if (isRawVideo && (typeof payload.size !== "number" || !Number.isSafeInteger(payload.size)
+          || payload.size <= 0 || payload.size > mediaLimits.video
+          || (payload.size > 100 * 1024 * 1024 && !multipart))) {
+          throw new Error("Choose a video up to 1 GB and use multipart for large uploads.");
+        }
         const profileRole = /-cover\.[^.]+$/.test(filename) ? "cover" : "logo";
         if (isProfile && !/-(cover|logo)\.[^.]+$/.test(filename)) {
           throw new Error("Choose a logo or cover image before uploading.");

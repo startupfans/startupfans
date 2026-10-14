@@ -133,7 +133,7 @@ export function Composer({ slug, name, avatarUrl, onPosted, onBusyChange }: {
       const blob = await upload(`startups/${slug}/${type === "video" ? "raw/" : ""}${crypto.randomUUID()}.${extension}`, uploadFile, {
         access: "public",
         handleUploadUrl: "/api/upload",
-        clientPayload: JSON.stringify({ slug }),
+        clientPayload: JSON.stringify({ slug, size: uploadFile.size }),
         contentType,
         multipart: type === "video",
         abortSignal: controller.signal,
@@ -254,7 +254,7 @@ export function Composer({ slug, name, avatarUrl, onPosted, onBusyChange }: {
               title={`Add image (up to ${mediaLimits.image / (1024 * 1024)} MB)`} aria-label="Add image" className={postIconButtonClass}><ImageIcon /></button>
             <button type="button" disabled={pending}
               onClick={() => openFilePicker(getMediaAccept("video"))}
-              title={`Add video (up to ${mediaLimits.video / (1024 * 1024)} MB, 3 minutes)`} aria-label="Add video" className={postIconButtonClass}><VideoIcon /></button>
+              title="Add video (up to 1 GB)" aria-label="Add video" className={postIconButtonClass}><VideoIcon /></button>
           </div>
           <div className="flex min-w-0 items-center gap-3">
             {body.length > 4000 && <span className="text-xs tabular-nums text-ink/60">{body.length.toLocaleString("en-GB")}/5,000</span>}

@@ -1,4 +1,4 @@
-import { getFileMediaFormat, getImageUploadMaximum, gifMaximumBytes, imageQuality, imageTargets, mediaLimits, videoMaximumSeconds, type ImageRole } from "@/lib/media";
+import { getFileMediaFormat, getImageUploadMaximum, gifMaximumBytes, imageQuality, imageTargets, mediaLimits, type ImageRole } from "@/lib/media";
 
 function checkAborted(signal?: AbortSignal) {
   signal?.throwIfAborted();
@@ -105,7 +105,7 @@ export async function downscaleImage(file: File, role: ImageRole, signal?: Abort
 
 export async function validateVideo(file: File, signal?: AbortSignal): Promise<void> {
   checkAborted(signal);
-  if (file.size > mediaLimits.video) throw new Error("Videos must be 500 MB or smaller.");
+  if (file.size > mediaLimits.video) throw new Error("Videos must be 1 GB or smaller.");
   const video = document.createElement("video");
   const url = URL.createObjectURL(file);
   try {
@@ -122,7 +122,6 @@ export async function validateVideo(file: File, signal?: AbortSignal): Promise<v
       signal?.addEventListener("abort", abort, { once: true });
       video.onloadedmetadata = () => {
         if (!Number.isFinite(video.duration) || video.duration <= 0) finish(new Error("Couldn't read this video's duration. Export it as MP4 and try again."));
-        else if (video.duration > videoMaximumSeconds) finish(new Error(`Videos must be ${videoMaximumSeconds / 60} minutes or shorter.`));
         else finish();
       };
       video.onerror = () => finish(new Error("Couldn't read this video. Export it as MP4 and try again."));

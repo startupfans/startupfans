@@ -27,8 +27,11 @@ export function PostMedia({ mediaUrl, mediaType, mediaPosterUrl, mediaStatus = "
           className="block h-auto w-full"
           style={{ width: "100%", height: "auto" }} />
       ) : (
-        <PostVideo key={`${mediaUrl}:${mediaPosterUrl}`} mediaUrl={mediaUrl}
-          mediaPosterUrl={mediaPosterUrl} preload={mediaStatus === "failed" ? "metadata" : "none"} quickTime={contentType === "video/quicktime"} />
+        <>
+          <PostVideo key={`${mediaUrl}:${mediaPosterUrl}`} mediaUrl={mediaUrl}
+            mediaPosterUrl={mediaPosterUrl} preload={mediaStatus === "failed" ? "metadata" : "none"} quickTime={contentType === "video/quicktime"} />
+          {mediaStatus === "failed" && <p className="px-3 py-2 text-xs text-ink/60">original quality</p>}
+        </>
       )}
     </div>
   );

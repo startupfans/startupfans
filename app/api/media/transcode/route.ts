@@ -8,7 +8,7 @@ export const runtime = "nodejs";
 export const maxDuration = 800;
 
 export async function POST(request: Request) {
-  const deadline = performance.now() + 780000;
+  const deadline = performance.now() + 800000;
   const authorization = request.headers.get("authorization") ?? "";
   if (!authorization.startsWith("Bearer ")) return Response.json({ error: "Unauthorized" }, { status: 401 });
   let body: unknown;
