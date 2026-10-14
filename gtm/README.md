@@ -19,6 +19,7 @@ Launch and distribution drafts from Grok bot plus team edits. Not public site co
 | `bait-post.md` | Engagement bait post draft |
 | `selected-thread.md` | "Selected startups" thread draft |
 | `more-ideas.md` | Extra tactics for the remaining launch window |
+| `london-demo-night.md` | London Luma demo night (verbatim event copy + LinkedIn draft) |
 
 ## Reddit
 

@@ -2,7 +2,6 @@ import { AppHeader } from "@/app/components/app-shell";
 import { Sticker } from "@/app/components/sticker";
 import { StartupForm } from "@/app/s/[slug]/follow-button";
 import { requireUser } from "@/lib/auth";
-import { BioField } from "@/app/s/[slug]/settings/image-upload";
 import { WebsiteBrandFields } from "@/app/start/website-brand-fields";
 
 const inputClass = "mt-2 min-h-11 w-full min-w-0 rounded-xl border-2 border-ink bg-white px-4 py-3 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ink";
@@ -26,13 +25,6 @@ async function StartPage() {
               <span id="slug-help" className="mt-1 block text-sm font-normal text-ink/70">startupfans.co/s/your-name</span>
               <input id="slug" name="slug" required minLength={3} maxLength={40} pattern="[a-z0-9][a-z0-9\-]{1,38}[a-z0-9]" aria-describedby="slug-help" autoCapitalize="none" autoCorrect="off" spellCheck={false} className={inputClass} />
             </label>
-            <label htmlFor="tagline" className="block font-bold">Tagline <span className="font-normal">(optional)</span>
-              <input id="tagline" name="tagline" maxLength={120} className={inputClass} />
-            </label>
-            <label htmlFor="description" className="block font-bold">Description <span className="font-normal">(optional)</span>
-              <textarea id="description" name="description" maxLength={2000} rows={5} className={`${inputClass} resize-y`} />
-            </label>
-            <BioField />
             <WebsiteBrandFields creatorId={user.id} />
             <label htmlFor="stage" className="block font-bold">Stage <span className="font-normal">(optional)</span>
               <select id="stage" name="stage" defaultValue="" className={inputClass}>
