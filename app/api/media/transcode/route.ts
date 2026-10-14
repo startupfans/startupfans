@@ -8,6 +8,7 @@ export const runtime = "nodejs";
 export const maxDuration = 800;
 
 export async function POST(request: Request) {
+  const deadline = performance.now() + 780000;
   const authorization = request.headers.get("authorization") ?? "";
   if (!authorization.startsWith("Bearer ")) return Response.json({ error: "Unauthorized" }, { status: 401 });
   let body: unknown;
@@ -24,7 +25,7 @@ export async function POST(request: Request) {
   if (post.status !== "processing") return Response.json({ status: post.status });
   after(async () => {
     const { processVideoJob } = await import("@/lib/video");
-    await processVideoJob(postId);
+    await processVideoJob(postId, deadline);
   });
   return Response.json({ status: "processing" }, { status: 202 });
 }

@@ -14,6 +14,20 @@ import { claimVideoJob, completeVideoJob, failVideoJob, validateVideoJobSource }
 
 const require = createRequire(import.meta.url);
 const scale = "scale=w='max(2,trunc(iw*min(1,1080/max(iw,ih))/2)*2)':h='max(2,trunc(ih*min(1,1080/max(iw,ih))/2)*2)':flags=lanczos,setsar=1";
+const diskInputLimit = 400 * 1024 * 1024;
+const diskOutputLimit = 60 * 1024 * 1024;
+const encodeReserveMs = 180000;
+const jobBudgetMs = 780000;
+
+export function videoDownloadTimeout(bytes: number, remainingMs: number) {
+  const available = Math.floor(remainingMs) - encodeReserveMs;
+  if (available <= 0) throw new Error("Insufficient video job time.");
+  return Math.min(60000 + Math.ceil(bytes / (1024 * 1024)) * 1000, available);
+}
+
+type VideoInput =
+  | { kind: "file"; path: string; bytes: number }
+  | { kind: "pipe"; url: string; bytes: number; deadline: number };
 
 function ffmpegPath() {
   const installer: unknown = require("@ffmpeg-installer/ffmpeg");
@@ -44,28 +58,63 @@ function getPosterFormat() {
   return posterFormat;
 }
 
-// Only local files are accepted, including by demuxers which can open nested URLs.
-async function runFfmpeg(args: string[], signal: AbortSignal) {
-  return new Promise<string>((resolve, reject) => {
+// Demuxers may open only local files or the explicitly supplied stdin pipe.
+async function runFfmpeg(args: string[], signal: AbortSignal, input?: (signal: AbortSignal) => AsyncIterable<Uint8Array>) {
+  const feeding = new AbortController();
+  const feedSignal = AbortSignal.any([signal, feeding.signal]);
+  // Evaluate feed preconditions before spawning a child with an open stdin.
+  const source = input?.(feedSignal);
+  let childExited = false;
+  let feedError: unknown;
+  let feed: Promise<void> | undefined;
+  const result = new Promise<string>((resolve, reject) => {
     const child = spawn(ffmpegPath(), ["-hide_banner", "-nostdin", "-y", ...args], {
-      stdio: ["ignore", "ignore", "pipe"], signal, killSignal: "SIGKILL",
+      stdio: ["pipe", "ignore", "pipe"], signal, killSignal: "SIGKILL",
     });
+    child.once("exit", () => {
+      childExited = true;
+      feeding.abort();
+    });
+    if (source) {
+      feed = pipeline(source, child.stdin, { signal: feedSignal }).catch((error: unknown) => {
+        // Stdin can close before exit is observed; the exit status decides whether
+        // EPIPE/premature close was an early successful probe or an FFmpeg failure.
+        const stdinClosed = error instanceof Error && "code" in error
+          && (error.code === "EPIPE" || error.code === "ERR_STREAM_PREMATURE_CLOSE");
+        if (!childExited && child.exitCode !== 0 && !stdinClosed) {
+          feedError = error;
+          child.kill("SIGKILL");
+        }
+      });
+    } else child.stdin.end();
     let stderr = "";
     child.stderr.setEncoding("utf8");
     child.stderr.on("data", (chunk: string) => { stderr = (stderr + chunk).slice(-32768); });
     child.once("error", () => reject(new Error("FFmpeg could not run.")));
     child.once("close", (code) => {
+      childExited = true;
+      feeding.abort();
       if (code === 0) resolve(stderr);
       else reject(new Error("FFmpeg failed."));
     });
   });
+  try {
+    const stderr = await result;
+    await feed;
+    if (feedError) throw new Error("Raw video stream failed.");
+    return stderr;
+  } finally {
+    feeding.abort();
+    await feed;
+  }
 }
 
-export async function probeVideoFile(input: string, signal = AbortSignal.timeout(15000)) {
+async function probeVideoInput(input: VideoInput, signal: AbortSignal) {
   // The allowed FFmpeg package has no ffprobe executable. Its demuxer reports the
   // same container duration without decoding frames or fetching remote resources.
-  const info = await runFfmpeg(["-protocol_whitelist", "file,pipe", "-threads", "1", "-i", input,
-    "-map", "0:v:0", "-c:v", "copy", "-frames:v", "0", "-f", "null", "-"], signal);
+  const info = await runFfmpeg(["-protocol_whitelist", "file,pipe", "-threads", "1", "-i", input.kind === "file" ? input.path : "pipe:0",
+    "-map", "0:v:0", "-c:v", "copy", "-frames:v", "0", "-f", "null", "-"], signal,
+    input.kind === "pipe" ? (feedSignal) => rawVideoBody(input.url, feedSignal, videoDownloadTimeout(input.bytes, input.deadline - performance.now()), mediaLimits.video, true) : undefined);
   const duration = /Duration: (\d+):(\d+):(\d+\.\d+)/.exec(info);
   const dimensions = /Video:[^\n]*?\b([1-9]\d*)x([1-9]\d*)\b/.exec(info);
   if (!duration || !dimensions) throw new Error("Video metadata is unavailable.");
@@ -75,14 +124,26 @@ export async function probeVideoFile(input: string, signal = AbortSignal.timeout
   };
 }
 
+export async function probeVideoFile(input: string, signal = AbortSignal.timeout(15000)) {
+  return probeVideoInput({ kind: "file", path: input, bytes: (await stat(input)).size }, signal);
+}
+
 export async function transcodeVideoFile(input: string, directory: string, {
   signal = AbortSignal.timeout(720000), enforceLimits = true, removeInput = false,
   onInputMetadata,
 }: { signal?: AbortSignal; enforceLimits?: boolean; removeInput?: boolean;
   onInputMetadata?: (metadata: { width: number; height: number; duration: number; bytes: number }) => void } = {}) {
-  const size = (await stat(input)).size;
+  return transcodeVideoInput({ kind: "file", path: input, bytes: (await stat(input)).size }, directory,
+    { signal, enforceLimits, removeInput, onInputMetadata });
+}
+
+async function transcodeVideoInput(input: VideoInput, directory: string, {
+  signal, enforceLimits = true, removeInput = false, onInputMetadata,
+}: { signal: AbortSignal; enforceLimits?: boolean; removeInput?: boolean;
+  onInputMetadata?: (metadata: { width: number; height: number; duration: number; bytes: number }) => void }) {
+  const size = input.bytes;
   if (enforceLimits && size > mediaLimits.video) throw new Error("Video exceeds the byte limit.");
-  const metadata = await probeVideoFile(input, signal);
+  const metadata = await probeVideoInput(input, signal);
   onInputMetadata?.({ ...metadata, bytes: size });
   if (metadata.duration <= 0 || (enforceLimits && metadata.duration > videoMaximumSeconds)) {
     throw new Error("Video exceeds the duration limit.");
@@ -92,12 +153,24 @@ export async function transcodeVideoFile(input: string, directory: string, {
   const videoPath = join(directory, "rendition.mp4");
   const posterPath = join(directory, `poster.${posterFormat.extension}`);
   const start = performance.now();
-  await runFfmpeg(["-protocol_whitelist", "file,pipe", "-threads", "1", "-i", input,
-    "-map", "0:v:0", "-map", "0:a:0?", "-vf", scale, "-filter_threads", "1",
-    "-c:v", "libx264", "-crf", "21", "-preset", preset, "-threads", "1", "-pix_fmt", "yuv420p",
-    "-vsync", "0", "-c:a", "aac", "-b:a", "128k", "-map_metadata", "-1", "-movflags", "+faststart", videoPath], signal);
+  const outputLimit = new AbortController();
+  const monitor = setInterval(() => {
+    void stat(videoPath).then((info) => {
+      if (info.size > diskOutputLimit) outputLimit.abort();
+    }, () => {});
+  }, 250);
+  try {
+    await runFfmpeg(["-protocol_whitelist", "file,pipe", "-threads", "1", "-i", input.kind === "file" ? input.path : "pipe:0",
+      "-map", "0:v:0", "-map", "0:a:0?", "-vf", scale, "-filter_threads", "1",
+      "-c:v", "libx264", "-crf", "21", "-preset", preset, "-threads", "1", "-pix_fmt", "yuv420p",
+      "-vsync", "0", "-c:a", "aac", "-b:a", "128k", "-map_metadata", "-1", "-movflags", "+faststart", videoPath], AbortSignal.any([signal, outputLimit.signal]),
+      input.kind === "pipe" ? (feedSignal) => rawVideoBody(input.url, feedSignal, videoDownloadTimeout(input.bytes, input.deadline - performance.now()), mediaLimits.video, true) : undefined);
+  } finally {
+    clearInterval(monitor);
+  }
+  if ((await stat(videoPath)).size > diskOutputLimit) throw new Error("Video output exceeds temporary storage budget.");
   const encodeSeconds = (performance.now() - start) / 1000;
-  if (removeInput) await rm(input, { force: true });
+  if (removeInput && input.kind === "file") await rm(input.path, { force: true });
   await runFfmpeg(["-protocol_whitelist", "file,pipe", "-ss", String(metadata.duration * 0.1),
     "-threads", "1", "-i", videoPath, "-map", "0:v:0", "-frames:v", "1", "-vf", scale,
     "-filter_threads", "1", ...posterFormat.args, "-update", "1", posterPath], signal);
@@ -105,32 +178,128 @@ export async function transcodeVideoFile(input: string, directory: string, {
     videoBytes: (await stat(videoPath)).size, posterBytes: (await stat(posterPath)).size };
 }
 
-async function downloadRawVideo(url: string, path: string, signal: AbortSignal) {
-  const response = await fetch(url, { redirect: "error", cache: "no-store",
-    signal: AbortSignal.any([signal, AbortSignal.timeout(60000)]) });
-  if (!response.ok || !response.body || Number(response.headers.get("content-length")) > mediaLimits.video) {
-    throw new Error("Raw video download failed.");
-  }
-  const reader = response.body.getReader();
-  async function* limitedBody() {
+async function* rawVideoBody(url: string, signal: AbortSignal, timeoutMs: number, byteLimit: number, headersOnly = false) {
+  const timeoutSignal = AbortSignal.timeout(timeoutMs);
+  const download = new AbortController();
+  const expire = () => download.abort(timeoutSignal.reason);
+  timeoutSignal.addEventListener("abort", expire, { once: true });
+  try {
+    const response = await fetch(url, { redirect: "error", cache: "no-store",
+      signal: AbortSignal.any([signal, download.signal]) });
+    // Detach the header timer: FFmpeg backpressure must use the encode budget.
+    if (headersOnly) timeoutSignal.removeEventListener("abort", expire);
+    if (!response.ok || !response.body || Number(response.headers.get("content-length")) > byteLimit) {
+      await response.body?.cancel();
+      throw new Error("Raw video download failed.");
+    }
+    const reader = response.body.getReader();
     let bytes = 0;
     try {
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
         bytes += value.byteLength;
-        if (bytes > mediaLimits.video) throw new Error("Raw video exceeds the byte limit.");
+        if (bytes > byteLimit) throw new Error("Raw video exceeds the byte limit.");
         yield value;
       }
     } finally {
-      await reader.cancel();
+      await reader.cancel().catch(() => {});
     }
+  } finally {
+    timeoutSignal.removeEventListener("abort", expire);
   }
-  await pipeline(limitedBody(), createWriteStream(path), { signal });
 }
 
-export async function processVideoJob(postId: string) {
-  const signal = AbortSignal.timeout(780000);
+async function readVideoRange(url: string, start: number, end: number, size: number, signal: AbortSignal) {
+  const response = await fetch(url, { headers: { Range: `bytes=${start}-${end}` },
+    redirect: "error", cache: "no-store", signal });
+  if (response.status !== 206 || response.headers.get("content-range") !== `bytes ${start}-${end}/${size}` || !response.body) {
+    await response.body?.cancel();
+    throw new Error("Video range reads are unavailable.");
+  }
+  const chunks: Uint8Array[] = [];
+  let bytes = 0;
+  const reader = response.body.getReader();
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      bytes += value.byteLength;
+      if (bytes > end - start + 1) throw new Error("Invalid video range.");
+      chunks.push(value);
+    }
+  } finally {
+    await reader.cancel().catch(() => {});
+  }
+  if (bytes !== end - start + 1) throw new Error("Incomplete video range.");
+  return Buffer.concat(chunks);
+}
+
+async function canPipeVideo(url: string, size: number, signal: AbortSignal) {
+  if (size < 16) return false;
+  const head = await readVideoRange(url, 0, 15, size, signal);
+  // WebM uses a sequential EBML container and does not require a seekable input.
+  if (head.readUInt32BE(0) === 0x1a45dfa3) return true;
+  if (!["ftyp", "moov", "wide", "free", "skip"].includes(head.toString("ascii", 4, 8))) return false;
+  const tailStart = Math.max(0, size - 65536);
+  const tail = await readVideoRange(url, tailStart, size - 1, size, signal);
+  let offset = 0;
+  let mediaSeen = false;
+  // Walk actual top-level atom boundaries; a moov byte string inside mdat is not metadata.
+  for (let atoms = 0; atoms < 64 && offset + 8 <= size; atoms++) {
+    const end = Math.min(size - 1, offset + 15);
+    const header = offset === 0 ? head : offset >= tailStart
+      ? tail.subarray(offset - tailStart, end - tailStart + 1)
+      : await readVideoRange(url, offset, end, size, signal);
+    const type = header.toString("ascii", 4, 8);
+    const shortSize = header.readUInt32BE(0);
+    if (shortSize === 1 && header.length < 16) return false;
+    const atomSize = shortSize === 1 ? Number(header.readBigUInt64BE(8)) : shortSize || size - offset;
+    if (!Number.isSafeInteger(atomSize) || atomSize < (shortSize === 1 ? 16 : 8) || offset + atomSize > size) return false;
+    if (type === "moov") return !mediaSeen;
+    if (type === "mdat") mediaSeen = true;
+    offset += atomSize;
+  }
+  return false;
+}
+
+export async function transcodeRawVideo(url: string, directory: string, {
+  deadline = performance.now() + jobBudgetMs, signal = AbortSignal.timeout(jobBudgetMs), onInputMetadata,
+}: { deadline?: number; signal?: AbortSignal;
+  onInputMetadata?: (metadata: { width: number; height: number; duration: number; bytes: number }) => void } = {}) {
+  const inspectionSignal = AbortSignal.any([signal, AbortSignal.timeout(15000)]);
+  const response = await fetch(url, { method: "HEAD", redirect: "error", cache: "no-store", signal: inspectionSignal });
+  const length = response.headers.get("content-length");
+  const size = length === null ? null : Number(length);
+  if (!response.ok || (size !== null && (!Number.isSafeInteger(size) || size <= 0 || size > mediaLimits.video))) {
+    throw new Error("Raw video size is unavailable or exceeds the limit.");
+  }
+  let pipe = false;
+  try { pipe = size !== null && await canPipeVideo(url, size, inspectionSignal); }
+  catch { signal.throwIfAborted(); }
+  const downloadMs = videoDownloadTimeout(size ?? mediaLimits.video, deadline - performance.now());
+  let input: VideoInput;
+  if (pipe && size !== null) {
+    input = { kind: "pipe", url, bytes: size, deadline };
+  } else {
+    if (size !== null && size > diskInputLimit) throw new Error("Seekable raw video exceeds temporary storage budget.");
+    const path = join(directory, "original");
+    await pipeline(rawVideoBody(url, signal, downloadMs, diskInputLimit), createWriteStream(path), { signal });
+    const downloadedSize = (await stat(path)).size;
+    if (size !== null && downloadedSize !== size) throw new Error("Incomplete raw video download.");
+    input = { kind: "file", path, bytes: downloadedSize };
+  }
+  const remainingMs = Math.floor(deadline - performance.now());
+  if (remainingMs <= 0) throw new Error("Video job time expired.");
+  const output = await transcodeVideoInput(input, directory, {
+    signal: AbortSignal.any([signal, AbortSignal.timeout(Math.min(720000, remainingMs))]),
+    removeInput: true, onInputMetadata,
+  });
+  return { ...output, inputMode: input.kind };
+}
+
+export async function processVideoJob(postId: string, deadline = performance.now() + jobBudgetMs) {
+  const signal = AbortSignal.timeout(Math.max(0, Math.floor(deadline - performance.now())));
   const uploaded: string[] = [];
   let directory: string | null = null;
   let claimed = false;
@@ -142,10 +311,8 @@ export async function processVideoJob(postId: string) {
     claimed = true;
     validateVideoJobSource(post.raw, post.slug);
     directory = await mkdtemp(join(tmpdir(), "startupfans-video-"));
-    const input = join(directory, "original");
-    await downloadRawVideo(post.raw, input, signal);
-    const output = await transcodeVideoFile(input, directory, {
-      signal: AbortSignal.any([signal, AbortSignal.timeout(720000)]), removeInput: true,
+    const output = await transcodeRawVideo(post.raw, directory, {
+      signal, deadline,
       onInputMetadata: (metadata) => { inputMetadata = metadata; },
     });
     const prefix = `startups/${post.slug}/${randomUUID()}`;

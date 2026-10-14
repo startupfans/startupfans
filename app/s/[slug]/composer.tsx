@@ -9,7 +9,7 @@ import { CloseIcon, ImageIcon, SendIcon, TrashIcon, VideoIcon, postIconButtonBas
 import { MentionAutocomplete } from "@/app/components/mention-autocomplete";
 import { SubmitButton } from "@/app/components/submit-button";
 import { ConfirmSubmit } from "@/app/components/confirm-dialog";
-import { getFileMediaFormat, getMediaAccept, mediaLimits, videoMaximumPixels, type MediaType } from "@/lib/media";
+import { getFileMediaFormat, getMediaAccept, mediaLimits, type MediaType } from "@/lib/media";
 import { downscaleImage, validateVideo } from "@/app/components/image-downscale";
 import { createPost, deletePost, type PostActionState } from "./post-actions";
 
@@ -24,35 +24,6 @@ async function checkUploadAvailability() {
       throw new Error(result.error);
     }
     throw new Error("Attachments are unavailable right now. You can still post text.");
-  }
-}
-
-
-async function validateVideoResolution(file: File, signal: AbortSignal) {
-  const video = document.createElement("video");
-  const url = URL.createObjectURL(file);
-  try {
-    await new Promise<void>((resolve, reject) => {
-      const finish = (error?: Error) => {
-        clearTimeout(timeout);
-        signal.removeEventListener("abort", abort);
-        video.onloadedmetadata = null;
-        video.onerror = null;
-        if (error) reject(error); else resolve();
-      };
-      const abort = () => finish(new DOMException("Upload cancelled.", "AbortError"));
-      const timeout = setTimeout(() => finish(new Error("Couldn't read this video. Try another file.")), 15000);
-      signal.addEventListener("abort", abort, { once: true });
-      video.onloadedmetadata = () => finish(video.videoWidth * video.videoHeight > videoMaximumPixels
-        ? new Error("Couldn't read this video. Try another file.") : undefined);
-      video.onerror = () => finish(new Error("Couldn't read this video. Try another file."));
-      video.preload = "metadata";
-      if (signal.aborted) abort(); else video.src = url;
-    });
-  } finally {
-    video.removeAttribute("src");
-    video.load();
-    URL.revokeObjectURL(url);
   }
 }
 
@@ -149,7 +120,6 @@ export function Composer({ slug, name, avatarUrl, onPosted, onBusyChange }: {
       const uploadFile = type === "image" ? await downscaleImage(file, "post", controller.signal) : file;
       if (type === "video") {
         await validateVideo(file, controller.signal);
-        await validateVideoResolution(file, controller.signal);
       }
       if (controller.signal.aborted) return;
       const outputFormat = getFileMediaFormat(uploadFile);
