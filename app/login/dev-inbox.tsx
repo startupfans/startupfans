@@ -42,7 +42,7 @@ export function SignOutButton({ action }: SignOutButtonProps) {
   return (
     <form
       action={action}
-      className="mt-8"
+      className="mt-10"
       onSubmit={() => {
         if (process.env.NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN && process.env.NEXT_PUBLIC_POSTHOG_HOST) {
           posthog.reset();
@@ -51,7 +51,7 @@ export function SignOutButton({ action }: SignOutButtonProps) {
     >
       <SubmitButton
         pendingLabel="Signing out…"
-        className="min-h-11 w-full rounded-xl border-[3px] border-ink bg-white px-5 py-3 font-display font-extrabold shadow-sticker transition hover:-translate-y-0.5 active:translate-y-0 active:shadow-none sm:w-auto"
+        className="min-h-11 px-1 py-2 text-sm font-bold text-ink/70 underline underline-offset-4 transition hover:text-ink"
       >
         Sign out
       </SubmitButton>

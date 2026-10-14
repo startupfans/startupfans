@@ -1,12 +1,33 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { redirect } from "next/navigation";
 import { requireUser } from "@/lib/auth";
 import { isOptionalHttpsUrl, textField, updateProfile } from "@/lib/members";
 import { getMediaFormat, isMediaFilename } from "@/lib/media";
 import { captureServerEvent } from "@/lib/posthog-server";
 import { normalizeSocial, socialNetworks, type SocialField } from "@/lib/socials";
+
+export type UpdateProfileField = "name" | "avatarUrl" | SocialField;
+
+export interface UpdateProfileValues {
+  name: string;
+  avatarUrl: string;
+  xHandle: string;
+  linkedinUrl: string;
+  githubUrl: string;
+  instagramHandle: string;
+  youtubeUrl: string;
+  tiktokHandle: string;
+}
+
+export type UpdateProfileState =
+  | { status: "idle" }
+  | {
+    status: "error";
+    fieldErrors: Partial<Record<UpdateProfileField, string>>;
+    values: UpdateProfileValues;
+  }
+  | { status: "saved"; values: UpdateProfileValues };
 
 function isAvatarUrl(value: string, userId: string) {
   if (!isOptionalHttpsUrl(value)) return false;
@@ -21,53 +42,81 @@ function isAvatarUrl(value: string, userId: string) {
     && isMediaFilename(filename) && getMediaFormat(filename)?.type === "image";
 }
 
-const socialMessages = {
-  xHandle: "invalid-x",
-  linkedinUrl: "invalid-linkedin",
-  githubUrl: "invalid-github",
-  instagramHandle: "invalid-instagram",
-  youtubeUrl: "invalid-youtube",
-  tiktokHandle: "invalid-tiktok",
-} satisfies Record<SocialField, string>;
+function readUpdateValues(formData: FormData): UpdateProfileValues {
+  return {
+    name: textField(formData, "name"),
+    avatarUrl: textField(formData, "avatarUrl"),
+    xHandle: textField(formData, "xHandle"),
+    linkedinUrl: textField(formData, "linkedinUrl"),
+    githubUrl: textField(formData, "githubUrl"),
+    instagramHandle: textField(formData, "instagramHandle"),
+    youtubeUrl: textField(formData, "youtubeUrl"),
+    tiktokHandle: textField(formData, "tiktokHandle"),
+  };
+}
 
-export async function updateProfileAction(formData: FormData) {
+function refreshProfile(handle: string) {
+  revalidatePath("/me");
+  revalidatePath(`/u/${handle}`);
+  revalidatePath("/s/[slug]", "page");
+  revalidatePath("/s/[slug]/settings", "page");
+  revalidatePath("/s/[slug]/p/[postId]", "page");
+  revalidatePath("/feed");
+}
+
+export async function updateProfileAction(
+  _previous: UpdateProfileState,
+  formData: FormData,
+): Promise<UpdateProfileState> {
   const user = await requireUser("/me");
-  const name = textField(formData, "name");
-  const avatarUrl = textField(formData, "avatarUrl");
-  if (name.length > 60) {
-    redirect("/me?message=name-too-long");
+  const values = readUpdateValues(formData);
+  const fieldErrors: Partial<Record<UpdateProfileField, string>> = {};
+
+  if (values.name.length > 60) {
+    fieldErrors.name = "Use up to 60 characters for your name.";
   }
-  if (!isAvatarUrl(avatarUrl, user.id)) {
-    redirect("/me?message=invalid-avatar");
+  if (!isAvatarUrl(values.avatarUrl, user.id)) {
+    fieldErrors.avatarUrl = "Upload your own avatar or use a full https:// image address.";
   }
+
   const socials: Record<SocialField, string | null> = {
     xHandle: null, linkedinUrl: null, githubUrl: null,
     instagramHandle: null, youtubeUrl: null, tiktokHandle: null,
   };
-  for (const { network, field } of socialNetworks) {
-    const result = normalizeSocial(network, textField(formData, field));
-    if (result.status === "invalid") redirect(`/me?message=${socialMessages[field]}`);
-    socials[field] = result.value;
+  for (const { network, field, personalHint } of socialNetworks) {
+    const result = normalizeSocial(network, values[field]);
+    if (result.status === "invalid") fieldErrors[field] = personalHint;
+    else socials[field] = result.value;
   }
+  if (Object.keys(fieldErrors).length > 0) {
+    return { status: "error", fieldErrors, values };
+  }
+
   await updateProfile(user.id, {
-    name: name || null,
-    avatarUrl: avatarUrl || null,
+    name: values.name || null,
+    avatarUrl: values.avatarUrl || null,
     ...socials,
   });
   await captureServerEvent({
     distinctId: user.id,
     event: "profile_updated",
     properties: {
-      has_avatar: Boolean(avatarUrl),
-      has_name: Boolean(name),
+      has_avatar: Boolean(values.avatarUrl),
+      has_name: Boolean(values.name),
       has_socials: socialNetworks.some(({ field }) => Boolean(socials[field])),
     },
   });
-  revalidatePath("/me");
-  revalidatePath(`/u/${user.handle}`);
-  revalidatePath("/s/[slug]", "page");
-  revalidatePath("/s/[slug]/settings", "page");
-  revalidatePath("/s/[slug]/p/[postId]", "page");
-  revalidatePath("/feed");
-  redirect("/me?message=saved");
+  refreshProfile(user.handle);
+  return {
+    status: "saved",
+    values: {
+      ...values,
+      xHandle: socials.xHandle ?? "",
+      linkedinUrl: socials.linkedinUrl ?? "",
+      githubUrl: socials.githubUrl ?? "",
+      instagramHandle: socials.instagramHandle ?? "",
+      youtubeUrl: socials.youtubeUrl ?? "",
+      tiktokHandle: socials.tiktokHandle ?? "",
+    },
+  };
 }
