@@ -1,9 +1,6 @@
 import type { ReactNode } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { AdminLink } from "./admin-link";
-import { isAdmin } from "@/lib/admin";
-import { getCurrentUser } from "@/lib/auth";
 import { SubNav, type SubNavItem } from "./sub-nav";
 
 export function PageHeader({ title, identity, metadata, actions, tabs }: {
@@ -35,7 +32,6 @@ export function PageHeader({ title, identity, metadata, actions, tabs }: {
 }
 
 export async function TopNav({ signedIn, next }: { signedIn: boolean; next: string }) {
-  const admin = signedIn && isAdmin(await getCurrentUser());
   return (
     <nav className="flex flex-nowrap items-center justify-between gap-x-2 lg:gap-x-4" aria-label="Main navigation">
       <Link href="/" aria-label="startupfans home" className="inline-flex min-h-11 min-w-11 shrink-0 items-center justify-start">
@@ -57,7 +53,6 @@ export async function TopNav({ signedIn, next }: { signedIn: boolean; next: stri
         <Link className="inline-flex underline" href={signedIn ? "/me" : `/login?next=${encodeURIComponent(next)}`}>
           {signedIn ? "Your account" : "Sign in"}
         </Link>
-        {admin && <AdminLink compact />}
       </div>
     </nav>
   );

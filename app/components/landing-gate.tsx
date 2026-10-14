@@ -8,7 +8,7 @@ import { fetchSession, LandingSessionContext } from "./session-link";
 export function LandingGate({ children }: { children: ReactNode }) {
   const router = useRouter();
   const [ready, setReady] = useState(false);
-  const [session, setSession] = useState({ signedIn: false, admin: false });
+  const [session, setSession] = useState({ signedIn: false });
   const sessionRequest = useRef<ReturnType<typeof fetchSession> | null>(null);
 
   useEffect(() => {

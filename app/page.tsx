@@ -133,7 +133,6 @@ function Nav() {
           signedIn={{ href: "/feed", label: "Your feed", className: "min-h-11 text-sm font-bold hover:text-pink sm:text-base" }}
         />
         <SessionLink
-          showAdmin
           signedOut={{
             href: "/login",
             label: "Sign up",
