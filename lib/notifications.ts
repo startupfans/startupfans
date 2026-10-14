@@ -92,8 +92,8 @@ async function insertNotifications(source: NotificationSource, recipientIds: str
 }
 
 async function deliverNotificationEmail(source: NotificationSource, userId: string, notificationId: string | null) {
-  await db.transaction(async (tx) => {
-    // The recipient lock serializes concurrent email jobs, including email-only preferences.
+  const delivery = await db.transaction(async (tx) => {
+    // Serialize the coalescing reservation, including email-only preferences, before sending.
     const [user] = await tx.select().from(users).where(eq(users.id, userId)).for("update");
     if (!user || user.emailPaused) return;
     const [setting] = await tx.select().from(notificationSettings)
@@ -112,10 +112,6 @@ async function deliverNotificationEmail(source: NotificationSource, userId: stri
         source.postId ? eq(posts.visibility, "public") : undefined,
         source.commentId ? and(sql`${postComments.id} is not null`, isNull(postComments.deletedAt)) : undefined));
     if (!detail) return;
-    if (notificationId) {
-      const [exists] = await tx.select({ id: notifications.id }).from(notifications).where(eq(notifications.id, notificationId));
-      if (!exists) return;
-    }
     const [unread] = await tx.select({ count: sql<number>`count(*)::int` }).from(notifications)
       .leftJoin(posts, eq(posts.id, notifications.postId))
       .leftJoin(postComments, eq(postComments.id, notifications.commentId))
@@ -137,13 +133,35 @@ async function deliverNotificationEmail(source: NotificationSource, userId: stri
       mention: () => mentionEmail(content), reply: () => replyEmail(content), reply_to_reply: () => replyEmail(content, true),
       new_fan: () => newFanEmail(content), reshare: () => reshareEmail(content), team_joined: () => teamJoinedEmail(content),
     } satisfies Record<NotificationKind, () => ReturnType<typeof mentionEmail>>;
-    await sendEmail({ to: user.email, ...renderers[source.kind](),
-      fallbackLog: `[startupfans notification email: dev fallback] kind=${source.kind}` });
+    const email = { to: user.email, ...renderers[source.kind](),
+      fallbackLog: `[startupfans notification email: dev fallback] kind=${source.kind}` };
     const now = new Date();
+    if (notificationId) {
+      const [reserved] = await tx.update(notifications).set({ emailedAt: now })
+        .where(and(eq(notifications.id, notificationId), isNull(notifications.emailedAt)))
+        .returning({ id: notifications.id });
+      if (!reserved) return;
+    }
     await tx.insert(notificationSettings).values({ userId, kind: source.kind, lastEmailedAt: now })
       .onConflictDoUpdate({ target: [notificationSettings.userId, notificationSettings.kind], set: { lastEmailedAt: now } });
-    if (notificationId) await tx.update(notifications).set({ emailedAt: now }).where(eq(notifications.id, notificationId));
+    return { email, now, lastEmailedAt: setting?.lastEmailedAt ?? null };
   });
+  if (!delivery) return;
+  try {
+    await sendEmail(delivery.email);
+  } catch (error) {
+    // Restore only this reservation; a newer delivery must retain its coalescing clock.
+    await db.execute(sql`
+      with cleared_notification as (
+        update ${notifications} set emailed_at = null
+        where id = ${notificationId}::uuid and emailed_at = ${delivery.now.toISOString()}::timestamptz
+      )
+      update ${notificationSettings} set last_emailed_at = ${delivery.lastEmailedAt?.toISOString() ?? null}::timestamptz
+      where user_id = ${userId}::uuid and kind = ${source.kind}
+        and last_emailed_at = ${delivery.now.toISOString()}::timestamptz
+    `);
+    throw error;
+  }
 }
 
 function scheduleEmails(source: NotificationSource, deliveries: { userId: string; notificationId: string | null }[]) {
@@ -192,6 +210,11 @@ export function notifyActivity(input: {
             return parent ? [parent.userId] : [];
           }
           const [post] = await tx.select({ authorId: posts.authorId }).from(posts).where(eq(posts.id, source.postId));
+          if (post && comment.parentId) {
+            const [parent] = await tx.select({ userId: postComments.userId }).from(postComments)
+              .where(and(eq(postComments.id, comment.parentId), isNull(postComments.deletedAt)));
+            if (parent?.userId === post.authorId) return [];
+          }
           return post ? [post.authorId] : [];
         }
         const members = await tx.select({ userId: startupMembers.userId }).from(startupMembers)
