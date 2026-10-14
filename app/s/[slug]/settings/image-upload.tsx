@@ -7,7 +7,7 @@ import { isValidSlug } from "@/lib/slug";
 
 const inputClass = "mt-2 min-h-11 w-full min-w-0 rounded-xl border-2 border-ink bg-white px-4 py-3 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ink";
 
-export function ImageUpload({ name, label, slug, initialUrl = "", creatorId, onUrlChange, status }: {
+export function ImageUpload({ name, label, slug, initialUrl = "", creatorId, onUrlChange, status, busyMessage }: {
   name: "logoUrl" | "coverUrl";
   label: string;
   slug?: string;
@@ -15,6 +15,7 @@ export function ImageUpload({ name, label, slug, initialUrl = "", creatorId, onU
   creatorId: string;
   onUrlChange?: (url: string) => void;
   status?: ReactNode;
+  busyMessage?: string;
 }) {
   const [uploadsEnabled, setUploadsEnabled] = useState(true);
   useEffect(() => {
@@ -31,6 +32,7 @@ export function ImageUpload({ name, label, slug, initialUrl = "", creatorId, onU
       uploadScope={{ field: "slug", value: slug }}
       onUrlChange={onUrlChange}
       status={status}
+      busyMessage={busyMessage}
       buildUploadPath={(extension, form) => {
         const input = form?.elements.namedItem("slug");
         const targetSlug = slug ?? (input instanceof HTMLInputElement ? input.value.trim() : "");

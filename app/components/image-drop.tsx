@@ -4,6 +4,7 @@ import Image from "next/image";
 import { upload } from "@vercel/blob/client";
 import { useCallback, useEffect, useId, useRef, useState, type ReactNode } from "react";
 import { useFormStatus } from "react-dom";
+import { SpinnerIcon } from "@/app/components/icons";
 import { getFileMediaFormat, getMediaAccept } from "@/lib/media";
 import { downscaleImage } from "./image-downscale";
 
@@ -21,7 +22,7 @@ const previewClasses = {
 };
 
 export function ImageDrop({ name, label, shape, initialUrl, initial, buildUploadPath, hint, uploadsEnabled,
-  maxUrlLength = 2048, uploadScope, onUploadingChange, onUrlChange, status }: {
+  maxUrlLength = 2048, uploadScope, onUploadingChange, onUrlChange, status, busyMessage }: {
   name: string;
   label: string;
   shape: "round" | "square" | "wide";
@@ -35,6 +36,7 @@ export function ImageDrop({ name, label, shape, initialUrl, initial, buildUpload
   onUploadingChange?: (uploading: boolean) => void;
   onUrlChange?: (url: string) => void;
   status?: ReactNode;
+  busyMessage?: string;
 }) {
   const id = useId();
   const { pending } = useFormStatus();
@@ -98,7 +100,7 @@ export function ImageDrop({ name, label, shape, initialUrl, initial, buildUpload
   }, [scopeField, scopeValue, label, changeUrl]);
 
   async function uploadImage(file: File) {
-    if (pending || !uploadsEnabled) return;
+    if (pending || !uploadsEnabled || busyMessage) return;
     if (fileInput.current) fileInput.current.value = "";
     const format = getFileMediaFormat(file);
     if (!format || format.type !== "image") {
@@ -165,25 +167,26 @@ export function ImageDrop({ name, label, shape, initialUrl, initial, buildUpload
   }
 
   const visibleUrl = preview ?? previewUrl(url);
+  const canPick = !pending && uploadsEnabled && !busyMessage;
   return (
-    <div className="min-w-0" aria-busy={uploading}>
+    <div className="min-w-0" aria-busy={uploading || Boolean(busyMessage)}>
       <p id={`${id}-heading`} className="font-bold">{label}{shape === "round" && <span className="font-normal"> (optional)</span>}{status}</p>
       <input type="hidden" name={name} value={url} />
       <div role="group" aria-labelledby={`${id}-heading`} tabIndex={0}
-        className={`mt-2 min-w-0 rounded-xl border-[3px] border-dashed border-ink p-4 shadow-sticker transition focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ink ${dragging ? "bg-lime/50" : "bg-cream hover:bg-lime/30"}`}
+        className={`mt-2 min-w-0 rounded-xl border-[3px] border-dashed border-ink p-4 shadow-sticker transition focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ink ${busyMessage ? "cursor-wait bg-sky/50" : dragging ? "bg-lime/50" : "bg-cream hover:bg-lime/30"}`}
         onClick={(event) => {
           if (event.target instanceof Element && event.target.closest("button, input")) return;
-          if (!pending && uploadsEnabled) fileInput.current?.click();
+          if (canPick) fileInput.current?.click();
         }}
         onKeyDown={(event) => {
           if (event.target === event.currentTarget && (event.key === "Enter" || event.key === " ")) {
             event.preventDefault();
-            if (!pending && uploadsEnabled) fileInput.current?.click();
+            if (canPick) fileInput.current?.click();
           }
         }}
         onDragOver={(event) => {
           event.preventDefault();
-          if (!pending && uploadsEnabled) setDragging(true);
+          if (canPick) setDragging(true);
         }}
         onDragLeave={(event) => {
           if (!(event.relatedTarget instanceof Node) || !event.currentTarget.contains(event.relatedTarget)) setDragging(false);
@@ -192,9 +195,10 @@ export function ImageDrop({ name, label, shape, initialUrl, initial, buildUpload
           event.preventDefault();
           setDragging(false);
           const file = event.dataTransfer.files[0];
-          if (file) void uploadImage(file);
+          if (file && canPick) void uploadImage(file);
         }}
         onPaste={(event) => {
+          if (!canPick) return;
           const file = Array.from(event.clipboardData.items).find((item) => item.kind === "file")?.getAsFile();
           if (file) {
             event.preventDefault();
@@ -214,15 +218,20 @@ export function ImageDrop({ name, label, shape, initialUrl, initial, buildUpload
                 <img src={visibleUrl} alt={`${label} preview`} referrerPolicy="no-referrer"
                   className={`h-full w-full ${shape === "square" ? "object-contain p-2" : "object-cover"}`} />
               )
+            ) : busyMessage ? (
+              <span aria-hidden="true" className="flex h-full items-center justify-center"><SpinnerIcon /></span>
             ) : <span aria-hidden="true" className="flex h-full items-center justify-center font-display text-2xl font-extrabold">{initial}</span>}
           </div>
-          <p className="min-w-0 text-sm">Drop an image, paste, or choose a file</p>
+          <p className={`min-w-0 text-sm ${busyMessage ? "font-bold" : ""}`}>{busyMessage ?? "Drop an image, paste, or choose a file"}</p>
         </div>
         <div className="mt-4 flex flex-wrap gap-3">
-          <button type="button" disabled={pending || !uploadsEnabled} className={buttonClass} onClick={() => fileInput.current?.click()}>Choose file</button>
+          <button type="button" disabled={!canPick} className={`${buttonClass} ${busyMessage ? "inline-flex items-center gap-2 bg-sky disabled:cursor-wait disabled:!opacity-100" : ""}`}
+            onClick={() => { if (canPick) fileInput.current?.click(); }}>
+            {busyMessage ? <><SpinnerIcon />{busyMessage}</> : "Choose file"}
+          </button>
           {(url || preview || uploading) && <button type="button" disabled={pending} className={buttonClass} onClick={() => changeUrl("")}>Remove {label.toLowerCase()}</button>}
         </div>
-        <input ref={fileInput} type="file" accept={getMediaAccept("image")} hidden disabled={pending || !uploadsEnabled}
+        <input ref={fileInput} type="file" accept={getMediaAccept("image")} hidden disabled={!canPick}
           onChange={(event) => { const file = event.target.files?.[0]; if (file) void uploadImage(file); }} />
         <p className="mt-3 text-xs text-ink/70">{hint}</p>
         {uploading && <div className="mt-3">
@@ -234,7 +243,7 @@ export function ImageDrop({ name, label, shape, initialUrl, initial, buildUpload
       <details ref={fallback} open={!uploadsEnabled} className="mt-3 min-w-0 text-sm">
         <summary className="min-h-11 cursor-pointer py-3 font-semibold focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ink">Or paste an image address</summary>
         <label htmlFor={`${id}-address`} className="block font-semibold">Image address
-          <input id={`${id}-address`} type="url" pattern="https://.*" maxLength={maxUrlLength} placeholder="https://" value={url} disabled={pending}
+          <input id={`${id}-address`} type="url" pattern="https://.*" maxLength={maxUrlLength} placeholder="https://" value={url} disabled={pending || Boolean(busyMessage)}
             className="mt-2 min-h-11 w-full min-w-0 rounded-xl border-2 border-ink bg-white px-4 py-3 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ink"
             onChange={(event) => changeUrl(event.target.value)} />
         </label>

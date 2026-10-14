@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useId, useRef, useState } from "react";
-import { useFormStatus } from "react-dom";
+import { flushSync, useFormStatus } from "react-dom";
+import { SpinnerIcon } from "@/app/components/icons";
 import { BioField, ImageUpload } from "@/app/s/[slug]/settings/image-upload";
 
 const inputClass = "mt-2 min-h-11 w-full min-w-0 rounded-xl border-2 border-ink bg-white px-4 py-3 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ink";
@@ -94,8 +95,13 @@ export function WebsiteBrandFields({ creatorId }: { creatorId: string }) {
     controller.current?.abort();
     const active = new AbortController();
     controller.current = active;
-    setLookingUp(true);
-    setError("");
+    // Paint before the click that blurred this field can open the file picker.
+    flushSync(() => {
+      setLookingUp(true);
+      setError("");
+      setLookup(null);
+      setSelectedLogo(null);
+    });
     try {
       const response = await fetch(`/api/brand-lookup?website=${encodeURIComponent(trimmed)}`, {
         cache: "no-store",
@@ -190,13 +196,18 @@ export function WebsiteBrandFields({ creatorId }: { creatorId: string }) {
               }
             }} />
         </label>
-        <p className="mt-1 text-sm text-ink/70">
-          {lookingUp
-            ? "Fetching logo, cover and drafting about text…"
-            : appliedHost
+        {lookingUp ? (
+          <p role="status" className="mt-3 inline-flex min-h-11 items-center gap-2 rounded-xl border-2 border-ink bg-sky px-4 py-2 font-bold shadow-sticker">
+            <SpinnerIcon />
+            Fetching image…
+          </p>
+        ) : (
+          <p className="mt-1 text-sm text-ink/70">
+            {appliedHost
               ? `Filled from ${appliedHost}. Edit anything before you create.`
               : "Add your domain and we'll offer your logo, cover image and about text."}
-        </p>
+          </p>
+        )}
         {error && <p role="alert" className="mt-2 text-sm font-semibold">{error}</p>}
       </div>
 
@@ -276,8 +287,10 @@ export function WebsiteBrandFields({ creatorId }: { creatorId: string }) {
         </div>
       )}
 
-      <ImageUpload key={`logo-${logoSeed.key}`} name="logoUrl" label="Logo" creatorId={creatorId} initialUrl={logoSeed.url} />
-      <ImageUpload key={`cover-${coverSeed.key}`} name="coverUrl" label="Cover image" creatorId={creatorId} initialUrl={coverSeed.url} />
+      <ImageUpload key={`logo-${logoSeed.key}`} name="logoUrl" label="Logo" creatorId={creatorId} initialUrl={logoSeed.url}
+        busyMessage={lookingUp ? "Fetching image…" : undefined} />
+      <ImageUpload key={`cover-${coverSeed.key}`} name="coverUrl" label="Cover image" creatorId={creatorId} initialUrl={coverSeed.url}
+        busyMessage={lookingUp ? "Fetching image…" : undefined} />
 
       <label htmlFor="tagline" className="block font-bold">Tagline <span className="font-normal">(optional)</span>
         <input id="tagline" name="tagline" maxLength={120} value={tagline} disabled={pending}
