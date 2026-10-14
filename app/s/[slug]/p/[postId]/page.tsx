@@ -75,7 +75,7 @@ export async function PostPage({ params, searchParams }: PostPageProps & {
           <h2 id="replies-heading" className="font-display text-2xl font-extrabold">Replies <span className="text-ink/60">({comments.length})</span></h2>
           <CommentList comments={comments} slug={slug} postId={postId} viewerId={user?.id ?? null}
             canReply={Boolean(access?.canReply)} canModerate={Boolean(access?.canModerate)} />
-          <ReplyComposer slug={slug} postId={postId} canReply={Boolean(access?.canReply)} signedIn={user !== null} />
+          <ReplyComposer slug={slug} postId={postId} canReply={Boolean(access?.canReply)} viewerId={user?.id ?? null} />
         </section>
         <SiteFooter />
       </AppShell>

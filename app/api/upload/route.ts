@@ -51,10 +51,11 @@ export async function POST(request: Request) {
         const user = await getCurrentUser();
         if (!user) throw new Error("Sign in before uploading.");
         if (pathname.startsWith("users/")) {
-          const prefix = `users/${user.id}/avatar/`;
+          const prefix = pathname.startsWith(`users/${user.id}/replies/`)
+            ? `users/${user.id}/replies/` : `users/${user.id}/avatar/`;
           const filename = pathname.slice(prefix.length);
           if (!pathname.startsWith(prefix) || !isMediaFilename(filename) || getMediaFormat(filename)?.type !== "image") {
-            throw new Error("Upload an image to your own avatar folder.");
+            throw new Error("Upload an image to your own avatar or replies folder.");
           }
           return {
             allowedContentTypes: getMediaContentTypes("image"),

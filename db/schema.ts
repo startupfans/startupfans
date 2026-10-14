@@ -146,6 +146,7 @@ export const postComments = pgTable(
     postId: uuid("post_id").notNull().references(() => posts.id, { onDelete: "cascade" }),
     userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
     body: text("body").notNull(),
+    imageUrl: text("image_url"),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     deletedAt: timestamp("deleted_at", { withTimezone: true }),
   },
@@ -184,6 +185,17 @@ export const slackConnections = pgTable("slack_connections", {
   installedBy: uuid("installed_by").notNull().references(() => users.id),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
+
+export const commentReactions = pgTable("comment_reactions", {
+  commentId: uuid("comment_id").notNull().references(() => postComments.id, { onDelete: "cascade" }),
+  userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  kind: text("kind", { enum: ["like", "heart", "tomato"] }).notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [
+  primaryKey({ columns: [table.commentId, table.userId] }),
+  check("comment_reactions_kind_check", sql`${table.kind} in ('like', 'heart', 'tomato')`),
+  index("comment_reactions_comment_id_kind_idx").on(table.commentId, table.kind),
+]);
 
 export const slackPosts = pgTable("slack_posts", {
   slackTeamId: text("slack_team_id").notNull(),

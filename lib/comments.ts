@@ -2,9 +2,11 @@ import "server-only";
 
 import { and, asc, desc, eq, inArray, isNull, or, sql } from "drizzle-orm";
 import { db } from "@/db";
-import { commentLikes, follows, postComments, posts, startupMembers, startups, users } from "@/db/schema";
+import { follows, postComments, posts, startupMembers, startups, users } from "@/db/schema";
 import { mentionSegments, parseMentions, resolveMentionHandles } from "@/lib/mentions";
 import { isAdmin } from "@/lib/admin";
+import { commentReactionFields } from "@/lib/reactions";
+import { isReplyImageUrl } from "@/lib/media";
 import { allowRateLimit } from "@/lib/ratelimit";
 
 type CommentUser = { id: string; email: string };
@@ -30,20 +32,17 @@ function commentQuery(postId: string, viewerId: string | null = null, threadIds?
     parentId: postComments.parentId,
     userId: postComments.userId,
     body: postComments.body,
+    imageUrl: postComments.imageUrl,
     createdAt: postComments.createdAt,
     avatarUrl: users.avatarUrl,
-    likeCount: sql<number>`count(${commentLikes.userId})::int`,
-    liked: viewerId === null ? sql<boolean>`false`
-      : sql<boolean>`coalesce(bool_or(${commentLikes.userId} = ${viewerId}), false)`,
+    ...commentReactionFields(viewerId),
     // Keep the existing public author-name fallback, without shipping an email address.
     displayName: sql<string>`coalesce(nullif(trim(${users.name}), ''), split_part(${users.email}, '@', 1))`,
   }).from(postComments)
     .innerJoin(users, eq(users.id, postComments.userId))
     .innerJoin(posts, eq(posts.id, postComments.postId))
-    .leftJoin(commentLikes, eq(commentLikes.commentId, postComments.id))
     .where(and(eq(postComments.postId, postId), eq(posts.visibility, "public"), isNull(postComments.deletedAt),
       threadIds ? or(inArray(postComments.id, threadIds), inArray(postComments.parentId, threadIds)) : undefined))
-    .groupBy(postComments.id, users.id)
     .orderBy(asc(postComments.createdAt), asc(postComments.id));
 }
 
@@ -99,8 +98,11 @@ async function getCommentPost(tx: CommentTransaction, slug: string, postId: stri
   return post;
 }
 
-export async function createComment(slug: string, postId: string, user: CommentUser, body: string, replyToId: string | null = null): Promise<CommentResult> {
+export async function createComment(slug: string, postId: string, user: CommentUser, body: string, replyToId: string | null = null, imageUrl: string | null = null): Promise<CommentResult> {
   if (!body.trim() || body.length > 1000) return { status: "error", message: "Write a reply between 1 and 1,000 characters." };
+  if (imageUrl !== null && !isReplyImageUrl(imageUrl, user.id)) {
+    return { status: "error", message: "Choose an uploaded image for your reply." };
+  }
   return db.transaction(async (tx) => {
     const post = await getCommentPost(tx, slug, postId);
     if (!post) return { status: "error", message: "This post couldn't be found." };
@@ -121,7 +123,7 @@ export async function createComment(slug: string, postId: string, user: CommentU
       }
     }
     if (!await allowRateLimit(`comment-user:${user.id}`, 30, tx)) return { status: "error", message: "Slow down a little." };
-    await tx.insert(postComments).values({ postId, parentId, userId: user.id, body: body.trim() });
+    await tx.insert(postComments).values({ postId, parentId, userId: user.id, body: body.trim(), imageUrl });
     return { status: "success", startupId: post.startupId };
   });
 }
@@ -137,31 +139,5 @@ export async function deleteComment(slug: string, postId: string, commentId: str
     )).returning({ id: postComments.id });
     if (!deleted) return { status: "error", message: "Only the author or a team owner can delete this reply." };
     return { status: "success", startupId: post.startupId };
-  });
-}
-
-export async function setCommentLike(commentId: string, userId: string, desiredLiked?: boolean) {
-  return db.transaction(async (tx) => {
-    const [comment] = await tx.select({ postId: posts.id, startupId: posts.startupId, slug: startups.slug })
-      .from(postComments)
-      .innerJoin(posts, eq(posts.id, postComments.postId))
-      .innerJoin(startups, eq(startups.id, posts.startupId))
-      .where(and(eq(postComments.id, commentId), isNull(postComments.deletedAt), eq(posts.visibility, "public")))
-      .for("update", { of: [postComments, posts] });
-    if (!comment) return { status: "error", message: "This reply couldn't be found." } as const;
-    if (!await allowRateLimit(`comment-like-user:${userId}`, 60, tx)) {
-      return { status: "error", message: "Slow down a little." } as const;
-    }
-    const condition = and(eq(commentLikes.commentId, commentId), eq(commentLikes.userId, userId));
-    const [existing] = await tx.select({ userId: commentLikes.userId }).from(commentLikes).where(condition);
-    const liked = desiredLiked ?? !existing;
-    if (liked) {
-      await tx.insert(commentLikes).values({ commentId, userId }).onConflictDoNothing();
-    } else {
-      await tx.delete(commentLikes).where(condition);
-    }
-    const [total] = await tx.select({ count: sql<number>`count(*)::int` }).from(commentLikes)
-      .where(eq(commentLikes.commentId, commentId));
-    return { status: "success", ...comment, liked, count: total?.count ?? 0, changed: liked !== Boolean(existing) } as const;
   });
 }

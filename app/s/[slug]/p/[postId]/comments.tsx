@@ -1,11 +1,13 @@
 "use client";
 
-import { useActionState, useEffect, useId, useState } from "react";
+import { useActionState, useEffect, useId, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type { PublicComment, ReplyComment } from "@/lib/comments";
-import { LikeButton, type LikeState } from "./like-button";
+import { CommentReactionBar } from "./like-button";
+import type { PostReactionState } from "@/lib/reactions";
+import { ReplyImagePicker, ReplyMedia, useReplyImage } from "@/app/components/reply-image";
 import { relativeDate } from "@/lib/relative-date";
 import { MentionAutocomplete } from "@/app/components/mention-autocomplete";
 import { SubmitButton } from "@/app/components/submit-button";
@@ -17,32 +19,69 @@ import { removeComment, replyToPost, type CommentActionState } from "./comment-a
 const initialState: CommentActionState = { status: "idle" };
 const initialFollowState: FollowState = { status: "idle" };
 
-export function CommentComposer({ slug, postId, parentId = null, onReplied }: {
+export function CommentComposer({ slug, postId, userId, parentId = null, onReplied }: {
   slug: string;
   postId: string;
+  userId: string | null;
   parentId?: string | null;
   onReplied?: () => void;
 }) {
   const inputId = useId();
   const errorId = `${inputId}-error`;
   const [body, setBody] = useState("");
+  const image = useReplyImage(userId);
+  const [dragging, setDragging] = useState(false);
+  const dragDepth = useRef(0);
   const [state, action, pending] = useActionState(async (previous: CommentActionState, formData: FormData) => {
     const result = await replyToPost(slug, postId, previous, formData);
     if (result.status === "success") {
       setBody("");
+      image.removeAttachment();
       onReplied?.();
     }
     return result;
   }, initialState);
   return (
-    <form action={action} aria-label={parentId ? "Reply to comment" : "Reply to post"} className="mt-6 min-w-0 rounded-2xl border-[3px] border-ink bg-cream p-4 shadow-sticker" aria-busy={pending}>
+    <form action={action} onSubmit={(event) => { if (pending || image.uploading) event.preventDefault(); }}
+      onDragEnter={(event) => {
+        if (!event.dataTransfer.types.includes("Files")) return;
+        event.preventDefault();
+        dragDepth.current += 1;
+        if (!pending) setDragging(true);
+      }}
+      onDragOver={(event) => {
+        if (!event.dataTransfer.types.includes("Files")) return;
+        event.preventDefault();
+        event.dataTransfer.dropEffect = pending ? "none" : "copy";
+      }}
+      onDragLeave={(event) => {
+        event.preventDefault();
+        dragDepth.current = Math.max(0, dragDepth.current - 1);
+        if (dragDepth.current === 0) setDragging(false);
+      }}
+      onDrop={(event) => {
+        if (!event.dataTransfer.types.includes("Files")) return;
+        event.preventDefault();
+        dragDepth.current = 0;
+        setDragging(false);
+        const file = event.dataTransfer.files[0];
+        if (file) void image.attachFile(file, pending);
+      }}
+      onPaste={(event) => {
+        const file = Array.from(event.clipboardData.items).find((item) => item.kind === "file" && item.type.startsWith("image/"))?.getAsFile();
+        if (!file || pending) return;
+        event.preventDefault();
+        void image.attachFile(file, pending);
+      }} aria-label={parentId ? "Reply to comment" : "Reply to post"} className={`relative mt-6 min-w-0 rounded-2xl border-[3px] border-ink bg-cream p-4 shadow-sticker ${dragging ? "outline-2 outline-offset-4 outline-dashed outline-ink" : ""}`} aria-busy={pending || image.uploading}>
+      {dragging && <div role="status" className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center rounded-xl bg-cream/95 font-bold">Drop to attach</div>}
       <input type="hidden" name="parentId" value={parentId ?? ""} />
       <label htmlFor={inputId} className="block font-semibold">Your reply</label>
       <MentionAutocomplete startup={slug} id={inputId} name="body" rows={3} required maxLength={1000} value={body}
         onValueChange={setBody} disabled={pending}
         aria-describedby={state.status === "error" ? errorId : undefined}
         className="mt-2 block w-full min-w-0 resize-y rounded-xl border-2 border-ink bg-white p-3 disabled:opacity-60" />
-      <SubmitButton pending={pending} pendingLabel="Replying…" disabled={!body.trim()}
+      <ReplyImagePicker image={image} pending={pending} />
+      <SubmitButton pending={pending} pendingLabel="Replying…" disabled={image.uploading || !body.trim()}
         className="mt-3 min-h-11 rounded-xl border-2 border-ink bg-pink px-4 py-2 font-semibold shadow-sticker disabled:opacity-60">Reply</SubmitButton>
       {state.status === "error" && <p id={errorId} role="alert" className="mt-3 text-sm">{state.message}</p>}
       {state.status === "success" && <p role="status" className="sr-only">Reply posted.</p>}
@@ -50,7 +89,7 @@ export function CommentComposer({ slug, postId, parentId = null, onReplied }: {
   );
 }
 
-export function InlineReply({ slug, postId, commentId, onReplied }: { slug: string; postId: string; commentId: string; onReplied?: () => void }) {
+export function InlineReply({ slug, postId, userId, commentId, onReplied }: { slug: string; postId: string; userId: string | null; commentId: string; onReplied?: () => void }) {
   const [open, setOpen] = useState(false);
   const composerId = useId();
   return (
@@ -60,7 +99,7 @@ export function InlineReply({ slug, postId, commentId, onReplied }: { slug: stri
         {open ? "Cancel reply" : "Reply"}
       </button>
       <div id={composerId}>
-        {open && <CommentComposer slug={slug} postId={postId} parentId={commentId} onReplied={() => { setOpen(false); onReplied?.(); }} />}
+        {open && <CommentComposer slug={slug} postId={postId} userId={userId} parentId={commentId} onReplied={() => { setOpen(false); onReplied?.(); }} />}
       </div>
     </div>
   );
@@ -95,16 +134,16 @@ export function CommentTime({ dateTime }: { dateTime: string }) {
   return <time dateTime={dateTime} title={absoluteDate}>{label ?? absoluteDate}</time>;
 }
 
-export function CommentContent({ comment, slug, postId, canDelete, canReply, signedIn, onReplied, onDeleted, onLiked }: {
+export function CommentContent({ comment, slug, postId, canDelete, canReply, viewerId, onReplied, onDeleted, onReacted }: {
   comment: PublicComment | ReplyComment;
   slug: string;
   postId: string;
   canDelete: boolean;
   canReply: boolean;
-  signedIn: boolean;
+  viewerId: string | null;
   onReplied?: () => void;
   onDeleted?: () => void;
-  onLiked?: (commentId: string, result: LikeState) => void;
+  onReacted?: (commentId: string, result: PostReactionState) => void;
 }) {
   const createdAt = new Date(comment.createdAt);
   return (
@@ -125,16 +164,17 @@ export function CommentContent({ comment, slug, postId, canDelete, canReply, sig
       <p className="mt-3 whitespace-pre-wrap break-words text-sm leading-relaxed">{comment.mentions.map((segment, index) => segment.handle === null ? segment.text : (
         <Link key={index} href={`/u/${segment.handle}`} className="font-bold text-ink underline decoration-transparent decoration-4 underline-offset-4 hover:decoration-sun">{segment.text}</Link>
       ))}</p>
+      <ReplyMedia imageUrl={comment.imageUrl} />
       <div className="mt-2 flex flex-wrap items-center gap-3">
-        <LikeButton commentId={comment.id} count={comment.likeCount} liked={comment.liked}
-          signedIn={signedIn} postUrl={`/s/${slug}/p/${postId}`} onLiked={onLiked} />
-        {canReply && <InlineReply slug={slug} postId={postId} commentId={comment.id} onReplied={onReplied} />}
+        <CommentReactionBar commentId={comment.id} snapshot={{ kind: comment.viewerReaction, counts: comment.reactionCounts }}
+          signedIn={viewerId !== null} postUrl={`/s/${slug}/p/${postId}`} onReacted={onReacted} />
+        {canReply && <InlineReply slug={slug} postId={postId} userId={viewerId} commentId={comment.id} onReplied={onReplied} />}
       </div>
     </article>
   );
 }
 
-export function CommentList({ comments, slug, postId, viewerId, canReply, canModerate, onReplied, onDeleted, onLiked }: {
+export function CommentList({ comments, slug, postId, viewerId, canReply, canModerate, onReplied, onDeleted, onReacted }: {
   comments: (PublicComment | ReplyComment)[];
   slug: string;
   postId: string;
@@ -143,7 +183,7 @@ export function CommentList({ comments, slug, postId, viewerId, canReply, canMod
   canModerate: boolean;
   onReplied?: () => void;
   onDeleted?: () => void;
-  onLiked?: (commentId: string, result: LikeState) => void;
+  onReacted?: (commentId: string, result: PostReactionState) => void;
 }) {
   const threads = new Map<string, { parent: PublicComment | ReplyComment | null; replies: (PublicComment | ReplyComment)[] }>();
   for (const comment of comments) {
@@ -153,7 +193,7 @@ export function CommentList({ comments, slug, postId, viewerId, canReply, canMod
     else thread.replies.push(comment);
     threads.set(threadId, thread);
   }
-  const shared = { slug, postId, signedIn: viewerId !== null, onReplied, onDeleted, onLiked };
+  const shared = { slug, postId, viewerId, onReplied, onDeleted, onReacted };
   const canDelete = (comment: PublicComment | ReplyComment) => canModerate || viewerId === comment.userId;
   return comments.length === 0 ? <p className="mt-4 text-ink/60">No replies yet.</p> : (
     <ol className="mt-4 space-y-4">
@@ -176,11 +216,11 @@ export function CommentList({ comments, slug, postId, viewerId, canReply, canMod
   );
 }
 
-export function ReplyComposer({ slug, postId, canReply, signedIn, onReplied, onBecameFan }: {
+export function ReplyComposer({ slug, postId, canReply, viewerId, onReplied, onBecameFan }: {
   slug: string;
   postId: string;
   canReply: boolean;
-  signedIn: boolean;
+  viewerId: string | null;
   onReplied?: () => void;
   onBecameFan?: () => void;
 }) {
@@ -197,10 +237,10 @@ export function ReplyComposer({ slug, postId, canReply, signedIn, onReplied, onB
   }, initialFollowState);
 
   if (canReply || unlocked) {
-    return <CommentComposer slug={slug} postId={postId} onReplied={onReplied} />;
+    return <CommentComposer slug={slug} postId={postId} userId={viewerId} onReplied={onReplied} />;
   }
 
-  if (!signedIn) {
+  if (viewerId === null) {
     return (
       <Link href={`/login?${new URLSearchParams({ next: `/s/${slug}/p/${postId}#replies` })}`}
         className="mt-6 inline-flex min-h-11 items-center rounded-xl border-2 border-ink bg-sun px-4 py-2 font-semibold shadow-sticker">

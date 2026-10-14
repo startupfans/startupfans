@@ -5,7 +5,14 @@ import { useCallback, useEffect, useId, useRef, useState, type ReactNode } from 
 import { ReplyIcon, postIconButtonClass } from "@/app/components/icons";
 import type { RepliesPreview, ReplyComment } from "@/lib/comments";
 import { CommentList, ReplyComposer } from "./p/[postId]/comments";
-import type { LikeState } from "./p/[postId]/like-button";
+import type { PostReactionState } from "@/lib/reactions";
+
+function isReactionCounts(value: unknown): value is PostReactionState["counts"] {
+  return typeof value === "object" && value !== null
+    && "like" in value && typeof value.like === "number" && Number.isInteger(value.like) && value.like >= 0
+    && "heart" in value && typeof value.heart === "number" && Number.isInteger(value.heart) && value.heart >= 0
+    && "tomato" in value && typeof value.tomato === "number" && Number.isInteger(value.tomato) && value.tomato >= 0;
+}
 
 function isComment(value: unknown): value is ReplyComment {
   return typeof value === "object" && value !== null
@@ -16,8 +23,12 @@ function isComment(value: unknown): value is ReplyComment {
     && "createdAt" in value && typeof value.createdAt === "string" && Number.isFinite(Date.parse(value.createdAt))
     && "avatarUrl" in value && (value.avatarUrl === null || typeof value.avatarUrl === "string")
     && "displayName" in value && typeof value.displayName === "string"
-    && "likeCount" in value && typeof value.likeCount === "number" && Number.isInteger(value.likeCount) && value.likeCount >= 0
-    && "liked" in value && typeof value.liked === "boolean";
+    && "imageUrl" in value && (value.imageUrl === null || typeof value.imageUrl === "string")
+    && "viewerReaction" in value && (value.viewerReaction === null || value.viewerReaction === "like" || value.viewerReaction === "heart" || value.viewerReaction === "tomato")
+    && "reactionCounts" in value && isReactionCounts(value.reactionCounts)
+    && "mentions" in value && Array.isArray(value.mentions) && value.mentions.every((segment: unknown) =>
+      typeof segment === "object" && segment !== null && "text" in segment && typeof segment.text === "string"
+      && "handle" in segment && (segment.handle === null || typeof segment.handle === "string"));
 }
 
 function isPreview(value: unknown): value is RepliesPreview {
@@ -70,7 +81,7 @@ export function RepliesPanel({ slug, postId, snapshot, onPostPage, children }: {
   useEffect(() => {
     if (!open || onPostPage) return;
     const controller = new AbortController();
-    // Server actions refresh the card props, including viewer-specific heart changes.
+    // Server actions refresh the card props, including viewer-specific reaction changes.
     void Promise.resolve().then(() => {
       if (!controller.signal.aborted) return refresh(controller.signal);
     });
@@ -87,11 +98,11 @@ export function RepliesPanel({ slug, postId, snapshot, onPostPage, children }: {
     void refresh();
   }
 
-  function liked(commentId: string, result: LikeState) {
+  function reacted(commentId: string, result: PostReactionState) {
     setPreview((current) => current && {
       ...current,
       comments: current.comments.map((comment) => comment.id === commentId
-        ? { ...comment, liked: result.liked, likeCount: result.count }
+        ? { ...comment, viewerReaction: result.kind, reactionCounts: result.counts }
         : comment),
     });
   }
@@ -124,11 +135,11 @@ export function RepliesPanel({ slug, postId, snapshot, onPostPage, children }: {
         </div>}
         {preview && <>
           <CommentList comments={preview.comments} slug={slug} postId={postId} viewerId={preview.viewerId}
-            canReply={preview.canReply} canModerate={preview.canModerate} onReplied={replied} onDeleted={deleted} onLiked={liked} />
+            canReply={preview.canReply} canModerate={preview.canModerate} onReplied={replied} onDeleted={deleted} onReacted={reacted} />
           {preview.hasMore && <Link href={`${postUrl}#replies`} className="mt-4 inline-flex min-h-11 items-center py-2 font-semibold underline underline-offset-4">
             View all {count} replies
           </Link>}
-          <ReplyComposer slug={slug} postId={postId} canReply={preview.canReply} signedIn={preview.viewerId !== null}
+          <ReplyComposer slug={slug} postId={postId} canReply={preview.canReply} viewerId={preview.viewerId}
             onReplied={replied} onBecameFan={() => { void refresh(); }} />
         </>}
       </>}

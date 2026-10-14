@@ -48,3 +48,17 @@ export function getFileMediaFormat(file: { name: string; type: string }) {
 export function isMediaFilename(filename: string) {
   return /^[-a-zA-Z0-9_]+[-a-zA-Z0-9_.]*\.[a-zA-Z0-9]+$/.test(filename) && getMediaFormat(filename) !== null;
 }
+
+export function isReplyImageUrl(value: string, userId: string) {
+  try {
+    const url = new URL(value);
+    const prefix = `/users/${userId}/replies/`;
+    const filename = url.pathname.slice(prefix.length);
+    return url.protocol === "https:" && /^[a-z0-9-]+\.public\.blob\.vercel-storage\.com$/i.test(url.hostname)
+      && url.port === "" && url.username === "" && url.password === ""
+      && url.search === "" && url.hash === "" && url.pathname.startsWith(prefix)
+      && isMediaFilename(filename) && getMediaFormat(filename)?.type === "image";
+  } catch {
+    return false;
+  }
+}
