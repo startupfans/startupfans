@@ -106,8 +106,8 @@ export async function ReshareItem({ item }: { item: Extract<TimelineItem, { kind
   const tokens = parseMentions(item.note ?? "", false);
   const resolved = await resolveMentionHandles(tokens.map((token) => token.handle));
   const segments = mentionSegments(item.note ?? "", resolved, tokens);
-  return <section aria-label={`${name} reshared`} className="min-w-0 space-y-3">
-    <header className="flex min-w-0 flex-wrap items-center gap-2 rounded-xl border-2 border-ink bg-cream px-3 py-2 text-sm shadow-sticker">
+  return <section aria-label={`${name} reshared`} className="min-w-0 rounded-3xl border-[3px] border-ink bg-cream p-4 shadow-sticker sm:p-5">
+    <header className="flex min-w-0 flex-wrap items-center gap-2 text-sm">
       <Link href={`/u/${item.resharer.handle}`} className="flex min-w-0 max-w-full flex-wrap items-center gap-2 hover:underline">
         {item.resharer.avatarUrl ? <ProfileImage src={item.resharer.avatarUrl} alt="" width={28} height={28} sizes="28px" referrerPolicy="no-referrer"
           className="h-7 w-7 shrink-0 rounded-full border-2 border-ink object-cover" />
@@ -117,10 +117,14 @@ export async function ReshareItem({ item }: { item: Extract<TimelineItem, { kind
       <span>reshared</span>
       <time dateTime={item.createdAt.toISOString()} title={item.createdAt.toLocaleString("en-GB", { timeZone: "UTC" })} className="text-ink/60">{relativeDate(item.createdAt)}</time>
     </header>
-    {item.note && <p className="whitespace-pre-wrap break-words text-base leading-relaxed">{segments.map((segment, index) => segment.handle === null ? segment.text
+    {item.note && <p className="mt-3 whitespace-pre-wrap break-words text-base leading-relaxed">{segments.map((segment, index) => segment.handle === null ? segment.text
       : <Link key={index} href={`/u/${segment.handle}`} className="font-bold underline decoration-transparent decoration-4 underline-offset-4 hover:decoration-sun">{segment.text}</Link>)}</p>}
-    <PostCard post={item.post} showStartup instanceId={`reshare-${item.id}`} />
-    {!item.post.viewerMember && <ReshareFollowButton slug={item.post.startupSlug} name={item.post.startupName}
-      signedIn={viewer !== null} memberNo={item.post.viewerFanNo} />}
+    <div className="mt-4 min-w-0">
+      <PostCard post={item.post} showStartup instanceId={`reshare-${item.id}`} />
+    </div>
+    {!item.post.viewerMember && <div className="mt-4 min-w-0">
+      <ReshareFollowButton slug={item.post.startupSlug} name={item.post.startupName}
+        signedIn={viewer !== null} memberNo={item.post.viewerFanNo} />
+    </div>}
   </section>;
 }
