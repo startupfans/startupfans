@@ -9,6 +9,7 @@ import { follows, posts, startupMembers, startups, users } from "@/db/schema";
 import { isAdmin } from "@/lib/admin";
 import { createComment } from "@/lib/comments";
 import { followStartup, unfollowStartup } from "@/lib/follows";
+import { schedulePostLink } from "@/lib/links";
 import { type McpActor, type McpScope } from "@/lib/mcp/policy";
 import { captureMentionNotifications, listNotifications, notifyMentions } from "@/lib/notifications";
 import { captureServerEvent } from "@/lib/posthog-server";
@@ -244,6 +245,7 @@ export function registerStartupFansTools(server: McpServer, actor: McpActor) {
         return { ok: true, id: publishedId, startupId: member.startupId, recipientCount };
       });
       if (!post.ok) return fail(post.error);
+      schedulePostLink({ postId: post.id, body: body.trim(), slug, actorId: actor.id });
       revalidatePath(`/s/${slug}`);
       revalidatePath(`/s/${slug}/p/${post.id}`);
       revalidatePath("/feed");

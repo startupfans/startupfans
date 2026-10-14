@@ -19,14 +19,19 @@ const TIMEOUT_MS = 5000;
 export type PostLink = typeof postLinks.$inferSelect;
 
 function blockedAddress(address: string): boolean {
-  if (isBlockedIpAddress(address)) return true;
   if (isIP(address) === 4) {
-    const [a, b] = address.split(".").map(Number);
+    const [a, b, c] = address.split(".").map(Number);
     // Check octets directly: high-bit IPv4 masks in the shared guard are signed.
-    return (a === 169 && b === 254) || (a === 172 && b >= 16 && b <= 31)
-      || (a === 192 && (b === 168 || b === 0)) || (a === 198 && (b === 18 || b === 19)) || a >= 224;
+    return a === 0 || a === 10 || a === 127
+      || (a === 100 && b >= 64 && b <= 127)
+      || (a === 169 && b === 254) || (a === 172 && b >= 16 && b <= 31)
+      || (a === 192 && (b === 168 || (b === 0 && (c === 0 || c === 2))))
+      || (a === 198 && (b === 18 || b === 19 || (b === 51 && c === 100)))
+      || (a === 203 && b === 0 && c === 113) || a >= 224;
   }
-  const normalized = address.toLowerCase();
+  if (isIP(address) !== 6) return true;
+  const normalized = new URL(`http://[${address}]/`).hostname.slice(1, -1);
+  if (isBlockedIpAddress(normalized)) return true;
   if (/^fe[89ab][\da-f]:/.test(normalized)) return true;
   const mapped = /^::ffff:([\da-f]{1,4}):([\da-f]{1,4})$/.exec(normalized);
   if (mapped) {
@@ -43,7 +48,7 @@ export async function fetchLinkResource(input: string, maxBytes: number, kind: "
   let current = assertPublicHttpUrl(input);
   for (let hop = 0; hop <= 3; hop += 1) {
     signal.throwIfAborted();
-    if (excludedHost(current) || blockedAddressLiteral(current.hostname)) throw new Error("Blocked preview host.");
+    if (excludedHost(current) || isPrivateHost(current.hostname)) throw new Error("Blocked preview host.");
     const addresses = await new Promise<LookupAddress[]>((resolve, reject) => {
       const abort = () => reject(new Error("Link fetch timed out."));
       signal.addEventListener("abort", abort, { once: true });
@@ -92,7 +97,7 @@ export async function fetchLinkResource(input: string, maxBytes: number, kind: "
   throw new Error("Too many redirects.");
 }
 
-function blockedAddressLiteral(host: string) {
+export function isPrivateHost(host: string) {
   const address = host.replace(/^\[|\]$/g, "");
   return isIP(address) !== 0 && blockedAddress(address);
 }
@@ -183,7 +188,7 @@ export function parseLinkMetadata(html: string, pageUrl: string) {
   return {
     title,
     description: cleanText(first("og:description", "twitter:description", "description"), 1000),
-    siteName: cleanText(first("og:site_name", "twitter:site"), 100) ?? new URL(pageUrl).hostname,
+    siteName: cleanText(first("og:site_name"), 100) ?? new URL(pageUrl).hostname,
     canonicalUrl: canonical ?? resolveUrl(first("og:url", "twitter:url"), pageUrl) ?? pageUrl,
     image: resolveUrl(first("og:image:secure_url", "og:image", "og:image:url", "twitter:image", "twitter:image:src"), pageUrl),
   };
