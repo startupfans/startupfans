@@ -13,7 +13,7 @@ async function StartPage() {
   return (
     <div className="min-h-screen min-w-0">
       <AppHeader signedIn next="/start" />
-      <main className="mx-auto min-w-0 max-w-2xl break-words px-5 pb-10 sm:pb-16">
+      <main className="mx-auto min-w-0 max-w-2xl break-words px-5 pb-10 sm:px-8 sm:pb-16">
         <section className="mt-10 rounded-3xl border-[3px] border-ink bg-cream p-6 shadow-sticker-lg sm:p-10">
           <Sticker className="inline-block -rotate-3 bg-lime">Your startup, inside out</Sticker>
           <h1 className="mt-8 font-display text-4xl font-extrabold tracking-tight sm:text-5xl">Start your fan club.</h1>

@@ -6,7 +6,7 @@ const appBandClass = "mx-auto w-full min-w-0 max-w-6xl px-5 sm:px-8";
 export function AppShell({ children, className = "" }: { children: ReactNode; className?: string }) {
   return (
     <div className={`${appBandClass} [&>main>*:first-child]:mt-0`}>
-      <main className={`min-w-0 break-words pb-10 sm:pb-16 ${className}`}>{children}</main>
+      <main className={`mx-auto min-w-0 break-words pb-10 sm:pb-16 ${className}`}>{children}</main>
     </div>
   );
 }

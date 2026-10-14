@@ -84,7 +84,7 @@ async function StartupPage({ params }: StartupPageProps) {
             <Link href={`/s/${slug}/team`} className="mt-2 inline-flex min-h-11 items-center py-2 font-bold underline underline-offset-4">Meet the team</Link>
           </div>
         </ProfileHeader>
-        <section className="mt-14 max-w-3xl" aria-label="Startup updates">
+        <section className="mx-auto mt-14 max-w-3xl" aria-label="Startup updates">
           <h2 className="font-display text-2xl font-extrabold">Latest</h2>
           {isMember && <Composer slug={slug} name={user?.name?.trim() || user?.handle || "You"} avatarUrl={user?.avatarUrl ?? null} />}
           <div className="mt-7 space-y-6">
