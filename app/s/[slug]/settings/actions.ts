@@ -13,6 +13,14 @@ import { captureServerEvent } from "@/lib/posthog-server";
 import { isStartupProfileImageUrl, normalizeWebsiteUrl } from "@/lib/startups";
 import { normalizeSocial, socialNetworks, type SocialField } from "@/lib/socials";
 
+export type UpdateStartupField =
+  | "name" | "tagline" | "description" | "bio" | "location" | "website" | "stage"
+  | "logoUrl" | "coverUrl" | SocialField;
+
+export type UpdateStartupState =
+  | { status: "idle" }
+  | { status: "error"; fieldErrors: Partial<Record<UpdateStartupField, string>> };
+
 function refreshStartup(slug: string) {
   revalidatePath(`/s/${slug}`, "layout");
   revalidatePath("/feed");
@@ -32,7 +40,11 @@ export async function disconnectSlackAction(slug: string) {
   settingsMessage(slug, "slack-disconnected");
 }
 
-export async function updateStartupAction(slug: string, formData: FormData) {
+export async function updateStartupAction(
+  slug: string,
+  _previous: UpdateStartupState,
+  formData: FormData,
+): Promise<UpdateStartupState> {
   const { user } = await requireStartupOwner(slug);
   const name = textField(formData, "name");
   const tagline = textField(formData, "tagline");
@@ -43,31 +55,45 @@ export async function updateStartupAction(slug: string, formData: FormData) {
   const coverUrl = textField(formData, "coverUrl");
   const websiteResult = normalizeWebsiteUrl(textField(formData, "website"));
   const stage = textField(formData, "stage");
+  const fieldErrors: Partial<Record<UpdateStartupField, string>> = {};
 
-  if (name.length < 2 || name.length > 60) settingsMessage(slug, "invalid-name");
-  if (tagline.length > 120 || description.length > 2000 || bio.length > 280 || location.length > 120) {
-    settingsMessage(slug, "text-too-long");
+  if (name.length < 2 || name.length > 60) {
+    fieldErrors.name = "Choose a name between 2 and 60 characters.";
   }
-  if (logoUrl.length > 500 || coverUrl.length > 500) {
-    settingsMessage(slug, "url-too-long");
+  if (tagline.length > 120) fieldErrors.tagline = "Use up to 120 characters.";
+  if (description.length > 2000) fieldErrors.description = "Use up to 2,000 characters.";
+  if (bio.length > 280) fieldErrors.bio = "Use up to 280 characters.";
+  if (location.length > 120) fieldErrors.location = "Use up to 120 characters.";
+  if (logoUrl.length > 500) fieldErrors.logoUrl = "Use up to 500 characters.";
+  else if (!isStartupProfileImageUrl(logoUrl, slug)) {
+    fieldErrors.logoUrl = "Upload an image for this page or paste an https:// image URL.";
   }
-  if (!isStartupProfileImageUrl(logoUrl, slug) || !isStartupProfileImageUrl(coverUrl, slug)) {
-    settingsMessage(slug, "invalid-url");
+  if (coverUrl.length > 500) fieldErrors.coverUrl = "Use up to 500 characters.";
+  else if (!isStartupProfileImageUrl(coverUrl, slug)) {
+    fieldErrors.coverUrl = "Upload an image for this page or paste an https:// image URL.";
   }
-  if (websiteResult.status === "invalid") settingsMessage(slug, "invalid-website");
+  if (websiteResult.status === "invalid") {
+    fieldErrors.website = "Use a website address like yourstartup.com.";
+  }
   if (stage && !["idea", "pre-seed", "seed", "series-a", "growth", "bootstrapped"].includes(stage)) {
-    settingsMessage(slug, "invalid-stage");
+    fieldErrors.stage = "Choose a stage from the list.";
   }
-  const website = websiteResult.value;
   const socials: Record<SocialField, string | null> = {
     xHandle: null, linkedinUrl: null, githubUrl: null,
     instagramHandle: null, youtubeUrl: null, tiktokHandle: null,
   };
-  for (const { network, field } of socialNetworks) {
+  for (const { network, field, hint } of socialNetworks) {
     const result = normalizeSocial(network, textField(formData, field));
-    if (result.status === "invalid") settingsMessage(slug, `invalid-social-${network}`);
-    socials[field] = result.value;
+    if (result.status === "invalid") fieldErrors[field] = hint;
+    else socials[field] = result.value;
   }
+  if (Object.keys(fieldErrors).length > 0) {
+    return { status: "error", fieldErrors };
+  }
+  if (websiteResult.status !== "valid") {
+    return { status: "error", fieldErrors: { website: "Use a website address like yourstartup.com." } };
+  }
+  const website = websiteResult.value;
   await withOwnedStartup(slug, user.id, async (tx, startup) => {
     await tx.update(startups).set({
       name, tagline: tagline || null, description: description || null, logoUrl: logoUrl || null,

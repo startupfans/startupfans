@@ -41,15 +41,18 @@ export function ImageUpload({ name, label, slug, initialUrl = "", creatorId }: {
   );
 }
 
-export function BioField({ initialBio = "" }: { initialBio?: string }) {
+export function BioField({ initialBio = "", error }: { initialBio?: string; error?: string }) {
   const [bio, setBio] = useState(initialBio);
   const { pending } = useFormStatus();
+  const describedBy = error ? "bio-error bio-count" : "bio-count";
   return (
     <div>
       <label htmlFor="bio" className="block font-bold">Bio <span className="font-normal">(optional)</span>
         <textarea id="bio" name="bio" value={bio} onChange={(event) => setBio(event.target.value)} disabled={pending}
-          maxLength={280} rows={3} aria-describedby="bio-count" className={`${inputClass} resize-y`} />
+          maxLength={280} rows={3} aria-invalid={error ? true : undefined} aria-describedby={describedBy}
+          className={`${inputClass} resize-y`} />
       </label>
+      {error && <p id="bio-error" role="alert" className="mt-1 text-sm font-semibold">{error}</p>}
       <p id="bio-count" className="mt-1 text-right text-xs tabular-nums text-ink/70">{bio.length}/280</p>
     </div>
   );

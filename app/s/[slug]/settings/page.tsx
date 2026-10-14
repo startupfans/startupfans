@@ -3,42 +3,20 @@ import { AppHeader, AppShell } from "@/app/components/app-shell";
 import { SubNav } from "@/app/components/sub-nav";
 import { ConfirmSubmit } from "@/app/components/confirm-dialog";
 import Image from "next/image";
-import type { ReactNode } from "react";
-import { IconField } from "@/app/components/icon-field";
-import { GitHubIcon, GlobeIcon, InstagramIcon, LinkedInIcon, PinIcon, TikTokIcon, XIcon, YouTubeIcon } from "@/app/components/icons";
 import { getUnusedStartupInvites, hasExpiredStartupInvites } from "@/lib/invites";
 import { requireStartupOwner } from "@/lib/members";
 import { getStartupMembers } from "@/lib/startups";
 import { getSlackConnection, isSlackConfigured } from "@/lib/slack";
-import { clearExpiredInvitesAction, disconnectSlackAction, removeMemberAction, revokeInviteAction, setMemberRoleAction, updateStartupAction } from "./actions";
+import { clearExpiredInvitesAction, disconnectSlackAction, removeMemberAction, revokeInviteAction, setMemberRoleAction } from "./actions";
 import { InviteByEmail, InviteLink } from "./invite-link";
-import { BioField, ImageUpload } from "./image-upload";
+import { PageDetailsForm } from "./page-details-form";
 import { DangerZone } from "./danger-zone";
-import { socialNetworks, type SocialNetwork } from "@/lib/socials";
 
-const socialIcons = {
-  x: XIcon, linkedin: LinkedInIcon, github: GitHubIcon,
-  instagram: InstagramIcon, youtube: YouTubeIcon, tiktok: TikTokIcon,
-} satisfies Record<SocialNetwork, () => ReactNode>;
-
-const inputClass = "mt-2 min-h-11 w-full min-w-0 rounded-xl border-2 border-ink bg-white px-4 py-3 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ink";
 const buttonClass = "inline-flex min-h-11 w-full max-w-full items-center justify-center rounded-xl border-[3px] border-ink bg-white px-4 py-2 font-bold shadow-sticker disabled:opacity-50 sm:w-auto";
 const messages = new Map([
   ["slack-connected", "Slack connected."],
   ["slack-disconnected", "Slack disconnected."],
   ["slack-connect-failed", "We couldn't connect Slack. Check that this workspace isn't connected to another startup, then try again."],
-  ["invalid-name", "Choose a name between 2 and 60 characters."],
-  ["text-too-long", "Use up to 120 characters for the tagline and location, 280 for the bio and 2,000 for the description."],
-  ["url-too-long", "Use up to 500 characters for image and website addresses."],
-  ["invalid-url", "Upload images to this page's profile folder or paste an https:// image URL."],
-  ["invalid-website", "Use a website address like yourstartup.com."],
-  ["invalid-social-x", "Use an X handle or an https://x.com/ profile URL."],
-  ["invalid-social-linkedin", "Use an https://www.linkedin.com/company/ or /in/ profile URL."],
-  ["invalid-social-github", "Use an https://github.com/ profile URL."],
-  ["invalid-social-instagram", "Use an Instagram handle or an https://www.instagram.com/ profile URL."],
-  ["invalid-social-youtube", "Use an https://www.youtube.com/ channel URL."],
-  ["invalid-social-tiktok", "Use a TikTok handle or an https://www.tiktok.com/@ profile URL."],
-  ["invalid-stage", "Choose a stage from the list."],
   ["saved", "Page saved."],
   ["invalid-member", "Choose a member from the list."],
   ["last-owner", "Keep at least one owner on your page."],
@@ -107,45 +85,23 @@ async function SettingsPage({ params, searchParams }: {
           <section className="min-w-0 rounded-3xl border-[3px] border-ink bg-cream p-6 shadow-sticker-lg sm:p-8" aria-labelledby="page-details">
             <h2 id="page-details" className="font-display text-2xl font-extrabold">Page details</h2>
             <p className="mt-2 break-words text-ink/70">Page address: /s/{slug}</p>
-            <form action={updateStartupAction.bind(null, slug)} className="mt-6 space-y-5">
-              <label htmlFor="name" className="block font-bold">Startup name
-                <input id="name" name="name" defaultValue={startup.name} required minLength={2} maxLength={60} autoComplete="organization" className={inputClass} />
-              </label>
-              <label htmlFor="tagline" className="block font-bold">Tagline
-                <input id="tagline" name="tagline" defaultValue={startup.tagline ?? ""} maxLength={120} className={inputClass} />
-              </label>
-              <BioField initialBio={startup.bio ?? ""} />
-              <label htmlFor="description" className="block font-bold">Description
-                <textarea id="description" name="description" defaultValue={startup.description ?? ""} maxLength={2000} rows={5} className={`${inputClass} resize-y`} />
-              </label>
-              <ImageUpload name="logoUrl" label="Logo" slug={slug} initialUrl={startup.logoUrl ?? ""} creatorId={user.id} />
-              <ImageUpload name="coverUrl" label="Cover image" slug={slug} initialUrl={startup.coverUrl ?? ""} creatorId={user.id} />
-              <label htmlFor="location" className="block font-bold">Location
-                <IconField icon={<PinIcon />} id="location" name="location" defaultValue={startup.location ?? ""} maxLength={120} placeholder="City, country or remote" />
-              </label>
-              <label htmlFor="website" className="block font-bold">Website
-                <IconField icon={<GlobeIcon />} id="website" name="website" defaultValue={startup.website ?? ""} type="text" inputMode="url" maxLength={500} placeholder="yourstartup.com" autoComplete="url" />
-              </label>
-              <label htmlFor="stage" className="block min-w-0 font-bold">Stage
-                <select id="stage" name="stage" defaultValue={startup.stage ?? ""} className={inputClass}>
-                  <option value="">Choose a stage</option>
-                  <option value="idea">Idea</option><option value="pre-seed">Pre-seed</option>
-                  <option value="seed">Seed</option><option value="series-a">Series A</option>
-                  <option value="growth">Growth</option><option value="bootstrapped">Bootstrapped</option>
-                </select>
-              </label>
-              <fieldset className="min-w-0 space-y-5">
-                <legend className="mb-3 font-display text-xl font-extrabold">Social profiles</legend>
-                {socialNetworks.map(({ network, field, label, placeholder }) => {
-                  const SocialIcon = socialIcons[network];
-                  return <label key={field} htmlFor={field} className="block font-bold">{label}
-                    <IconField icon={<SocialIcon />} id={field} name={field} defaultValue={startup[field] ?? ""} maxLength={500} placeholder={placeholder}
-                      autoCapitalize="none" autoCorrect="off" spellCheck={false} />
-                  </label>;
-                })}
-              </fieldset>
-              <SubmitButton pendingLabel="Saving…" className={`${buttonClass} bg-lime`}>Save page</SubmitButton>
-            </form>
+            <PageDetailsForm slug={slug} creatorId={user.id} values={{
+              name: startup.name,
+              tagline: startup.tagline ?? "",
+              bio: startup.bio ?? "",
+              description: startup.description ?? "",
+              logoUrl: startup.logoUrl ?? "",
+              coverUrl: startup.coverUrl ?? "",
+              location: startup.location ?? "",
+              website: startup.website ?? "",
+              stage: startup.stage ?? "",
+              xHandle: startup.xHandle ?? "",
+              linkedinUrl: startup.linkedinUrl ?? "",
+              githubUrl: startup.githubUrl ?? "",
+              instagramHandle: startup.instagramHandle ?? "",
+              youtubeUrl: startup.youtubeUrl ?? "",
+              tiktokHandle: startup.tiktokHandle ?? "",
+            }} />
           </section>
           <section className="min-w-0 rounded-3xl border-[3px] border-ink bg-sky p-6 shadow-sticker-lg sm:p-8" aria-labelledby="team-heading">
             <h2 id="team-heading" className="font-display text-2xl font-extrabold">Your team</h2>

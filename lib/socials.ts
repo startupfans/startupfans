@@ -1,10 +1,46 @@
 export const socialNetworks = [
-  { network: "x", field: "xHandle", label: "X handle", placeholder: "@yourstartup" },
-  { network: "linkedin", field: "linkedinUrl", label: "LinkedIn URL", placeholder: "https://www.linkedin.com/company/yourstartup" },
-  { network: "github", field: "githubUrl", label: "GitHub URL", placeholder: "https://github.com/yourstartup" },
-  { network: "instagram", field: "instagramHandle", label: "Instagram handle", placeholder: "@yourstartup" },
-  { network: "youtube", field: "youtubeUrl", label: "YouTube URL", placeholder: "https://www.youtube.com/@yourstartup" },
-  { network: "tiktok", field: "tiktokHandle", label: "TikTok handle", placeholder: "@yourstartup" },
+  {
+    network: "x",
+    field: "xHandle",
+    label: "X handle",
+    placeholder: "@yourstartup",
+    hint: "Use an X handle or profile URL.",
+  },
+  {
+    network: "linkedin",
+    field: "linkedinUrl",
+    label: "LinkedIn URL",
+    placeholder: "linkedin.com/company/yourstartup",
+    hint: "Use a LinkedIn company or profile URL.",
+  },
+  {
+    network: "github",
+    field: "githubUrl",
+    label: "GitHub URL",
+    placeholder: "github.com/yourstartup",
+    hint: "Use a GitHub profile or org URL.",
+  },
+  {
+    network: "instagram",
+    field: "instagramHandle",
+    label: "Instagram handle",
+    placeholder: "@yourstartup",
+    hint: "Use an Instagram handle or profile URL.",
+  },
+  {
+    network: "youtube",
+    field: "youtubeUrl",
+    label: "YouTube URL",
+    placeholder: "youtube.com/@yourstartup",
+    hint: "Use a YouTube channel URL.",
+  },
+  {
+    network: "tiktok",
+    field: "tiktokHandle",
+    label: "TikTok handle",
+    placeholder: "@yourstartup",
+    hint: "Use a TikTok handle or profile URL.",
+  },
 ] as const;
 
 export type SocialNetwork = typeof socialNetworks[number]["network"];
@@ -20,14 +56,21 @@ const hosts = {
   tiktok: ["tiktok.com"],
 } satisfies Record<SocialNetwork, string[]>;
 
+/** Accepts bare hosts, http://, or https://. */
 function profileUrl(network: SocialNetwork, input: string) {
   try {
-    const url = new URL(input);
+    const candidate = /^[a-zA-Z][a-zA-Z\d+.-]*:/.test(input) ? input : `https://${input}`;
+    const url = new URL(candidate);
+    if (
+      (url.protocol !== "https:" && url.protocol !== "http:")
+      || url.username || url.password || url.port
+    ) {
+      return null;
+    }
     const hostname = url.hostname.replace(/^www\./, "");
     const validHost = hosts[network].includes(hostname)
       || (network === "linkedin" && hostname.endsWith(".linkedin.com"));
-    if (!input.startsWith("https://") || url.protocol !== "https:" || url.username || url.password || url.port
-      || !validHost) return null;
+    if (!validHost) return null;
     return url;
   } catch {
     return null;
