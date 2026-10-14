@@ -2,6 +2,7 @@
 
 import { useActionState, useEffect, useId, useRef, useState } from "react";
 import { ProfileImage } from "@/app/components/profile-image";
+import { TimeLink } from "@/app/components/time-link";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type { PublicComment, ReplyComment } from "@/lib/comments";
@@ -124,14 +125,14 @@ export function DeleteCommentButton({ slug, postId, commentId, onDeleted }: { sl
   );
 }
 
-export function CommentTime({ dateTime }: { dateTime: string }) {
+export function CommentTime({ href, dateTime }: { href: string; dateTime: string }) {
   const [label, setLabel] = useState<string | null>(null);
   const absoluteDate = new Date(dateTime).toLocaleString("en-GB", { timeZone: "UTC" });
   useEffect(() => {
     const frame = requestAnimationFrame(() => setLabel(relativeDate(new Date(dateTime))));
     return () => cancelAnimationFrame(frame);
   }, [dateTime]);
-  return <time dateTime={dateTime} title={absoluteDate}>{label ?? absoluteDate}</time>;
+  return <TimeLink href={href} dateTime={dateTime}>{label ?? absoluteDate}</TimeLink>;
 }
 
 export function CommentContent({ comment, slug, postId, canDelete, canReply, viewerId, onReplied, onDeleted, onReacted }: {
@@ -156,7 +157,7 @@ export function CommentContent({ comment, slug, postId, canDelete, canReply, vie
           </span>
         )}
         <span className="min-w-0 max-w-full break-words font-bold text-ink">{comment.displayName}</span>
-        <CommentTime key={createdAt.toISOString()} dateTime={createdAt.toISOString()} />
+        <CommentTime key={createdAt.toISOString()} href={`/s/${slug}/p/${postId}#comment-${comment.id}`} dateTime={createdAt.toISOString()} />
         {canDelete && <div className="ml-auto">
           <DeleteCommentButton slug={slug} postId={postId} commentId={comment.id} onDeleted={onDeleted} />
         </div>}

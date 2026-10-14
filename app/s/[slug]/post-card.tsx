@@ -1,6 +1,7 @@
 import { SubmitButton } from "@/app/components/submit-button";
 import { Handle } from "@/app/components/handle";
 import { ProfileImage } from "@/app/components/profile-image";
+import { TimeLink } from "@/app/components/time-link";
 import Link from "next/link";
 import Image from "next/image";
 import { FlagIcon, LinkIcon, postIconButtonClass } from "@/app/components/icons";
@@ -58,8 +59,8 @@ export async function PostCard({ post, showStartup = false, canDelete = false, o
           </Link>
           <span aria-hidden="true">·</span>
         </>}
-        <time dateTime={post.publishedAt.toISOString()} title={post.publishedAt.toLocaleString("en-GB", { timeZone: "UTC" })}
-          className="shrink-0">{relativeDate(post.publishedAt)}</time>
+        <TimeLink href={postPath} dateTime={post.publishedAt.toISOString()}
+          className="shrink-0">{relativeDate(post.publishedAt)}</TimeLink>
       </header>
       <div className="mt-2 [&_p:first-child]:mt-0 [&_p:last-child]:mb-0"><Markdown body={post.body} /></div>
       <PostMedia mediaUrl={post.mediaUrl} mediaType={post.mediaType} mediaPosterUrl={post.mediaPosterUrl} mediaStatus={post.mediaStatus} />
@@ -116,7 +117,8 @@ export async function ReshareItem({ item }: { item: Extract<TimelineItem, { kind
         <span className="min-w-0 break-words font-bold">{name}</span><Handle handle={item.resharer.handle} />
       </Link>
       <span>reshared</span>
-      <time dateTime={item.createdAt.toISOString()} title={item.createdAt.toLocaleString("en-GB", { timeZone: "UTC" })} className="text-ink/60">{relativeDate(item.createdAt)}</time>
+      <TimeLink href={`/s/${item.post.startupSlug}/p/${item.post.id}`} dateTime={item.createdAt.toISOString()}
+        className="text-ink/60">{relativeDate(item.createdAt)}</TimeLink>
     </header>
     {item.note && <p className="mt-3 whitespace-pre-wrap break-words text-base leading-relaxed">{segments.map((segment, index) => segment.handle === null ? segment.text
       : <Link key={index} href={`/u/${segment.handle}`} className="font-bold underline decoration-transparent decoration-4 underline-offset-4 hover:decoration-sun">{segment.text}</Link>)}</p>}
