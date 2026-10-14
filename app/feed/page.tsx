@@ -2,10 +2,12 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { PageHeader, SiteFooter } from "@/app/components/sticker";
 import { AppHeader, AppShell } from "@/app/components/app-shell";
+import { PlatformStats } from "@/app/components/platform-stats";
 import { TimelineCard } from "@/app/s/[slug]/post-card";
 import { getCurrentUser } from "@/lib/auth";
-import { listFeed } from "@/lib/posts";
 import { getMemberStartups } from "@/lib/members";
+import { listFeed } from "@/lib/posts";
+import { getPlatformStats } from "@/lib/stats";
 import { FeedComposer } from "./feed-composer";
 
 export function generateMetadata(): Metadata {
@@ -15,7 +17,11 @@ export function generateMetadata(): Metadata {
 export default async function FeedPage({ searchParams }: {
   searchParams: Promise<{ filter?: string | string[]; before?: string | string[] }>;
 }) {
-  const [query, user] = await Promise.all([searchParams, getCurrentUser()]);
+  const [query, user, platformStats] = await Promise.all([
+    searchParams,
+    getCurrentUser(),
+    getPlatformStats(),
+  ]);
   const memberStartups = user ? await getMemberStartups(user.id) : [];
   const following = query.filter === "following";
   const needsSignIn = following && !user;
@@ -38,6 +44,7 @@ export default async function FeedPage({ searchParams }: {
           { href: "/feed", label: "Everyone", current: !following },
           { href: user ? "/feed?filter=following" : followingLogin, label: "Following", current: following },
         ] }} />
+        <PlatformStats variant="feed" initial={platformStats} />
         {user && memberStartups.length > 0 && (
           <FeedComposer startups={memberStartups.map(({ name, slug, logoUrl }) => ({ name, slug, logoUrl }))}
             userId={user.id} name={user.name?.trim() || user.handle} avatarUrl={user.avatarUrl} />
