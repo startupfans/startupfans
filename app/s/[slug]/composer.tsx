@@ -10,6 +10,7 @@ import { MentionAutocomplete } from "@/app/components/mention-autocomplete";
 import { SubmitButton } from "@/app/components/submit-button";
 import { ConfirmSubmit } from "@/app/components/confirm-dialog";
 import { getFileMediaFormat, getMediaAccept, mediaLimits, type MediaType } from "@/lib/media";
+import { downscaleImage, validateVideo } from "@/app/components/image-downscale";
 import { createPost, deletePost, type PostActionState } from "./post-actions";
 
 const initialState: PostActionState = { status: "idle" };
@@ -105,12 +106,6 @@ export function Composer({ slug, name, avatarUrl, onPosted, onBusyChange }: {
       return;
     }
     const { type } = format;
-    const maximum = mediaLimits[type] / (1024 * 1024);
-    if (file.size > mediaLimits[type]) {
-      setUploadError(`${type === "image" ? "Images" : "Videos"} must be ${maximum} MB or smaller.`);
-      if (fileInput.current) fileInput.current.value = "";
-      return;
-    }
     uploadController.current?.abort();
     const controller = new AbortController();
     uploadController.current = controller;
@@ -122,31 +117,14 @@ export function Composer({ slug, name, avatarUrl, onPosted, onBusyChange }: {
     setConverting(needsConversion);
     setProgress(0);
     try {
-      let uploadFile = file;
-      let contentType = format.contentType;
-      let extension = format.extensions[0];
-      if (needsConversion) {
-        try {
-          const { default: heic2any } = await import("heic2any");
-          if (controller.signal.aborted) return;
-          const converted = await heic2any({ blob: file, toType: "image/jpeg", quality: 0.9 });
-          if (controller.signal.aborted) return;
-          const jpeg = Array.isArray(converted) ? converted[0] : converted;
-          if (!jpeg) throw new Error("No converted photo.");
-          uploadFile = new File([jpeg], `${file.name.replace(/\.[^.]+$/, "")}.jpg`, { type: "image/jpeg" });
-          const jpegFormat = getFileMediaFormat(uploadFile);
-          if (!jpegFormat) throw new Error("Unsupported converted photo.");
-          contentType = jpegFormat.contentType;
-          extension = jpegFormat.extensions[0];
-        } catch {
-          throw new Error("Couldn't convert this photo. Choose another file or export it as JPEG and try again.");
-        }
-      }
+      const uploadFile = type === "image" ? await downscaleImage(file, "post", controller.signal) : file;
+      if (type === "video") await validateVideo(file, controller.signal);
       if (controller.signal.aborted) return;
+      const outputFormat = getFileMediaFormat(uploadFile);
+      if (!outputFormat) throw new Error("Couldn't prepare this attachment. Choose another file.");
+      const contentType = outputFormat.contentType;
+      const extension = outputFormat.extensions[0];
       setConverting(false);
-      if (uploadFile.size > mediaLimits[type]) {
-        throw new Error(`The converted photo must be ${maximum} MB or smaller. Choose another file.`);
-      }
       setPreview({ url: URL.createObjectURL(uploadFile), type, name: uploadFile.name, contentType });
       await checkUploadAvailability();
       if (controller.signal.aborted) return;
@@ -274,7 +252,7 @@ export function Composer({ slug, name, avatarUrl, onPosted, onBusyChange }: {
               title={`Add image (up to ${mediaLimits.image / (1024 * 1024)} MB)`} aria-label="Add image" className={postIconButtonClass}><ImageIcon /></button>
             <button type="button" disabled={pending}
               onClick={() => openFilePicker(getMediaAccept("video"))}
-              title={`Add video (up to ${mediaLimits.video / (1024 * 1024)} MB)`} aria-label="Add video" className={postIconButtonClass}><VideoIcon /></button>
+              title={`Add video (up to ${mediaLimits.video / (1024 * 1024)} MB, 60 seconds)`} aria-label="Add video" className={postIconButtonClass}><VideoIcon /></button>
           </div>
           <div className="flex min-w-0 items-center gap-3">
             {body.length > 4000 && <span className="text-xs tabular-nums text-ink/60">{body.length.toLocaleString("en-GB")}/5,000</span>}

@@ -2,7 +2,7 @@ import { handleUpload, type HandleUploadBody } from "@vercel/blob/client";
 import { getCurrentUser } from "@/lib/auth";
 import { isAdmin } from "@/lib/admin";
 import { getPostMembership } from "@/lib/posts";
-import { getMediaContentTypes, getMediaFormat, isMediaFilename, mediaLimits } from "@/lib/media";
+import { getImageUploadMaximum, getMediaFormat, isMediaFilename, mediaLimits } from "@/lib/media";
 import { isValidSlug } from "@/lib/slug";
 import { getStartupBySlug } from "@/lib/startups";
 
@@ -57,9 +57,12 @@ export async function POST(request: Request) {
           if (!pathname.startsWith(prefix) || !isMediaFilename(filename) || getMediaFormat(filename)?.type !== "image") {
             throw new Error("Upload an image to your own avatar or replies folder.");
           }
+          const format = getMediaFormat(filename);
+          if (!format) throw new Error("Choose a supported image.");
+          const role = prefix.endsWith("/replies/") ? "reply" : "avatar";
           return {
-            allowedContentTypes: getMediaContentTypes("image"),
-            maximumSizeInBytes: mediaLimits.image,
+            allowedContentTypes: [format.contentType],
+            maximumSizeInBytes: getImageUploadMaximum(role, format.contentType),
             addRandomSuffix: true,
           };
         }
@@ -86,9 +89,14 @@ export async function POST(request: Request) {
           || (isProfile && (format.type !== "image" || !filename.startsWith(`${user.id}-`)))) {
           throw new Error("Upload an image or video to this startup's media folder.");
         }
+        const profileRole = /-cover\.[^.]+$/.test(filename) ? "cover" : "logo";
+        if (isProfile && !/-(cover|logo)\.[^.]+$/.test(filename)) {
+          throw new Error("Choose a logo or cover image before uploading.");
+        }
         return {
-          allowedContentTypes: getMediaContentTypes(format.type),
-          maximumSizeInBytes: mediaLimits[format.type],
+          allowedContentTypes: [format.contentType],
+          maximumSizeInBytes: format.type === "video" ? mediaLimits.video
+            : getImageUploadMaximum(isProfile ? profileRole : "post", format.contentType),
           addRandomSuffix: true,
         };
       },

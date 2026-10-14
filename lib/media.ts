@@ -19,7 +19,27 @@ const pickerMediaFormats = [
   { type: "image", contentType: "image/heif", extensions: ["heif"] },
 ] satisfies MediaFormat[];
 
-export const mediaLimits = { image: 10 * 1024 * 1024, video: 200 * 1024 * 1024 };
+export type ImageRole = "post" | "reply" | "cover" | "avatar" | "logo";
+
+export const imageTargets = {
+  post: { longEdge: 2048, maximumBytes: 2 * 1024 * 1024 },
+  reply: { longEdge: 2048, maximumBytes: 2 * 1024 * 1024 },
+  cover: { longEdge: 1800, maximumBytes: 1024 * 1024 },
+  avatar: { longEdge: 512, maximumBytes: 250 * 1024 },
+  logo: { longEdge: 512, maximumBytes: 250 * 1024 },
+} satisfies Record<ImageRole, { longEdge: number; maximumBytes: number }>;
+
+export const imageQuality = { webp: 0.82, jpeg: 0.85 };
+export const gifMaximumBytes = 4 * 1024 * 1024;
+export const graphicPngMaximumBytes = 1024 * 1024;
+export const videoMaximumSeconds = 60;
+export const mediaLimits = { image: 10 * 1024 * 1024, video: 50 * 1024 * 1024 };
+
+export function getImageUploadMaximum(role: ImageRole, contentType: string) {
+  if (contentType === "image/gif") return gifMaximumBytes;
+  if ((role === "avatar" || role === "logo") && contentType === "image/png") return graphicPngMaximumBytes;
+  return imageTargets[role].maximumBytes;
+}
 
 export function getMediaAccept(type?: MediaType) {
   return pickerMediaFormats.filter((format) => !type || format.type === type)

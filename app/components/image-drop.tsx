@@ -4,7 +4,8 @@ import Image from "next/image";
 import { upload } from "@vercel/blob/client";
 import { useCallback, useEffect, useId, useRef, useState, type ReactNode } from "react";
 import { useFormStatus } from "react-dom";
-import { getFileMediaFormat, getMediaAccept, mediaLimits } from "@/lib/media";
+import { getFileMediaFormat, getMediaAccept } from "@/lib/media";
+import { downscaleImage } from "./image-downscale";
 
 const buttonClass = "min-h-11 rounded-xl border-2 border-ink bg-white px-4 py-2 font-bold shadow-sticker disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ink";
 
@@ -104,10 +105,6 @@ export function ImageDrop({ name, label, shape, initialUrl, initial, buildUpload
       setError("Choose a JPEG, PNG, WebP, GIF, AVIF, HEIC or HEIF image.");
       return;
     }
-    if (file.size > mediaLimits.image) {
-      setError("Images must be 10 MB or smaller.");
-      return;
-    }
     let target;
     try {
       target = buildUploadPath(format.extensions[0], fileInput.current?.form ?? null);
@@ -127,21 +124,13 @@ export function ImageDrop({ name, label, shape, initialUrl, initial, buildUpload
     const needsConversion = ["image/heic", "image/heif"].includes(format.contentType);
     setConverting(needsConversion);
     try {
-      let image = file;
-      let contentType = format.contentType;
-      if (needsConversion) {
-        const { default: heic2any } = await import("heic2any");
-        if (active.signal.aborted) return;
-        const converted = await heic2any({ blob: file, toType: "image/jpeg", quality: 0.9 });
-        if (active.signal.aborted) return;
-        const jpeg = Array.isArray(converted) ? converted[0] : converted;
-        if (!jpeg) throw new Error("Couldn't convert this photo. Try a JPEG image.");
-        image = new File([jpeg], "image.jpg", { type: "image/jpeg" });
-        contentType = "image/jpeg";
-        target.pathname = target.pathname.replace(/\.[^.]+$/, ".jpg");
-      }
+      const role = shape === "wide" ? "cover" : shape === "square" ? "logo" : "avatar";
+      const image = await downscaleImage(file, role, active.signal);
       if (active.signal.aborted) return;
-      if (image.size > mediaLimits.image) throw new Error("The converted photo must be 10 MB or smaller.");
+      const outputFormat = getFileMediaFormat(image);
+      if (!outputFormat) throw new Error("Couldn't prepare this image. Choose another file.");
+      const contentType = outputFormat.contentType;
+      target.pathname = target.pathname.replace(/\.[^.]+$/, `${role === "avatar" ? "" : `-${role}`}.${outputFormat.extensions[0]}`);
       setConverting(false);
       setPreview(URL.createObjectURL(image));
       const blob = await upload(target.pathname, image, {

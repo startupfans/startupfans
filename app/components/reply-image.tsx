@@ -4,7 +4,8 @@ import { upload } from "@vercel/blob/client";
 import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
 import { CloseIcon, ImageIcon, postIconButtonClass } from "@/app/components/icons";
-import { getFileMediaFormat, getMediaAccept, mediaLimits } from "@/lib/media";
+import { getFileMediaFormat, getMediaAccept } from "@/lib/media";
+import { downscaleImage } from "./image-downscale";
 
 type ReplyImage = { url: string };
 
@@ -60,12 +61,6 @@ export function useReplyImage(userId: string | null) {
       if (fileInput.current) fileInput.current.value = "";
       return;
     }
-    const maximum = mediaLimits.image / (1024 * 1024);
-    if (file.size > mediaLimits.image) {
-      setUploadError(`Images must be ${maximum} MB or smaller.`);
-      if (fileInput.current) fileInput.current.value = "";
-      return;
-    }
     uploadController.current?.abort();
     const controller = new AbortController();
     uploadController.current = controller;
@@ -77,31 +72,13 @@ export function useReplyImage(userId: string | null) {
     setConverting(needsConversion);
     setProgress(0);
     try {
-      let uploadFile = file;
-      let contentType = format.contentType;
-      let extension = format.extensions[0];
-      if (needsConversion) {
-        try {
-          const { default: heic2any } = await import("heic2any");
-          if (controller.signal.aborted) return;
-          const converted = await heic2any({ blob: file, toType: "image/jpeg", quality: 0.9 });
-          if (controller.signal.aborted) return;
-          const jpeg = Array.isArray(converted) ? converted[0] : converted;
-          if (!jpeg) throw new Error("No converted photo.");
-          uploadFile = new File([jpeg], `${file.name.replace(/\.[^.]+$/, "")}.jpg`, { type: "image/jpeg" });
-          const jpegFormat = getFileMediaFormat(uploadFile);
-          if (!jpegFormat) throw new Error("Unsupported converted photo.");
-          contentType = jpegFormat.contentType;
-          extension = jpegFormat.extensions[0];
-        } catch {
-          throw new Error("Couldn't convert this photo. Choose another file or export it as JPEG and try again.");
-        }
-      }
+      const uploadFile = await downscaleImage(file, "reply", controller.signal);
       if (controller.signal.aborted) return;
+      const outputFormat = getFileMediaFormat(uploadFile);
+      if (!outputFormat) throw new Error("Couldn't prepare this image. Choose another file.");
+      const contentType = outputFormat.contentType;
+      const extension = outputFormat.extensions[0];
       setConverting(false);
-      if (uploadFile.size > mediaLimits.image) {
-        throw new Error(`The converted photo must be ${maximum} MB or smaller. Choose another file.`);
-      }
       setPreview({ url: URL.createObjectURL(uploadFile) });
       await checkUploadAvailability();
       if (controller.signal.aborted) return;
