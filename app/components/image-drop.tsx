@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { upload } from "@vercel/blob/client";
-import { useCallback, useEffect, useId, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useRef, useState, type ReactNode } from "react";
 import { useFormStatus } from "react-dom";
 import { getFileMediaFormat, getMediaAccept, mediaLimits } from "@/lib/media";
 
@@ -20,7 +20,7 @@ const previewClasses = {
 };
 
 export function ImageDrop({ name, label, shape, initialUrl, initial, buildUploadPath, hint, uploadsEnabled,
-  maxUrlLength = 2048, uploadScope, onUploadingChange, onUrlChange }: {
+  maxUrlLength = 2048, uploadScope, onUploadingChange, onUrlChange, status }: {
   name: string;
   label: string;
   shape: "round" | "square" | "wide";
@@ -33,6 +33,7 @@ export function ImageDrop({ name, label, shape, initialUrl, initial, buildUpload
   uploadScope?: { field: string; value?: string };
   onUploadingChange?: (uploading: boolean) => void;
   onUrlChange?: (url: string) => void;
+  status?: ReactNode;
 }) {
   const id = useId();
   const { pending } = useFormStatus();
@@ -177,7 +178,7 @@ export function ImageDrop({ name, label, shape, initialUrl, initial, buildUpload
   const visibleUrl = preview ?? previewUrl(url);
   return (
     <div className="min-w-0" aria-busy={uploading}>
-      <p id={`${id}-heading`} className="font-bold">{label}{shape === "round" && <span className="font-normal"> (optional)</span>}</p>
+      <p id={`${id}-heading`} className="font-bold">{label}{shape === "round" && <span className="font-normal"> (optional)</span>}{status}</p>
       <input type="hidden" name={name} value={url} />
       <div role="group" aria-labelledby={`${id}-heading`} tabIndex={0}
         className={`mt-2 min-w-0 rounded-xl border-[3px] border-dashed border-ink p-4 shadow-sticker transition focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ink ${dragging ? "bg-lime/50" : "bg-cream hover:bg-lime/30"}`}

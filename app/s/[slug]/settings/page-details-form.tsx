@@ -25,8 +25,16 @@ const socialIcons = {
   instagram: InstagramIcon, youtube: YouTubeIcon, tiktok: TikTokIcon,
 } satisfies Record<SocialNetwork, () => ReactNode>;
 
-const inputClass = "mt-2 min-h-11 w-full min-w-0 rounded-xl border-2 border-ink bg-white px-4 py-3 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ink";
-const errorClass = "mt-1 text-sm font-semibold";
+const fieldOrder = [
+  "name", "tagline", "bio", "description", "logoUrl", "coverUrl",
+  "location", "website", "stage",
+  ...socialNetworks.map(({ field }) => field),
+] as const satisfies readonly UpdateStartupField[];
+
+const fieldSet = new Set<string>(fieldOrder);
+
+const inputClass = "mt-2 min-h-11 w-full min-w-0 rounded-xl border-2 border-ink bg-white px-4 py-3 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ink aria-invalid:border-pink aria-invalid:bg-sun/40";
+const errorClass = "mt-2 rounded-lg border-2 border-ink bg-sun px-3 py-2 text-sm font-semibold";
 
 function fieldError(state: UpdateStartupState, field: UpdateStartupField) {
   return state.status === "error" ? state.fieldErrors[field] : undefined;
@@ -37,36 +45,45 @@ function FieldHint({ id, message }: { id: string; message?: string }) {
   return <p id={id} role="alert" className={errorClass}>{message}</p>;
 }
 
-function SaveStatus({ pending, state }: { pending: boolean; state: UpdateStartupState }) {
-  if (pending) {
+function SaveMark({
+  field, savingField, savedField,
+}: {
+  field: UpdateStartupField;
+  savingField: UpdateStartupField | null;
+  savedField: UpdateStartupField | null;
+}) {
+  if (savingField === field) {
     return (
-      <p role="status" aria-live="polite"
-        className="rounded-xl border-2 border-ink bg-sky px-4 py-3 font-semibold shadow-sticker">
+      <span role="status" aria-live="polite" className="ml-2 text-sm font-semibold text-ink/70">
         Saving…
-      </p>
+      </span>
     );
   }
-  if (state.status === "saved") {
+  if (savedField === field) {
     return (
-      <p role="status" aria-live="polite"
-        className="rounded-xl border-2 border-ink bg-lime px-4 py-3 font-semibold shadow-sticker">
+      <span role="status" aria-live="polite"
+        className="ml-2 inline-block rounded-full border-2 border-ink bg-lime px-2 py-0.5 text-sm font-semibold">
         Saved
-      </p>
+      </span>
     );
   }
-  if (state.status === "error") {
-    return (
-      <p role="status" aria-live="polite"
-        className="rounded-xl border-2 border-ink bg-sun px-4 py-3 font-semibold shadow-sticker">
-        Couldn&apos;t save — check the highlighted fields.
-      </p>
-    );
+  return null;
+}
+
+function focusField(field: UpdateStartupField) {
+  const target = document.getElementById(field)
+    ?? document.getElementById(`${field}-error`);
+  if (!target) return;
+  target.scrollIntoView({ block: "center", behavior: "smooth" });
+  if (target instanceof HTMLElement && "focus" in target) {
+    try { target.focus({ preventScroll: true }); } catch { /* ignore */ }
   }
-  return (
-    <p role="status" className="rounded-xl border-2 border-ink bg-white px-4 py-3 text-ink/80 shadow-sticker">
-      Changes save automatically.
-    </p>
-  );
+}
+
+function fieldFromTarget(target: EventTarget | null): UpdateStartupField | null {
+  if (!(target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement
+    || target instanceof HTMLSelectElement)) return null;
+  return fieldSet.has(target.name) ? target.name as UpdateStartupField : null;
 }
 
 export function PageDetailsForm({
@@ -82,11 +99,15 @@ export function PageDetailsForm({
   );
   // Freeze the first paint defaults; React 19 form actions reset to defaultValue.
   const [defaults] = useState(values);
+  const [savingField, setSavingField] = useState<UpdateStartupField | null>(null);
+  const [savedField, setSavedField] = useState<UpdateStartupField | null>(null);
   const formRef = useRef<HTMLFormElement>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const dirtyRef = useRef(false);
   const actionRef = useRef(action);
   const pendingRef = useRef(pending);
+  const activeFieldRef = useRef<UpdateStartupField | null>(null);
+  const savingFieldRef = useRef<UpdateStartupField | null>(null);
 
   useEffect(() => {
     actionRef.current = action;
@@ -97,6 +118,27 @@ export function PageDetailsForm({
     if (debounceRef.current) clearTimeout(debounceRef.current);
   }, []);
 
+  useEffect(() => {
+    if (state.status !== "error") return;
+    const first = fieldOrder.find((field) => state.fieldErrors[field]);
+    if (first) focusField(first);
+  }, [state]);
+
+  useEffect(() => {
+    if (pending) return;
+    if (state.status === "saved" && savingFieldRef.current) {
+      setSavedField(savingFieldRef.current);
+    }
+    if (state.status === "error") setSavedField(null);
+    savingFieldRef.current = null;
+    setSavingField(null);
+  }, [pending, state]);
+
+  const noteField = useCallback((field: UpdateStartupField) => {
+    activeFieldRef.current = field;
+    setSavedField(null);
+  }, []);
+
   const saveNow = useCallback((immediate = false) => {
     const run = () => {
       const form = formRef.current;
@@ -105,6 +147,8 @@ export function PageDetailsForm({
         return;
       }
       dirtyRef.current = false;
+      savingFieldRef.current = activeFieldRef.current;
+      setSavingField(activeFieldRef.current);
       startTransition(() => actionRef.current(new FormData(form)));
     };
     if (debounceRef.current) clearTimeout(debounceRef.current);
@@ -116,15 +160,29 @@ export function PageDetailsForm({
     debounceRef.current = setTimeout(run, SAVE_DEBOUNCE_MS);
   }, []);
 
-  const saveImage = useCallback(() => saveNow(true), [saveNow]);
+  const saveLogo = useCallback(() => {
+    noteField("logoUrl");
+    saveNow(true);
+  }, [noteField, saveNow]);
+
+  const saveCover = useCallback(() => {
+    noteField("coverUrl");
+    saveNow(true);
+  }, [noteField, saveNow]);
 
   useEffect(() => {
     if (pending || !dirtyRef.current) return;
     dirtyRef.current = false;
     const form = formRef.current;
     if (!form) return;
+    savingFieldRef.current = activeFieldRef.current;
+    setSavingField(activeFieldRef.current);
     startTransition(() => actionRef.current(new FormData(form)));
   }, [pending]);
+
+  const mark = (field: UpdateStartupField) => (
+    <SaveMark field={field} savingField={savingField} savedField={savedField} />
+  );
 
   return (
     <form
@@ -134,63 +192,74 @@ export function PageDetailsForm({
       aria-busy={pending}
       onSubmit={(event) => {
         event.preventDefault();
+        const field = fieldFromTarget(event.nativeEvent instanceof SubmitEvent
+          ? event.nativeEvent.submitter
+          : null) ?? activeFieldRef.current;
+        if (field) noteField(field);
         saveNow(true);
       }}
-      onInput={() => saveNow()}
+      onInput={(event) => {
+        const field = fieldFromTarget(event.target);
+        if (field) noteField(field);
+        saveNow();
+      }}
       onChange={(event) => {
+        const field = fieldFromTarget(event.target);
+        if (field) noteField(field);
         if (event.target instanceof HTMLSelectElement) saveNow(true);
       }}
       onBlur={(event) => {
         if (!(event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement
           || event.target instanceof HTMLSelectElement)) return;
+        const field = fieldFromTarget(event.target);
+        if (field) noteField(field);
         if (debounceRef.current) saveNow(true);
       }}
     >
-      <SaveStatus pending={pending} state={state} />
-      <label htmlFor="name" className="block font-bold">Startup name
+      <label htmlFor="name" className="block font-bold">Startup name{mark("name")}
         <input id="name" name="name" defaultValue={defaults.name} required minLength={2} maxLength={60}
           autoComplete="organization" aria-invalid={fieldError(state, "name") ? true : undefined}
           aria-describedby={fieldError(state, "name") ? "name-error" : undefined} className={inputClass} />
         <FieldHint id="name-error" message={fieldError(state, "name")} />
       </label>
-      <label htmlFor="tagline" className="block font-bold">Tagline
+      <label htmlFor="tagline" className="block font-bold">Tagline{mark("tagline")}
         <input id="tagline" name="tagline" defaultValue={defaults.tagline} maxLength={120}
           aria-invalid={fieldError(state, "tagline") ? true : undefined}
           aria-describedby={fieldError(state, "tagline") ? "tagline-error" : undefined} className={inputClass} />
         <FieldHint id="tagline-error" message={fieldError(state, "tagline")} />
       </label>
-      <BioField initialBio={defaults.bio} error={fieldError(state, "bio")} />
-      <label htmlFor="description" className="block font-bold">Description
+      <BioField initialBio={defaults.bio} error={fieldError(state, "bio")} status={mark("bio")} />
+      <label htmlFor="description" className="block font-bold">Description{mark("description")}
         <textarea id="description" name="description" defaultValue={defaults.description} maxLength={2000} rows={5}
           aria-invalid={fieldError(state, "description") ? true : undefined}
           aria-describedby={fieldError(state, "description") ? "description-error" : undefined}
           className={`${inputClass} resize-y`} />
         <FieldHint id="description-error" message={fieldError(state, "description")} />
       </label>
-      <div>
+      <div id="logoUrl">
         <ImageUpload name="logoUrl" label="Logo" slug={slug} initialUrl={defaults.logoUrl}
-          creatorId={creatorId} onUrlChange={saveImage} />
+          creatorId={creatorId} onUrlChange={saveLogo} status={mark("logoUrl")} />
         <FieldHint id="logoUrl-error" message={fieldError(state, "logoUrl")} />
       </div>
-      <div>
+      <div id="coverUrl">
         <ImageUpload name="coverUrl" label="Cover image" slug={slug} initialUrl={defaults.coverUrl}
-          creatorId={creatorId} onUrlChange={saveImage} />
+          creatorId={creatorId} onUrlChange={saveCover} status={mark("coverUrl")} />
         <FieldHint id="coverUrl-error" message={fieldError(state, "coverUrl")} />
       </div>
-      <label htmlFor="location" className="block font-bold">Location
+      <label htmlFor="location" className="block font-bold">Location{mark("location")}
         <IconField icon={<PinIcon />} id="location" name="location" defaultValue={defaults.location} maxLength={120}
           placeholder="City, country or remote" aria-invalid={fieldError(state, "location") ? true : undefined}
           aria-describedby={fieldError(state, "location") ? "location-error" : undefined} />
         <FieldHint id="location-error" message={fieldError(state, "location")} />
       </label>
-      <label htmlFor="website" className="block font-bold">Website
+      <label htmlFor="website" className="block font-bold">Website{mark("website")}
         <IconField icon={<GlobeIcon />} id="website" name="website" defaultValue={defaults.website} type="text"
           inputMode="url" maxLength={500} placeholder="yourstartup.com" autoComplete="url"
           aria-invalid={fieldError(state, "website") ? true : undefined}
           aria-describedby={fieldError(state, "website") ? "website-error" : undefined} />
         <FieldHint id="website-error" message={fieldError(state, "website")} />
       </label>
-      <label htmlFor="stage" className="block min-w-0 font-bold">Stage
+      <label htmlFor="stage" className="block min-w-0 font-bold">Stage{mark("stage")}
         <select id="stage" name="stage" defaultValue={defaults.stage} className={inputClass}
           aria-invalid={fieldError(state, "stage") ? true : undefined}
           aria-describedby={fieldError(state, "stage") ? "stage-error" : undefined}>
@@ -208,7 +277,7 @@ export function PageDetailsForm({
           const error = fieldError(state, field);
           const errorId = `${field}-error`;
           return (
-            <label key={field} htmlFor={field} className="block font-bold">{label}
+            <label key={field} htmlFor={field} className="block font-bold">{label}{mark(field)}
               <IconField icon={<SocialIcon />} id={field} name={field} defaultValue={defaults[field]}
                 maxLength={500} placeholder={placeholder} autoCapitalize="none" autoCorrect="off"
                 spellCheck={false} aria-invalid={error ? true : undefined}
@@ -218,7 +287,6 @@ export function PageDetailsForm({
           );
         })}
       </fieldset>
-      <SaveStatus pending={pending} state={state} />
     </form>
   );
 }

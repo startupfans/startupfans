@@ -1,19 +1,20 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { useFormStatus } from "react-dom";
 import { ImageDrop } from "@/app/components/image-drop";
 import { isValidSlug } from "@/lib/slug";
 
 const inputClass = "mt-2 min-h-11 w-full min-w-0 rounded-xl border-2 border-ink bg-white px-4 py-3 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ink";
 
-export function ImageUpload({ name, label, slug, initialUrl = "", creatorId, onUrlChange }: {
+export function ImageUpload({ name, label, slug, initialUrl = "", creatorId, onUrlChange, status }: {
   name: "logoUrl" | "coverUrl";
   label: string;
   slug?: string;
   initialUrl?: string;
   creatorId: string;
   onUrlChange?: (url: string) => void;
+  status?: ReactNode;
 }) {
   const [uploadsEnabled, setUploadsEnabled] = useState(true);
   useEffect(() => {
@@ -29,6 +30,7 @@ export function ImageUpload({ name, label, slug, initialUrl = "", creatorId, onU
       hint={`Images up to 10 MB. ${name === "coverUrl" ? "A 3:1 image fits best." : "A square image fits best."}`}
       uploadScope={{ field: "slug", value: slug }}
       onUrlChange={onUrlChange}
+      status={status}
       buildUploadPath={(extension, form) => {
         const input = form?.elements.namedItem("slug");
         const targetSlug = slug ?? (input instanceof HTMLInputElement ? input.value.trim() : "");
@@ -43,18 +45,22 @@ export function ImageUpload({ name, label, slug, initialUrl = "", creatorId, onU
   );
 }
 
-export function BioField({ initialBio = "", error }: { initialBio?: string; error?: string }) {
+export function BioField({ initialBio = "", error, status }: {
+  initialBio?: string;
+  error?: string;
+  status?: ReactNode;
+}) {
   const [bio, setBio] = useState(initialBio);
   const { pending } = useFormStatus();
   const describedBy = error ? "bio-error bio-count" : "bio-count";
   return (
     <div>
-      <label htmlFor="bio" className="block font-bold">Bio <span className="font-normal">(optional)</span>
+      <label htmlFor="bio" className="block font-bold">Bio <span className="font-normal">(optional)</span>{status}
         <textarea id="bio" name="bio" value={bio} onChange={(event) => setBio(event.target.value)} disabled={pending}
           maxLength={280} rows={3} aria-invalid={error ? true : undefined} aria-describedby={describedBy}
-          className={`${inputClass} resize-y`} />
+          className={`${inputClass} resize-y aria-invalid:border-pink aria-invalid:bg-sun/40`} />
       </label>
-      {error && <p id="bio-error" role="alert" className="mt-1 text-sm font-semibold">{error}</p>}
+      {error && <p id="bio-error" role="alert" className="mt-2 rounded-lg border-2 border-ink bg-sun px-3 py-2 text-sm font-semibold">{error}</p>}
       <p id="bio-count" className="mt-1 text-right text-xs tabular-nums text-ink/70">{bio.length}/280</p>
     </div>
   );

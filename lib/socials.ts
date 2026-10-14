@@ -17,8 +17,8 @@ export const socialNetworks = [
     network: "github",
     field: "githubUrl",
     label: "GitHub URL",
-    placeholder: "github.com/yourstartup",
-    hint: "Use a GitHub profile or org URL.",
+    placeholder: "github.com/yourstartup/repo",
+    hint: "Use a GitHub profile, org, or repo URL.",
   },
   {
     network: "instagram",
@@ -107,7 +107,7 @@ export function normalizeSocial(network: SocialNetwork, input: string): SocialRe
       const path = url.pathname.replace(/\/$/, "");
       const pattern = {
         linkedin: /^\/(?:company|in|school)\/[a-zA-Z0-9_%.-]+$/,
-        github: /^\/[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,37}[a-zA-Z0-9])?$/,
+        github: /^\/[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,37}[a-zA-Z0-9])?(?:\/[a-zA-Z0-9._-]+)?$/,
         youtube: /^\/(?:@[\p{L}\p{N}_.%\-]+|(?:channel|c|user)\/[a-zA-Z0-9_.%\-]+)$/u,
       }[network];
       if (!pattern.test(path)) return { status: "invalid" };
