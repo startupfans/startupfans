@@ -33,6 +33,7 @@ export const imageQuality = { webp: 0.82, jpeg: 0.85 };
 export const gifMaximumBytes = 4 * 1024 * 1024;
 export const graphicPngMaximumBytes = 1024 * 1024;
 export const videoMaximumSeconds = 60;
+export const videoMaximumPixels = 3840 * 2160;
 export const mediaLimits = { image: 10 * 1024 * 1024, video: 50 * 1024 * 1024 };
 
 export function getImageUploadMaximum(role: ImageRole, contentType: string) {
@@ -78,6 +79,22 @@ export function isReplyImageUrl(value: string, userId: string) {
       && url.port === "" && url.username === "" && url.password === ""
       && url.search === "" && url.hash === "" && url.pathname.startsWith(prefix)
       && isMediaFilename(filename) && getMediaFormat(filename)?.type === "image";
+  } catch {
+    return false;
+  }
+}
+
+export type MediaStatus = "ready" | "processing" | "encoding" | "failed";
+
+export function isStartupRawVideoUrl(value: string, slug: string) {
+  try {
+    const url = new URL(value);
+    const prefix = `/startups/${slug}/raw/`;
+    const filename = url.pathname.slice(prefix.length);
+    return url.protocol === "https:" && /^[a-z0-9-]+\.public\.blob\.vercel-storage\.com$/i.test(url.hostname)
+      && url.port === "" && url.username === "" && url.password === ""
+      && url.search === "" && url.hash === "" && url.pathname.startsWith(prefix)
+      && isMediaFilename(filename) && getMediaFormat(filename)?.type === "video";
   } catch {
     return false;
   }

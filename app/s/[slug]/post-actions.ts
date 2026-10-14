@@ -8,7 +8,8 @@ import { posts, startupMembers, startups } from "@/db/schema";
 import { isAdmin } from "@/lib/admin";
 import { getCurrentUser, isValidSessionId } from "@/lib/auth";
 import { isStartupMediaUrl } from "@/lib/posts";
-import { getMediaFormat } from "@/lib/media";
+import { prepareVideoJob, scheduleVideoJob } from "@/lib/video";
+import { getMediaFormat, isStartupRawVideoUrl } from "@/lib/media";
 import { submitPostReport } from "@/lib/reports";
 import { captureServerEvent } from "@/lib/posthog-server";
 import { emitPostHogLog } from "@/lib/posthog-logs";
@@ -34,16 +35,23 @@ export async function createPost(
     return { status: "error", message: "Write an update between 1 and 5,000 characters." };
   }
   if (typeof mediaUrl !== "string" || typeof mediaType !== "string"
-    || (mediaUrl === "" ? mediaType !== "" : !isStartupMediaUrl(mediaUrl, slug)
+    || (mediaUrl === "" ? mediaType !== "" : !(mediaType === "video" ? isStartupRawVideoUrl(mediaUrl, slug) : isStartupMediaUrl(mediaUrl, slug))
       || (mediaType !== "image" && mediaType !== "video"))) {
     return { status: "error", message: "Remove the attachment and upload it again." };
   }
   const attachmentType = mediaType === "image" || mediaType === "video" ? mediaType : null;
-  if (mediaUrl && getMediaFormat(new URL(mediaUrl).pathname)?.type !== attachmentType) {
+  if (mediaUrl && (attachmentType === "video"
+    ? !isStartupRawVideoUrl(mediaUrl, slug)
+    : getMediaFormat(new URL(mediaUrl).pathname)?.type !== attachmentType)) {
     return { status: "error", message: "The attachment doesn't match its media type. Upload it again." };
   }
   const user = await getCurrentUser();
   if (!user) return { status: "error", message: "Sign in again to post your update." };
+
+  let videoJob: Awaited<ReturnType<typeof prepareVideoJob>> | null = null;
+  if (attachmentType === "video") {
+    videoJob = await prepareVideoJob();
+  }
 
   let post: { id: string; startupId: string; recipientCount: number } | null;
   try {
@@ -59,7 +67,9 @@ export async function createPost(
         bodyMd: body.trim(),
         visibility: "public",
         source: "web",
-        mediaUrl: mediaUrl || null,
+        mediaUrl: attachmentType === "video" ? null : mediaUrl || null,
+        mediaRawUrl: attachmentType === "video" ? mediaUrl : null,
+        mediaStatus: attachmentType === "video" ? "processing" : "ready",
         mediaType: attachmentType,
       }).returning({ id: posts.id });
       const recipientCount = await notifyMentions({ body: body.trim(), actorId: user.id, postId: created.id }, tx);
@@ -71,6 +81,7 @@ export async function createPost(
     return { status: "error", message: "We couldn't publish your update. Try again." };
   }
   const postId = post.id;
+  if (attachmentType === "video") scheduleVideoJob(postId, videoJob);
   await captureMentionNotifications({ actorId: user.id, postId, startupId: post.startupId, recipientCount: post.recipientCount });
   await captureServerEvent({
     distinctId: user.id,

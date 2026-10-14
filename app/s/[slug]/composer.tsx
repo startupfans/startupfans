@@ -9,7 +9,7 @@ import { CloseIcon, ImageIcon, SendIcon, TrashIcon, VideoIcon, postIconButtonBas
 import { MentionAutocomplete } from "@/app/components/mention-autocomplete";
 import { SubmitButton } from "@/app/components/submit-button";
 import { ConfirmSubmit } from "@/app/components/confirm-dialog";
-import { getFileMediaFormat, getMediaAccept, mediaLimits, type MediaType } from "@/lib/media";
+import { getFileMediaFormat, getMediaAccept, mediaLimits, videoMaximumPixels, type MediaType } from "@/lib/media";
 import { downscaleImage, validateVideo } from "@/app/components/image-downscale";
 import { createPost, deletePost, type PostActionState } from "./post-actions";
 
@@ -24,6 +24,35 @@ async function checkUploadAvailability() {
       throw new Error(result.error);
     }
     throw new Error("Attachments are unavailable right now. You can still post text.");
+  }
+}
+
+
+async function validateVideoResolution(file: File, signal: AbortSignal) {
+  const video = document.createElement("video");
+  const url = URL.createObjectURL(file);
+  try {
+    await new Promise<void>((resolve, reject) => {
+      const finish = (error?: Error) => {
+        clearTimeout(timeout);
+        signal.removeEventListener("abort", abort);
+        video.onloadedmetadata = null;
+        video.onerror = null;
+        if (error) reject(error); else resolve();
+      };
+      const abort = () => finish(new DOMException("Upload cancelled.", "AbortError"));
+      const timeout = setTimeout(() => finish(new Error("Couldn't read this video. Try another file.")), 15000);
+      signal.addEventListener("abort", abort, { once: true });
+      video.onloadedmetadata = () => finish(video.videoWidth * video.videoHeight > videoMaximumPixels
+        ? new Error("Videos must be 4K or smaller. Export a smaller video and try again.") : undefined);
+      video.onerror = () => finish(new Error("Couldn't read this video. Try another file."));
+      video.preload = "metadata";
+      if (signal.aborted) abort(); else video.src = url;
+    });
+  } finally {
+    video.removeAttribute("src");
+    video.load();
+    URL.revokeObjectURL(url);
   }
 }
 
@@ -118,7 +147,10 @@ export function Composer({ slug, name, avatarUrl, onPosted, onBusyChange }: {
     setProgress(0);
     try {
       const uploadFile = type === "image" ? await downscaleImage(file, "post", controller.signal) : file;
-      if (type === "video") await validateVideo(file, controller.signal);
+      if (type === "video") {
+        await validateVideo(file, controller.signal);
+        await validateVideoResolution(file, controller.signal);
+      }
       if (controller.signal.aborted) return;
       const outputFormat = getFileMediaFormat(uploadFile);
       if (!outputFormat) throw new Error("Couldn't prepare this attachment. Choose another file.");
@@ -128,7 +160,7 @@ export function Composer({ slug, name, avatarUrl, onPosted, onBusyChange }: {
       setPreview({ url: URL.createObjectURL(uploadFile), type, name: uploadFile.name, contentType });
       await checkUploadAvailability();
       if (controller.signal.aborted) return;
-      const blob = await upload(`startups/${slug}/${crypto.randomUUID()}.${extension}`, uploadFile, {
+      const blob = await upload(`startups/${slug}/${type === "video" ? "raw/" : ""}${crypto.randomUUID()}.${extension}`, uploadFile, {
         access: "public",
         handleUploadUrl: "/api/upload",
         clientPayload: JSON.stringify({ slug }),
@@ -252,7 +284,7 @@ export function Composer({ slug, name, avatarUrl, onPosted, onBusyChange }: {
               title={`Add image (up to ${mediaLimits.image / (1024 * 1024)} MB)`} aria-label="Add image" className={postIconButtonClass}><ImageIcon /></button>
             <button type="button" disabled={pending}
               onClick={() => openFilePicker(getMediaAccept("video"))}
-              title={`Add video (up to ${mediaLimits.video / (1024 * 1024)} MB, 60 seconds)`} aria-label="Add video" className={postIconButtonClass}><VideoIcon /></button>
+              title={`Add video (up to ${mediaLimits.video / (1024 * 1024)} MB, 60 seconds, 4K)`} aria-label="Add video" className={postIconButtonClass}><VideoIcon /></button>
           </div>
           <div className="flex min-w-0 items-center gap-3">
             {body.length > 4000 && <span className="text-xs tabular-nums text-ink/60">{body.length.toLocaleString("en-GB")}/5,000</span>}

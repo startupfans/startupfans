@@ -35,6 +35,7 @@ function publicPostFields(viewerId: string | null, admin = false) {
     mediaUrl: posts.mediaUrl,
     mediaType: posts.mediaType,
     mediaPosterUrl: posts.mediaPosterUrl,
+    mediaStatus: posts.mediaStatus,
     authorName: users.name,
     authorHandle: users.handle,
     authorAvatarUrl: users.avatarUrl,

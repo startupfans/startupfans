@@ -2,6 +2,14 @@ allowBuilds:
   core-js: false
   esbuild: false
   unrs-resolver: false
+  '@ffmpeg-installer/darwin-arm64': true
+  '@ffmpeg-installer/darwin-x64': true
+  '@ffmpeg-installer/linux-arm64': true
+  '@ffmpeg-installer/linux-arm': true
+  '@ffmpeg-installer/linux-ia32': true
+  '@ffmpeg-installer/linux-x64': true
+  '@ffmpeg-installer/win32-ia32': true
+  '@ffmpeg-installer/win32-x64': true
 
 # pnpm 12 rejects lockfile entries published in the last 24h by default. Our lockfile pins versions and
 # Expo, PostHog and friends ship daily, so the age policy is off for now. Revisit after launch week.

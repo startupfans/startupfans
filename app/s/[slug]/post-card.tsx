@@ -61,7 +61,7 @@ export async function PostCard({ post, showStartup = false, canDelete = false, o
           className="shrink-0">{relativeDate(post.publishedAt)}</time>
       </header>
       <div className="mt-2 [&_p:first-child]:mt-0 [&_p:last-child]:mb-0"><Markdown body={post.body} /></div>
-      <PostMedia mediaUrl={post.mediaUrl} mediaType={post.mediaType} mediaPosterUrl={post.mediaPosterUrl} />
+      <PostMedia mediaUrl={post.mediaUrl} mediaType={post.mediaType} mediaPosterUrl={post.mediaPosterUrl} mediaStatus={post.mediaStatus} />
       <ResharePanel postId={post.id} postUrl={postPath} signedIn={user !== null} count={post.reshareCount} reshared={post.viewerReshared}>
         <RepliesPanel slug={post.startupSlug} postId={post.id}
           snapshot={{ replyCount: post.replyCount, preview: onPostPage ? null : post.repliesPreview ?? null }}

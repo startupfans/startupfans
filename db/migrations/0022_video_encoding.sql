@@ -1,0 +1,2 @@
+ALTER TABLE "posts" DROP CONSTRAINT "posts_media_status_check";--> statement-breakpoint
+ALTER TABLE "posts" ADD CONSTRAINT "posts_media_status_check" CHECK ("posts"."media_status" in ('ready', 'processing', 'encoding', 'failed'));

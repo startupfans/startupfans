@@ -1,6 +1,14 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  serverExternalPackages: ["@ffmpeg-installer/ffmpeg"],
+  outputFileTracingIncludes: {
+    "/api/media/transcode": [
+      "./node_modules/.pnpm/@ffmpeg-installer+*/node_modules/@ffmpeg-installer/*/ffmpeg",
+      "./node_modules/.pnpm/@ffmpeg-installer+*/node_modules/@ffmpeg-installer/**/*.js",
+      "./node_modules/.pnpm/@ffmpeg-installer+*/node_modules/@ffmpeg-installer/**/package.json",
+    ],
+  },
   images: {
     remotePatterns: [{
       protocol: "https",

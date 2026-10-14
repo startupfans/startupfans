@@ -130,12 +130,18 @@ export const posts = pgTable(
     mediaUrl: text("media_url"),
     mediaType: mediaType("media_type"),
     mediaPosterUrl: text("media_poster_url"),
+    mediaStatus: text("media_status", { enum: ["ready", "processing", "encoding", "failed"] }).notNull().default("ready"),
+    mediaRawUrl: text("media_raw_url"),
+    mediaProcessedAt: timestamp("media_processed_at", { withTimezone: true }),
     source: postSource("source").notNull().default("web"),
     visibility: visibility("visibility").notNull().default("public"),
     publishedAt: timestamp("published_at", { withTimezone: true }).notNull().defaultNow(),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
-  (table) => [index("posts_startup_id_published_at_idx").on(table.startupId, table.publishedAt)],
+  (table) => [
+    index("posts_startup_id_published_at_idx").on(table.startupId, table.publishedAt),
+    check("posts_media_status_check", sql`${table.mediaStatus} in ('ready', 'processing', 'encoding', 'failed')`),
+  ],
 );
 
 export const postComments = pgTable(

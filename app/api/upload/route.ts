@@ -82,13 +82,17 @@ export async function POST(request: Request) {
         } else if (!isProfile && !member) {
           throw new Error("Only signed-in team members can upload here.");
         }
-        const prefix = isProfile ? profilePrefix : `startups/${payload.slug}/`;
+        const rawPrefix = `startups/${payload.slug}/raw/`;
+        const isRawVideo = pathname.startsWith(rawPrefix);
+        const prefix = isProfile ? profilePrefix : isRawVideo ? rawPrefix : `startups/${payload.slug}/`;
         const filename = pathname.slice(prefix.length);
         const format = getMediaFormat(filename);
         if (!pathname.startsWith(prefix) || !isMediaFilename(filename) || !format
-          || (isProfile && (format.type !== "image" || !filename.startsWith(`${user.id}-`)))) {
+          || (isProfile && (format.type !== "image" || !filename.startsWith(`${user.id}-`)))
+          || (isRawVideo ? format.type !== "video" : format.type === "video")) {
           throw new Error("Upload an image or video to this startup's media folder.");
         }
+        if (isRawVideo && !process.env.MEDIA_JOB_SECRET) throw new Error("Video processing is unavailable.");
         const profileRole = /-cover\.[^.]+$/.test(filename) ? "cover" : "logo";
         if (isProfile && !/-(cover|logo)\.[^.]+$/.test(filename)) {
           throw new Error("Choose a logo or cover image before uploading.");

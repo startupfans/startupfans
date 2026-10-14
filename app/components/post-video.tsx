@@ -9,10 +9,11 @@ function setRatio(video: HTMLVideoElement, width: number, height: number) {
   }
 }
 
-export function PostVideo({ mediaUrl, mediaPosterUrl, quickTime }: {
+export function PostVideo({ mediaUrl, mediaPosterUrl, quickTime, preload = "none" }: {
   mediaUrl: string;
   mediaPosterUrl: string | null;
   quickTime: boolean;
+  preload?: "metadata" | "none";
 }) {
   const videoRef = useRef<HTMLVideoElement | null>(null);
 
@@ -33,7 +34,7 @@ export function PostVideo({ mediaUrl, mediaPosterUrl, quickTime }: {
   }, [mediaUrl, mediaPosterUrl]);
 
   return (
-    <video ref={videoRef} poster={mediaPosterUrl ?? undefined} controls playsInline preload="none"
+    <video ref={videoRef} poster={mediaPosterUrl ?? undefined} controls playsInline preload={preload}
       className="block h-auto max-h-80 w-auto max-w-full" style={{ aspectRatio: "1", width: "300px" }} aria-label="Post video attachment"
       onLoadedMetadata={({ currentTarget }) => setRatio(currentTarget, currentTarget.videoWidth, currentTarget.videoHeight)}>
       {quickTime && <source src={mediaUrl} type="video/quicktime" />}
