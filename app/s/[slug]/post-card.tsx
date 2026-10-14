@@ -7,6 +7,7 @@ import Image from "next/image";
 import { FlagIcon, LinkIcon, postIconButtonClass } from "@/app/components/icons";
 import { Markdown } from "@/app/components/markdown";
 import { PostMedia } from "@/app/components/post-media";
+import { LinkCard } from "@/app/components/link-card";
 import { isAdmin } from "@/lib/admin";
 import { getCurrentUser } from "@/lib/auth";
 import type { PublicPost, TimelineItem } from "@/lib/posts";
@@ -64,6 +65,7 @@ export async function PostCard({ post, showStartup = false, canDelete = false, o
       </header>
       <div className="mt-2 [&_p:first-child]:mt-0 [&_p:last-child]:mb-0"><Markdown body={post.body} /></div>
       <PostMedia mediaUrl={post.mediaUrl} mediaType={post.mediaType} mediaPosterUrl={post.mediaPosterUrl} mediaStatus={post.mediaStatus} />
+      <LinkCard preview={post.linkPreview} />
       <ResharePanel postId={post.id} postUrl={postPath} signedIn={user !== null} count={post.reshareCount} reshared={post.viewerReshared}>
         <RepliesPanel slug={post.startupSlug} postId={post.id}
           snapshot={{ replyCount: post.replyCount, preview: onPostPage ? null : post.repliesPreview ?? null }}

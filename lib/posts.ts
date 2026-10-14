@@ -12,6 +12,7 @@ import { postReactionFields } from "@/lib/reactions";
 import { postReshareFields } from "@/lib/reshares";
 import { getRepliesPreviews, type RepliesPreview } from "@/lib/comments";
 import { isAdmin } from "@/lib/admin";
+import { hydratePostLinks } from "@/lib/links";
 
 function publicPostFields(viewerId: string | null, admin = false) {
   return {
@@ -49,8 +50,11 @@ function publicPostFields(viewerId: string | null, admin = false) {
 async function hydrateReplies<T extends { id: string; body: string; replyCount: number; canReply: boolean; canModerate: boolean }>(rows: T[], viewerId: string | null, mentionHandles: readonly string[] = []) {
   const uniquePosts = [...new Map(rows.map((post) => [post.id, post])).values()];
   const handles = [...mentionHandles, ...uniquePosts.flatMap((post) => parseMentions(post.body).map((token) => token.handle))];
-  const previews = await getRepliesPreviews(uniquePosts.map((post) => post.id), viewerId, 10, handles);
-  return rows.map((post) => {
+  const [previews, linkedRows] = await Promise.all([
+    getRepliesPreviews(uniquePosts.map((post) => post.id), viewerId, 10, handles),
+    hydratePostLinks(rows),
+  ]);
+  return linkedRows.map((post) => {
     const comments = previews.get(post.id) ?? [];
     return { ...post, repliesPreview: {
       comments, total: post.replyCount, hasMore: post.replyCount > comments.length,
@@ -163,9 +167,11 @@ export async function listFeed({ userId, following = false, cursor, authorId }: 
     ))
     .orderBy(desc(postReshares.createdAt), desc(reshareId)).limit(21);
   const [postRows, reshareRows] = await Promise.all([postQuery, reshareQuery]);
-  const merged: TimelineItem[] = [
-    ...postRows.map((post): TimelineItem => ({ kind: "post", id: post.id, timestamp: post.cursorTimestamp, post })),
-    ...reshareRows.map(({ cursorTimestamp, ...item }): TimelineItem => ({ kind: "reshare", timestamp: cursorTimestamp, ...item })),
+  type PendingTimelineItem = Omit<Extract<TimelineItem, { kind: "post" }>, "post"> & { post: typeof postRows[number] }
+    | Omit<Extract<TimelineItem, { kind: "reshare" }>, "post"> & { post: typeof reshareRows[number]["post"] };
+  const merged: PendingTimelineItem[] = [
+    ...postRows.map((post): PendingTimelineItem => ({ kind: "post", id: post.id, timestamp: post.cursorTimestamp, post })),
+    ...reshareRows.map(({ cursorTimestamp, ...item }): PendingTimelineItem => ({ kind: "reshare", timestamp: cursorTimestamp, ...item })),
   ];
   const compare = (a: string, b: string) => a < b ? 1 : a > b ? -1 : 0;
   merged.sort((a, b) => compare(a.timestamp, b.timestamp) || compare(a.kind, b.kind) || compare(a.id, b.id));
@@ -195,7 +201,7 @@ export const getPublicPost = cache(async (slug: string, postId: string) => {
     .where(and(eq(posts.id, postId), eq(startups.slug, slug), eq(posts.visibility, "public")))
     .limit(1);
   if (post) await resolveMentions([post.body]);
-  return post ?? null;
+  return post ? (await hydratePostLinks([post]))[0] : null;
 });
 
 export async function getPostMembership(slug: string, userId: string) {

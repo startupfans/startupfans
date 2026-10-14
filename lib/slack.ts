@@ -9,6 +9,7 @@ import { slackConnections, slackPosts, startupMembers, startups, users } from "@
 import { decryptSlackToken, getSlackTokenKey } from "@/lib/crypto";
 import { createPostForStartup } from "@/lib/posts";
 import { captureMentionNotifications, notifyMentions } from "@/lib/notifications";
+import { schedulePostLink } from "@/lib/links";
 
 export const SLACK_STATE_COOKIE = "sf_slack_state";
 export const SLACK_SCOPES = ["reactions:read", "channels:history", "groups:history", "users:read", "users:read.email", "files:read", "chat:write"];
@@ -204,6 +205,7 @@ export async function publishSlackReaction(event: SlackReaction) {
     return { ...post, actorId, recipientCount };
   });
   if (!created) return;
+  schedulePostLink({ postId: created.id, body, slug: row.slug, actorId: created.actorId });
   await captureMentionNotifications({ actorId: created.actorId, postId: created.id,
     startupId: row.connection.startupId, recipientCount: created.recipientCount });
   revalidatePath(`/s/${row.slug}`);

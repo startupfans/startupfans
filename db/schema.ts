@@ -160,6 +160,20 @@ export const posts = pgTable(
   ],
 );
 
+export const postLinks = pgTable("post_links", {
+  postId: uuid("post_id").primaryKey().references(() => posts.id, { onDelete: "cascade" }),
+  url: text("url").notNull(),
+  canonicalUrl: text("canonical_url"),
+  title: text("title"),
+  description: text("description"),
+  siteName: text("site_name"),
+  imageUrl: text("image_url"),
+  status: text("status", { enum: ["ready", "none", "failed"] }).notNull(),
+  fetchedAt: timestamp("fetched_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [
+  check("post_links_status_check", sql`${table.status} in ('ready', 'none', 'failed')`),
+]);
+
 export const postComments = pgTable(
   "post_comments",
   {

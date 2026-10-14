@@ -14,6 +14,7 @@ import { submitPostReport } from "@/lib/reports";
 import { captureServerEvent } from "@/lib/posthog-server";
 import { emitPostHogLog } from "@/lib/posthog-logs";
 import { captureMentionNotifications, notifyMentions } from "@/lib/notifications";
+import { schedulePostLink } from "@/lib/links";
 
 export type PostActionState =
   | { status: "idle" }
@@ -81,6 +82,7 @@ export async function createPost(
     return { status: "error", message: "We couldn't publish your update. Try again." };
   }
   const postId = post.id;
+  schedulePostLink({ postId, body: body.trim(), slug, actorId: user.id });
   if (attachmentType === "video") scheduleVideoJob(postId, videoJob);
   await captureMentionNotifications({ actorId: user.id, postId, startupId: post.startupId, recipientCount: post.recipientCount });
   await captureServerEvent({
