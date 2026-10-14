@@ -62,23 +62,21 @@ async function SettingsPage({ params, searchParams }: {
         {message && <p role="status" className="mt-5 rounded-xl border-2 border-ink bg-sun p-4">{message}</p>}
         {isOwner && <section className="mt-8 rounded-3xl border-[3px] border-ink bg-lime p-6 shadow-sticker-lg sm:p-8" aria-labelledby="slack-heading">
           <h2 id="slack-heading" className="font-display text-2xl font-extrabold">Slack</h2>
-          {!slackConfigured ? <p className="mt-4">Slack isn&apos;t configured</p> : (
+          <p className="mt-4">Your team already posts wins in Slack. React with 📣 and the message lands on your public page, so the feed fills itself.</p>
+          {!slackConfigured ? (
+            <p className="mt-4 text-sm text-ink/70">Coming soon. You can keep posting from this page anytime.</p>
+          ) : slackConnection ? (
             <>
-              <p className="mt-4">Your team already posts wins in Slack. React with 📣 and the message lands on your public page, so the feed fills itself.</p>
-              {slackConnection ? (
-                <>
-                  <p className="mt-4 break-words">Connected to {slackConnection.workspaceName}.</p>
-                  <p className="mt-2 text-sm text-ink/70">Invite startupfans to the channels you want to publish from.</p>
-                  <form action={disconnectSlackAction.bind(null, slug)} className="mt-5">
-                    <ConfirmSubmit pendingLabel="Disconnecting…" className={buttonClass}
-                      description={`This disconnects ${slackConnection.workspaceName} from this startup. Existing posts stay published.`}
-                      confirmLabel="Yes, disconnect">Disconnect</ConfirmSubmit>
-                  </form>
-                </>
-              ) : (
-                <a href={`/api/slack/install?${new URLSearchParams({ slug })}`} className={`${buttonClass} mt-5`}>Connect Slack</a>
-              )}
+              <p className="mt-4 break-words">Connected to {slackConnection.workspaceName}.</p>
+              <p className="mt-2 text-sm text-ink/70">Invite startupfans to the channels you want to publish from.</p>
+              <form action={disconnectSlackAction.bind(null, slug)} className="mt-5">
+                <ConfirmSubmit pendingLabel="Disconnecting…" className={buttonClass}
+                  description={`This disconnects ${slackConnection.workspaceName} from this startup. Existing posts stay published.`}
+                  confirmLabel="Yes, disconnect">Disconnect</ConfirmSubmit>
+              </form>
             </>
+          ) : (
+            <a href={`/api/slack/install?${new URLSearchParams({ slug })}`} className={`${buttonClass} mt-5`}>Connect Slack</a>
           )}
         </section>}
         <div className="mt-8 grid min-w-0 gap-10 lg:grid-cols-2 lg:items-start">

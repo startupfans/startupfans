@@ -91,8 +91,8 @@ only messages accessible to the bot can be published. Thread replies use
 [`reactions.get`](https://docs.slack.dev/reference/methods/reactions.get/)
 when history doesn't return the exact message.
 
-Without all four Slack values, settings shows "Slack isn't configured" and the
-routes return 503. Signed events are acknowledged immediately and processed
+Without all four Slack values, settings shows the Slack value prop with
+"Coming soon" (no Connect button) and the routes return 503. Signed events are acknowledged immediately and processed
 using Next's `after()` within the route's 60-second duration. Failures are logged
 without credentials. There is no durable retry queue; a failed event may need
 another reaction. If the post succeeds but the thread reply fails, repeated
