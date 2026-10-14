@@ -2,7 +2,7 @@ import { eq } from "drizzle-orm";
 import { after } from "next/server";
 import { db } from "@/db";
 import { posts } from "@/db/schema";
-import { processVideoJob, verifyMediaJobToken } from "@/lib/video";
+import { verifyMediaJobToken } from "@/lib/video-jobs";
 
 export const runtime = "nodejs";
 export const maxDuration = 300;
@@ -22,6 +22,9 @@ export async function POST(request: Request) {
   const [post] = await db.select({ status: posts.mediaStatus }).from(posts).where(eq(posts.id, postId));
   if (!post) return Response.json({ error: "Not found" }, { status: 404 });
   if (post.status !== "processing") return Response.json({ status: post.status });
-  after(() => processVideoJob(postId));
+  after(async () => {
+    const { processVideoJob } = await import("@/lib/video");
+    await processVideoJob(postId);
+  });
   return Response.json({ status: "processing" }, { status: 202 });
 }

@@ -8,7 +8,7 @@ import { posts, startupMembers, startups } from "@/db/schema";
 import { isAdmin } from "@/lib/admin";
 import { getCurrentUser, isValidSessionId } from "@/lib/auth";
 import { isStartupMediaUrl } from "@/lib/posts";
-import { prepareVideoJob, scheduleVideoJob } from "@/lib/video";
+import { prepareVideoJob, scheduleVideoJob } from "@/lib/video-jobs";
 import { getMediaFormat, isStartupRawVideoUrl } from "@/lib/media";
 import { submitPostReport } from "@/lib/reports";
 import { captureServerEvent } from "@/lib/posthog-server";

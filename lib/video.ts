@@ -1,7 +1,7 @@
 import "server-only";
 
 import { spawn, spawnSync } from "node:child_process";
-import { createHmac, randomUUID, timingSafeEqual } from "node:crypto";
+import { randomUUID } from "node:crypto";
 import { createReadStream, createWriteStream } from "node:fs";
 import { mkdtemp, rm, stat } from "node:fs/promises";
 import { createRequire } from "node:module";
@@ -9,12 +9,8 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { pipeline } from "node:stream/promises";
 import { del, put } from "@vercel/blob";
-import { and, eq, isNotNull, sql } from "drizzle-orm";
-import { headers } from "next/headers";
-import { after } from "next/server";
-import { db } from "@/db";
-import { posts, startups } from "@/db/schema";
-import { isStartupRawVideoUrl, mediaLimits, videoMaximumPixels, videoMaximumSeconds } from "@/lib/media";
+import { mediaLimits, videoMaximumPixels, videoMaximumSeconds } from "@/lib/media";
+import { claimVideoJob, completeVideoJob, failVideoJob, validateVideoJobSource } from "@/lib/video-jobs";
 
 const require = createRequire(import.meta.url);
 const scale = "scale=w='max(2,trunc(iw*min(1,1080/max(iw,ih))/2)*2)':h='max(2,trunc(ih*min(1,1080/max(iw,ih))/2)*2)':flags=lanczos,setsar=1";
@@ -41,7 +37,12 @@ function selectPosterFormat(): PosterFormat {
   return { extension: "jpg", contentType: "image/jpeg", args: ["-c:v", "mjpeg", "-q:v", "3"] };
 }
 
-const posterFormat = selectPosterFormat();
+let posterFormat: PosterFormat | undefined;
+
+function getPosterFormat() {
+  posterFormat ??= selectPosterFormat();
+  return posterFormat;
+}
 
 // Only local files are accepted, including by demuxers which can open nested URLs.
 async function runFfmpeg(args: string[], signal: AbortSignal) {
@@ -85,6 +86,7 @@ export async function transcodeVideoFile(input: string, directory: string, {
   }
   // Cap input pixel count at 4K; single-threaded decoding bounds frame buffers.
   if (enforceLimits && metadata.width * metadata.height > videoMaximumPixels) throw new Error("Video exceeds the resolution limit.");
+  const posterFormat = getPosterFormat();
   const videoPath = join(directory, "rendition.mp4");
   const posterPath = join(directory, `poster.${posterFormat.extension}`);
   const start = performance.now();
@@ -98,68 +100,6 @@ export async function transcodeVideoFile(input: string, directory: string, {
     "-filter_threads", "1", ...posterFormat.args, "-update", "1", posterPath], signal);
   return { videoPath, posterPath, posterExtension: posterFormat.extension, posterContentType: posterFormat.contentType, encodeSeconds, metadata,
     videoBytes: (await stat(videoPath)).size, posterBytes: (await stat(posterPath)).size };
-}
-
-function jobSecret() {
-  const secret = process.env.MEDIA_JOB_SECRET;
-  if (!secret || secret.length < 32) throw new Error("MEDIA_JOB_SECRET must have at least 32 characters.");
-  return secret;
-}
-
-export function createMediaJobToken(postId: string) {
-  return createHmac("sha256", jobSecret()).update(`video:${postId}`).digest("hex");
-}
-
-export function verifyMediaJobToken(postId: string, token: string) {
-  if (!/^[0-9a-f]{64}$/.test(token)) return false;
-  try {
-    return timingSafeEqual(Buffer.from(token, "hex"), Buffer.from(createMediaJobToken(postId), "hex"));
-  } catch {
-    return false;
-  }
-}
-
-export async function prepareVideoJob() {
-  try {
-    const requestHeaders = await headers();
-    const host = requestHeaders.get("x-forwarded-host") ?? requestHeaders.get("host");
-    const protocol = requestHeaders.get("x-forwarded-proto") ?? (process.env.VERCEL ? "https" : "http");
-    if (!host || (protocol !== "http" && protocol !== "https")) return null;
-    const origin = new URL(`${protocol}://${host}`);
-    if (origin.host !== host || origin.username || origin.password || origin.pathname !== "/" || origin.search || origin.hash) return null;
-    return { url: new URL("/api/media/transcode", origin).href };
-  } catch {
-    return null;
-  }
-}
-
-export async function failVideoJob(postId: string, status: "processing" | "encoding" = "processing") {
-  await db.update(posts).set({ mediaStatus: "failed", mediaUrl: sql`${posts.mediaRawUrl}` })
-    .where(and(eq(posts.id, postId), eq(posts.mediaStatus, status)));
-}
-
-export function scheduleVideoJob(postId: string, job: { url: string } | null) {
-  after(async () => {
-    let statusCode: number | null = null;
-    try {
-      if (!job) throw new Error("Video job origin is unavailable.");
-      const requestHeaders = new Headers({
-        "Content-Type": "application/json", Authorization: `Bearer ${createMediaJobToken(postId)}`,
-      });
-      const bypass = process.env.VERCEL_AUTOMATION_BYPASS_SECRET;
-      if (bypass) requestHeaders.set("x-vercel-protection-bypass", bypass);
-      const response = await fetch(job.url, {
-        method: "POST", headers: requestHeaders, body: JSON.stringify({ postId }),
-        signal: AbortSignal.timeout(15000), redirect: "error", cache: "no-store",
-      });
-      statusCode = response.status;
-      if (!response.ok) throw new Error("Video job was rejected.");
-    } catch {
-      console.error("[startupfans video] Job dispatch failed.", { postId, statusCode });
-      try { await failVideoJob(postId); }
-      catch { console.error("[startupfans video] Could not save dispatch fallback.", { postId, statusCode }); }
-    }
-  });
 }
 
 async function downloadRawVideo(url: string, path: string, signal: AbortSignal) {
@@ -193,13 +133,10 @@ export async function processVideoJob(postId: string) {
   let claimed = false;
   let published = false;
   try {
-    const [post] = await db.update(posts).set({ mediaStatus: "encoding" }).from(startups)
-      .where(and(eq(posts.id, postId), eq(posts.startupId, startups.id),
-        eq(posts.mediaStatus, "processing"), isNotNull(posts.mediaRawUrl)))
-      .returning({ raw: posts.mediaRawUrl, slug: startups.slug });
+    const post = await claimVideoJob(postId);
     if (!post?.raw) return;
     claimed = true;
-    if (!isStartupRawVideoUrl(post.raw, post.slug)) throw new Error("Invalid raw video URL.");
+    validateVideoJobSource(post.raw, post.slug);
     directory = await mkdtemp(join(tmpdir(), "startupfans-video-"));
     const input = join(directory, "original");
     await downloadRawVideo(post.raw, input, signal);
@@ -213,9 +150,7 @@ export async function processVideoJob(postId: string) {
       access: "public", contentType: output.posterContentType, addRandomSuffix: false, abortSignal: signal,
     });
     uploaded.push(poster.url);
-    const [saved] = await db.update(posts).set({ mediaUrl: video.url, mediaPosterUrl: poster.url,
-      mediaStatus: "ready", mediaProcessedAt: new Date(), mediaRawUrl: null })
-      .where(and(eq(posts.id, postId), eq(posts.mediaStatus, "encoding"))).returning({ id: posts.id });
+    const saved = await completeVideoJob(postId, video.url, poster.url);
     if (saved) {
       published = true;
       try { await del(post.raw, { abortSignal: AbortSignal.timeout(10000) }); }
