@@ -20,7 +20,7 @@ const previewClasses = {
 };
 
 export function ImageDrop({ name, label, shape, initialUrl, initial, buildUploadPath, hint, uploadsEnabled,
-  maxUrlLength = 2048, uploadScope, onUploadingChange }: {
+  maxUrlLength = 2048, uploadScope, onUploadingChange, onUrlChange }: {
   name: string;
   label: string;
   shape: "round" | "square" | "wide";
@@ -32,6 +32,7 @@ export function ImageDrop({ name, label, shape, initialUrl, initial, buildUpload
   maxUrlLength?: number;
   uploadScope?: { field: string; value?: string };
   onUploadingChange?: (uploading: boolean) => void;
+  onUrlChange?: (url: string) => void;
 }) {
   const id = useId();
   const { pending } = useFormStatus();
@@ -58,7 +59,8 @@ export function ImageDrop({ name, label, shape, initialUrl, initial, buildUpload
     setProgress(0);
     setError("");
     if (fileInput.current) fileInput.current.value = "";
-  }, []);
+    onUrlChange?.(value);
+  }, [onUrlChange]);
 
   useEffect(() => () => controller.current?.abort(), []);
   useEffect(() => () => { if (preview) URL.revokeObjectURL(preview); }, [preview]);
@@ -155,6 +157,7 @@ export function ImageDrop({ name, label, shape, initialUrl, initial, buildUpload
         setUrl(blob.url);
         setPreview(null);
         setError("");
+        onUrlChange?.(blob.url);
       }
     } catch (cause) {
       if (!active.signal.aborted) {

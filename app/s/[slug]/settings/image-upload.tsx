@@ -7,12 +7,13 @@ import { isValidSlug } from "@/lib/slug";
 
 const inputClass = "mt-2 min-h-11 w-full min-w-0 rounded-xl border-2 border-ink bg-white px-4 py-3 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ink";
 
-export function ImageUpload({ name, label, slug, initialUrl = "", creatorId }: {
+export function ImageUpload({ name, label, slug, initialUrl = "", creatorId, onUrlChange }: {
   name: "logoUrl" | "coverUrl";
   label: string;
   slug?: string;
   initialUrl?: string;
   creatorId: string;
+  onUrlChange?: (url: string) => void;
 }) {
   const [uploadsEnabled, setUploadsEnabled] = useState(true);
   useEffect(() => {
@@ -27,6 +28,7 @@ export function ImageUpload({ name, label, slug, initialUrl = "", creatorId }: {
       initialUrl={initialUrl} uploadsEnabled={uploadsEnabled} maxUrlLength={500}
       hint={`Images up to 10 MB. ${name === "coverUrl" ? "A 3:1 image fits best." : "A square image fits best."}`}
       uploadScope={{ field: "slug", value: slug }}
+      onUrlChange={onUrlChange}
       buildUploadPath={(extension, form) => {
         const input = form?.elements.namedItem("slug");
         const targetSlug = slug ?? (input instanceof HTMLInputElement ? input.value.trim() : "");

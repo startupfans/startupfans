@@ -17,9 +17,32 @@ export type UpdateStartupField =
   | "name" | "tagline" | "description" | "bio" | "location" | "website" | "stage"
   | "logoUrl" | "coverUrl" | SocialField;
 
+export interface UpdateStartupValues {
+  name: string;
+  tagline: string;
+  bio: string;
+  description: string;
+  logoUrl: string;
+  coverUrl: string;
+  location: string;
+  website: string;
+  stage: string;
+  xHandle: string;
+  linkedinUrl: string;
+  githubUrl: string;
+  instagramHandle: string;
+  youtubeUrl: string;
+  tiktokHandle: string;
+}
+
 export type UpdateStartupState =
   | { status: "idle" }
-  | { status: "error"; fieldErrors: Partial<Record<UpdateStartupField, string>> };
+  | {
+    status: "error";
+    fieldErrors: Partial<Record<UpdateStartupField, string>>;
+    values: UpdateStartupValues;
+  }
+  | { status: "saved"; values: UpdateStartupValues };
 
 function refreshStartup(slug: string) {
   revalidatePath(`/s/${slug}`, "layout");
@@ -29,6 +52,26 @@ function refreshStartup(slug: string) {
 
 function settingsMessage(slug: string, message: string): never {
   redirect(`/s/${slug}/settings?${new URLSearchParams({ message })}`);
+}
+
+function readUpdateValues(formData: FormData): UpdateStartupValues {
+  return {
+    name: textField(formData, "name"),
+    tagline: textField(formData, "tagline"),
+    bio: textField(formData, "bio"),
+    description: textField(formData, "description"),
+    logoUrl: textField(formData, "logoUrl"),
+    coverUrl: textField(formData, "coverUrl"),
+    location: textField(formData, "location"),
+    website: textField(formData, "website"),
+    stage: textField(formData, "stage"),
+    xHandle: textField(formData, "xHandle"),
+    linkedinUrl: textField(formData, "linkedinUrl"),
+    githubUrl: textField(formData, "githubUrl"),
+    instagramHandle: textField(formData, "instagramHandle"),
+    youtubeUrl: textField(formData, "youtubeUrl"),
+    tiktokHandle: textField(formData, "tiktokHandle"),
+  };
 }
 
 export async function disconnectSlackAction(slug: string) {
@@ -46,16 +89,13 @@ export async function updateStartupAction(
   formData: FormData,
 ): Promise<UpdateStartupState> {
   const { user } = await requireStartupOwner(slug);
-  const name = textField(formData, "name");
-  const tagline = textField(formData, "tagline");
-  const description = textField(formData, "description");
-  const bio = textField(formData, "bio");
-  const location = textField(formData, "location");
-  const logoUrl = textField(formData, "logoUrl");
-  const coverUrl = textField(formData, "coverUrl");
-  const websiteResult = normalizeWebsiteUrl(textField(formData, "website"));
-  const stage = textField(formData, "stage");
+  const values = readUpdateValues(formData);
+  const { name, tagline, description, bio, location, logoUrl, coverUrl, stage } = values;
+  const websiteResult = normalizeWebsiteUrl(values.website);
   const fieldErrors: Partial<Record<UpdateStartupField, string>> = {};
+  const fail = (errors: Partial<Record<UpdateStartupField, string>>): UpdateStartupState => (
+    { status: "error", fieldErrors: errors, values }
+  );
 
   if (name.length < 2 || name.length > 60) {
     fieldErrors.name = "Choose a name between 2 and 60 characters.";
@@ -83,15 +123,13 @@ export async function updateStartupAction(
     instagramHandle: null, youtubeUrl: null, tiktokHandle: null,
   };
   for (const { network, field, hint } of socialNetworks) {
-    const result = normalizeSocial(network, textField(formData, field));
+    const result = normalizeSocial(network, values[field]);
     if (result.status === "invalid") fieldErrors[field] = hint;
     else socials[field] = result.value;
   }
-  if (Object.keys(fieldErrors).length > 0) {
-    return { status: "error", fieldErrors };
-  }
+  if (Object.keys(fieldErrors).length > 0) return fail(fieldErrors);
   if (websiteResult.status !== "valid") {
-    return { status: "error", fieldErrors: { website: "Use a website address like yourstartup.com." } };
+    return fail({ website: "Use a website address like yourstartup.com." });
   }
   const website = websiteResult.value;
   await withOwnedStartup(slug, user.id, async (tx, startup) => {
@@ -110,7 +148,19 @@ export async function updateStartupAction(
     },
   });
   refreshStartup(slug);
-  settingsMessage(slug, "saved");
+  return {
+    status: "saved",
+    values: {
+      ...values,
+      website: website ?? "",
+      xHandle: socials.xHandle ?? "",
+      linkedinUrl: socials.linkedinUrl ?? "",
+      githubUrl: socials.githubUrl ?? "",
+      instagramHandle: socials.instagramHandle ?? "",
+      youtubeUrl: socials.youtubeUrl ?? "",
+      tiktokHandle: socials.tiktokHandle ?? "",
+    },
+  };
 }
 
 export async function removeMemberAction(slug: string, formData: FormData) {
