@@ -33,7 +33,7 @@ export function PostVideo({ mediaUrl, mediaPosterUrl, quickTime }: {
   }, [mediaUrl, mediaPosterUrl]);
 
   return (
-    <video ref={videoRef} poster={mediaPosterUrl ?? undefined} controls playsInline preload="metadata"
+    <video ref={videoRef} poster={mediaPosterUrl ?? undefined} controls playsInline preload="none"
       className="block h-auto max-h-80 w-auto max-w-full" style={{ aspectRatio: "1", width: "300px" }} aria-label="Post video attachment"
       onLoadedMetadata={({ currentTarget }) => setRatio(currentTarget, currentTarget.videoWidth, currentTarget.videoHeight)}>
       {quickTime && <source src={mediaUrl} type="video/quicktime" />}
