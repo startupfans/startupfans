@@ -17,6 +17,7 @@ function EmailPreviewsPage() {
             { name: "magic-link", label: "Sign-in magic link" },
             { name: "sign-in-code", label: "Six-digit sign-in code" },
             { name: "invite", label: "Team invite" },
+            ...["mention", "reply", "new-fan", "reshare", "team-joined"].map((name) => ({ name, label: name.replaceAll("-", " ") })),
           ].map(({ name, label }) => (
             <li key={name} className="rounded-xl border-2 border-ink bg-white p-4">
               <p className="font-bold">{label}</p>

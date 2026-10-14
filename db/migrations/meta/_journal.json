@@ -176,6 +176,13 @@
       "when": 1791987684758,
       "tag": "0024_amused_ricochet",
       "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "7",
+      "when": 1791988544780,
+      "tag": "0025_notifications_v2",
+      "breakpoints": true
     }
   ]
 }

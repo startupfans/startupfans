@@ -4,6 +4,7 @@ import { createHash, randomBytes } from "node:crypto";
 import { and, asc, count, eq, gt, isNotNull, isNull, lte, or, sql } from "drizzle-orm";
 import { db } from "@/db";
 import { follows, startupInvites, startupMembers, startups, users } from "@/db/schema";
+import { notifyActivity } from "@/lib/notifications";
 import { withOwnedStartup } from "@/lib/members";
 
 const inviteLifetimeMs = 7 * 24 * 60 * 60 * 1000;
@@ -91,7 +92,7 @@ export async function getValidStartupInvite(token: string, email?: string) {
 export async function acceptStartupInvite(token: string, userId: string) {
   const invite = await getValidStartupInvite(token);
   if (!invite) return null;
-  return db.transaction(async (tx) => {
+  const result = await db.transaction(async (tx) => {
     const [startup] = await tx.select({ slug: startups.slug }).from(startups)
       .where(eq(startups.id, invite.startupId)).for("update");
     if (!startup) return null;
@@ -115,10 +116,12 @@ export async function acceptStartupInvite(token: string, userId: string) {
         isNull(startupInvites.usedAt), gt(startupInvites.expiresAt, new Date())))
       .returning({ startupId: startupInvites.startupId });
     if (!claimed) return null;
-    await tx.insert(startupMembers).values({ startupId: claimed.startupId, userId, role: "editor" })
-      .onConflictDoNothing({ target: [startupMembers.startupId, startupMembers.userId] });
+    const joined = await tx.insert(startupMembers).values({ startupId: claimed.startupId, userId, role: "editor" })
+      .onConflictDoNothing({ target: [startupMembers.startupId, startupMembers.userId] }).returning({ userId: startupMembers.userId });
     await tx.delete(follows)
       .where(and(eq(follows.userId, userId), eq(follows.startupId, claimed.startupId)));
-    return { ...startup, status: "accepted", kind } as const;
+    return { ...startup, status: "accepted", kind, joined: joined.length > 0 } as const;
   });
+  if (result?.status === "accepted" && result.joined) notifyActivity({ kind: "team_joined", actorId: userId, startupId: invite.startupId });
+  return result;
 }

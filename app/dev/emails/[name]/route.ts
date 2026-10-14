@@ -3,6 +3,19 @@ import { inviteEmail } from "@/lib/emails/invite";
 import { magicLinkEmail } from "@/lib/emails/magic-link";
 import { signInCodeEmail } from "@/lib/emails/sign-in-code";
 
+import { mentionEmail } from "@/lib/emails/mention";
+import { replyEmail } from "@/lib/emails/reply";
+import { newFanEmail } from "@/lib/emails/new-fan";
+import { reshareEmail } from "@/lib/emails/reshare";
+import { teamJoinedEmail } from "@/lib/emails/team-joined";
+
+const notificationSample = {
+  actor: "alex", startup: "acme", url: "https://www.startupfans.co/notifications",
+  settingsUrl: "https://www.startupfans.co/me/notifications",
+  unsubscribeUrl: "https://www.startupfans.co/notifications/unsubscribe?sample=1",
+  excerpt: "we just shipped the update you asked for.", more: 2,
+};
+
 export async function GET(request: Request, { params }: { params: Promise<{ name: string }> }) {
   if (process.env.NODE_ENV === "production") notFound();
 
@@ -18,6 +31,11 @@ export async function GET(request: Request, { params }: { params: Promise<{ name
           startupName: "Acme", inviter: "Alex",
           url: "https://www.startupfans.co/join/sample-invite-token",
         });
+      case "mention": return mentionEmail(notificationSample);
+      case "reply": return replyEmail(notificationSample);
+      case "new-fan": return newFanEmail({ ...notificationSample, excerpt: "" });
+      case "reshare": return reshareEmail({ ...notificationSample, excerpt: "" });
+      case "team-joined": return teamJoinedEmail({ ...notificationSample, excerpt: "" });
       default:
         notFound();
     }

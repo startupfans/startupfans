@@ -3,6 +3,7 @@ import "server-only";
 import { and, asc, eq, inArray, ne, sql } from "drizzle-orm";
 import { db } from "@/db";
 import { follows, startupFollows, startupMembers, startups } from "@/db/schema";
+import { notifyActivity } from "@/lib/notifications";
 
 type Transaction = Parameters<Parameters<typeof db.transaction>[0]>[0];
 
@@ -25,7 +26,7 @@ export async function getStartupFollow(userId: string, startupId: string) {
 }
 
 export async function followStartup(userId: string, startupId: string): Promise<FollowResult> {
-  return db.transaction(async (tx) => {
+  const result = await db.transaction<FollowResult>(async (tx) => {
     const [startup] = await tx.select({ id: startups.id }).from(startups)
       .where(eq(startups.id, startupId)).for("update");
     if (!startup) throw new Error("Startup not found");
@@ -44,6 +45,8 @@ export async function followStartup(userId: string, startupId: string): Promise<
     if (!follow) throw new Error("Could not follow startup");
     return { status: "followed", follow, created: true };
   });
+  if (result.status === "followed" && result.created) notifyActivity({ kind: "new_fan", actorId: userId, startupId });
+  return result;
 }
 
 export async function unfollowStartup(userId: string, startupId: string) {
@@ -68,7 +71,7 @@ export async function getStartupFollowOptions(userId: string, startupId: string)
 
 export async function updateStartupFollow(userId: string, startupId: string, followerStartupId: string, following: boolean) {
   if (startupId === followerStartupId) return { status: "self" } as const;
-  return db.transaction(async (tx) => {
+  const result = await db.transaction(async (tx) => {
     const locked = await tx.select({ id: startups.id }).from(startups)
       .where(inArray(startups.id, [startupId, followerStartupId])).orderBy(asc(startups.id)).for("update");
     if (locked.length !== 2) return { status: "missing" } as const;
@@ -87,4 +90,6 @@ export async function updateStartupFollow(userId: string, startupId: string, fol
     });
     return { status: "success", changed: true } as const;
   });
+  if (following && result.status === "success" && result.changed) notifyActivity({ kind: "new_fan", actorId: userId, startupId, actorStartupId: followerStartupId });
+  return result;
 }

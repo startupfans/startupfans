@@ -33,6 +33,7 @@ export const users = pgTable("users", {
   instagramHandle: text("instagram_handle"),
   youtubeUrl: text("youtube_url"),
   tiktokHandle: text("tiktok_handle"),
+  emailPaused: boolean("email_paused").notNull().default(false),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 }, (table) => [
   uniqueIndex("users_handle_unique").on(sql`lower(${table.handle})`),
@@ -220,18 +221,34 @@ export const slackConnections = pgTable("slack_connections", {
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
+export const notificationKinds = ["mention", "reply", "reply_to_reply", "new_fan", "reshare", "team_joined"] as const;
+
+export const notificationSettings = pgTable("notification_settings", {
+  userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  kind: text("kind", { enum: notificationKinds }).notNull(),
+  inApp: boolean("in_app").notNull().default(true),
+  email: boolean("email").notNull().default(true),
+  lastEmailedAt: timestamp("last_emailed_at", { withTimezone: true }),
+}, (table) => [
+  primaryKey({ columns: [table.userId, table.kind] }),
+  check("notification_settings_kind_check", sql`${table.kind} in ('mention', 'reply', 'reply_to_reply', 'new_fan', 'reshare', 'team_joined')`),
+]);
+
 export const notifications = pgTable("notifications", {
   id: uuid("id").primaryKey().defaultRandom(),
   userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
-  kind: text("kind", { enum: ["mention"] }).notNull(),
+  kind: text("kind", { enum: notificationKinds }).notNull(),
   actorId: uuid("actor_id").notNull().references(() => users.id, { onDelete: "cascade" }),
-  postId: uuid("post_id").notNull().references(() => posts.id, { onDelete: "cascade" }),
+  postId: uuid("post_id").references(() => posts.id, { onDelete: "cascade" }),
+  startupId: uuid("startup_id").references(() => startups.id, { onDelete: "cascade" }),
+  actorStartupId: uuid("actor_startup_id").references(() => startups.id, { onDelete: "cascade" }),
   commentId: uuid("comment_id").references(() => postComments.id, { onDelete: "cascade" }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   readAt: timestamp("read_at", { withTimezone: true }),
+  emailedAt: timestamp("emailed_at", { withTimezone: true }),
 }, (table) => [
-  check("notifications_kind_check", sql`${table.kind} in ('mention')`),
-  unique("notifications_recipient_source_unique").on(table.userId, table.kind, table.postId, table.commentId).nullsNotDistinct(),
+  check("notifications_kind_check", sql`${table.kind} in ('mention', 'reply', 'reply_to_reply', 'new_fan', 'reshare', 'team_joined')`),
+  unique("notifications_recipient_source_unique").on(table.userId, table.kind, table.postId, table.commentId, table.startupId, table.actorId, table.actorStartupId).nullsNotDistinct(),
   index("notifications_user_id_read_at_created_at_idx").on(table.userId, table.readAt, table.createdAt),
 ]);
 

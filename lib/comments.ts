@@ -8,7 +8,7 @@ import { isAdmin } from "@/lib/admin";
 import { commentReactionFields, type PostReactionCounts, type PostReactionKind } from "@/lib/reactions";
 import { isReplyImageUrl } from "@/lib/media";
 import { allowRateLimit } from "@/lib/ratelimit";
-import { captureMentionNotifications, notifyMentions } from "@/lib/notifications";
+import { captureMentionNotifications, notifyActivity, notifyMentions } from "@/lib/notifications";
 
 type CommentUser = { id: string; email: string };
 type CommentTransaction = Parameters<Parameters<typeof db.transaction>[0]>[0];
@@ -177,7 +177,7 @@ export async function createComment(slug: string, postId: string, user: CommentU
     return { status: "error", message: "Choose an uploaded image for your reply." };
   }
   const result = await db.transaction(async (tx): Promise<Extract<CommentResult, { status: "error" }> | {
-    status: "success"; startupId: string; recipientCount: number;
+    status: "success"; startupId: string; recipientCount: number; commentId: string; nested: boolean;
   }> => {
     const post = await getCommentPost(tx, slug, postId);
     if (!post) return { status: "error", message: "This post couldn't be found." };
@@ -201,9 +201,11 @@ export async function createComment(slug: string, postId: string, user: CommentU
     const [comment] = await tx.insert(postComments).values({ postId, parentId, userId: user.id, body: body.trim(), imageUrl })
       .returning({ id: postComments.id });
     const recipientCount = await notifyMentions({ body: body.trim(), actorId: user.id, postId, commentId: comment.id }, tx);
-    return { status: "success", startupId: post.startupId, recipientCount };
+    return { status: "success", startupId: post.startupId, recipientCount, commentId: comment.id, nested: parentId !== null };
   });
   if (result.status === "error") return result;
+  notifyActivity({ kind: "reply", actorId: user.id, postId, startupId: result.startupId, commentId: result.commentId });
+  if (result.nested) notifyActivity({ kind: "reply_to_reply", actorId: user.id, postId, startupId: result.startupId, commentId: result.commentId });
   await captureMentionNotifications({ actorId: user.id, postId, startupId: result.startupId, recipientCount: result.recipientCount });
   return { status: "success", startupId: result.startupId };
 }

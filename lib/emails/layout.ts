@@ -7,6 +7,8 @@ interface EmailContent {
   button: string;
   url: string;
   notes: readonly string[];
+  preferences?: { settingsUrl: string; unsubscribeUrl: string };
+  regularWeight?: boolean;
 }
 
 export interface RenderedEmail {
@@ -35,10 +37,13 @@ export function renderEmail(content: EmailContent): RenderedEmail {
   const notes = content.notes.map((note) =>
     `<p style="margin:16px 0 0;color:#16120f;font-size:14px;line-height:22px;">${escapeHtml(note)}</p>`).join("");
 
+  const preferences = content.preferences
+    ? `<p style="margin:16px 0 0;font-size:12px;line-height:20px;"><a href="${escapeHtml(content.preferences.settingsUrl)}" style="color:#2f7493;">manage what we email you</a> · <a href="${escapeHtml(content.preferences.unsubscribeUrl)}" style="color:#2f7493;">turn off these emails</a></p>` : "";
+  const htmlWeight = content.regularWeight ? "400" : "900";
   return {
     subject: content.subject,
     text: ["startupfans", content.badge, content.headline, ...content.paragraphs,
-      `${content.button}:\n${url}`, ...content.notes, footer, siteUrl].join("\n\n"),
+      `${content.button}:\n${url}`, ...content.notes, footer, siteUrl, ...(content.preferences ? [`manage what we email you: ${content.preferences.settingsUrl}\nturn off these emails: ${content.preferences.unsubscribeUrl}`] : [])].join("\n\n"),
     html: `<!doctype html>
 <html lang="en">
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>${escapeHtml(content.subject)}</title></head>
@@ -48,7 +53,7 @@ export function renderEmail(content: EmailContent): RenderedEmail {
     <!--[if mso]><table role="presentation" width="560" cellpadding="0" cellspacing="0" border="0"><tr><td bgcolor="#fff4e0" style="background-color:#fff4e0;color:#16120f;"><![endif]-->
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="width:100%;max-width:560px;table-layout:fixed;background-color:#fff4e0;color:#16120f;">
       <tr><td bgcolor="#fff4e0" style="padding:0 0 28px;background-color:#fff4e0;color:#16120f;">
-        <a href="${siteUrl}" style="color:#16120f;text-decoration:none;font-size:24px;font-weight:900;"><img src="${siteUrl}/logo/startupfans-logo-on-light.png" width="220" alt="startupfans" style="display:block;width:220px;max-width:100%;height:auto;border:0;color:#16120f;font-family:${font};font-size:24px;font-weight:900;"></a>
+        <a href="${siteUrl}" style="color:#16120f;text-decoration:none;font-size:24px;font-weight:${htmlWeight};"><img src="${siteUrl}/logo/startupfans-logo-on-light.png" width="220" alt="startupfans" style="display:block;width:220px;max-width:100%;height:auto;border:0;color:#16120f;font-family:${font};font-size:24px;font-weight:${htmlWeight};"></a>
       </td></tr>
       <tr><td bgcolor="#16120f" style="padding:0 8px 8px 0;background-color:#16120f;color:#16120f;border-radius:24px;overflow:hidden;">
         <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#16120f" style="width:100%;table-layout:fixed;border-collapse:separate;border-radius:24px;overflow:hidden;background-color:#16120f;color:#16120f;">
@@ -56,22 +61,22 @@ export function renderEmail(content: EmailContent): RenderedEmail {
         <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#fff4e0" style="width:100%;table-layout:fixed;border-collapse:separate;border-radius:24px;overflow:hidden;background-color:#fff4e0;color:#16120f;">
           <tr><td bgcolor="#fff4e0" style="padding:28px;background-color:#fff4e0;color:#16120f;border-radius:24px;overflow:hidden;">
             <table role="presentation" cellpadding="0" cellspacing="0" border="0" bgcolor="${content.badgeColor}" style="border-collapse:separate;border-radius:12px;overflow:hidden;background-color:${content.badgeColor};color:#16120f;">
-              <tr><td bgcolor="${content.badgeColor}" style="padding:8px 14px;background-color:${content.badgeColor};color:#16120f;border:2px solid #16120f;border-radius:12px;overflow:hidden;font-family:${font};font-size:12px;line-height:18px;font-weight:800;letter-spacing:1px;text-transform:uppercase;">${escapeHtml(content.badge)}</td></tr>
+              <tr><td bgcolor="${content.badgeColor}" style="padding:8px 14px;background-color:${content.badgeColor};color:#16120f;border:2px solid #16120f;border-radius:12px;overflow:hidden;font-family:${font};font-size:12px;line-height:18px;font-weight:${content.regularWeight ? "400" : "800"};letter-spacing:1px;text-transform:uppercase;">${escapeHtml(content.badge)}</td></tr>
             </table>
-            <h1 style="margin:28px 0 20px;color:#16120f;font-family:${font};font-size:42px;line-height:46px;letter-spacing:-1.5px;font-weight:900;">${escapeHtml(content.headline)}</h1>
+            <h1 style="margin:28px 0 20px;color:#16120f;font-family:${font};font-size:42px;line-height:46px;letter-spacing:-1.5px;font-weight:${htmlWeight};">${escapeHtml(content.headline)}</h1>
             ${paragraphs}
             <table role="presentation" cellpadding="0" cellspacing="0" border="0" bgcolor="#fff4e0" style="background-color:#fff4e0;color:#16120f;">
               <tr><td bgcolor="#fff4e0" style="padding-top:24px;background-color:#fff4e0;color:#16120f;">
                 <!--[if mso]>
                 <v:roundrect xmlns:v="urn:schemas-microsoft-com:vml" xmlns:w="urn:schemas-microsoft-com:office:word" href="${href}" style="height:62px;v-text-anchor:middle;width:240px;" arcsize="52%" strokecolor="#16120f" strokeweight="3px" fillcolor="#ff5fa8">
                   <w:anchorlock/>
-                  <center style="color:#16120f;font-family:${font};font-size:18px;font-weight:800;">${escapeHtml(content.button)}</center>
+                  <center style="color:#16120f;font-family:${font};font-size:18px;font-weight:${content.regularWeight ? "400" : "800"};">${escapeHtml(content.button)}</center>
                 </v:roundrect>
                 <![endif]-->
                 <!--[if !mso]><!-->
                 <table role="presentation" cellpadding="0" cellspacing="0" border="0" bgcolor="#ff5fa8" style="border-collapse:separate;border-radius:16px;overflow:hidden;background-color:#ff5fa8;color:#16120f;">
                   <tr><td align="center" bgcolor="#ff5fa8" style="background-color:#ff5fa8;color:#16120f;border:3px solid #16120f;border-radius:16px;overflow:hidden;">
-                    <a href="${href}" style="display:inline-block;padding:16px 28px;border-radius:16px;background-color:#ff5fa8;color:#16120f;font-family:${font};font-size:18px;line-height:24px;font-weight:800;text-decoration:none;">${escapeHtml(content.button)}</a>
+                    <a href="${href}" style="display:inline-block;padding:16px 28px;border-radius:16px;background-color:#ff5fa8;color:#16120f;font-family:${font};font-size:18px;line-height:24px;font-weight:${content.regularWeight ? "400" : "800"};text-decoration:none;">${escapeHtml(content.button)}</a>
                   </td></tr>
                 </table>
                 <!--<![endif]-->
@@ -90,6 +95,7 @@ export function renderEmail(content: EmailContent): RenderedEmail {
       <tr><td bgcolor="#fff4e0" style="padding:28px 0 0;background-color:#fff4e0;color:#16120f;">
         <p style="margin:0 0 8px;color:#16120f;font-size:12px;line-height:20px;">${footer}</p>
         <a href="${siteUrl}" style="color:#2f7493;font-size:12px;line-height:20px;text-decoration:underline;">startupfans.co</a>
+        ${preferences}
       </td></tr>
     </table>
     <!--[if mso]></td></tr></table><![endif]-->

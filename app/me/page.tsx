@@ -45,6 +45,7 @@ async function MePage({ searchParams }: { searchParams: Promise<{ message?: stri
         <section className="mt-10 rounded-3xl border-[3px] border-ink bg-sky p-6 shadow-sticker-lg sm:p-10">
           <p className="break-words text-lg">Signed in as <strong>{user.email}</strong></p>
           {message && <p role="status" className="mt-5 rounded-xl border-2 border-ink bg-sun p-4">{message}</p>}
+          <Link href="/me/notifications" className="mt-5 inline-flex min-h-11 items-center rounded-full border-2 border-ink bg-cream px-4 py-2 shadow-sticker">notification settings</Link>
           <ProfileForm
             userId={user.id}
             avatarInitial={name.charAt(0).toUpperCase()}
