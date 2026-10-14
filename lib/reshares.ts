@@ -4,6 +4,8 @@ import { and, eq, sql } from "drizzle-orm";
 import { db } from "@/db";
 import { postReshares, posts, startups } from "@/db/schema";
 import { allowRateLimit } from "@/lib/ratelimit";
+import { isReshareImageUrl } from "@/lib/media";
+import { notifyMentions } from "@/lib/notifications";
 
 export function postReshareFields(viewerId: string | null) {
   return {
@@ -20,9 +22,12 @@ export function validateReshareNote(value: unknown) {
   return { status: "success", note: value.trim() || null } as const;
 }
 
-export async function savePostReshare(postId: string, userId: string, reshare: boolean, note: string | null) {
+export async function savePostReshare(postId: string, userId: string, reshare: boolean, note: string | null, imageUrl: string | null = null) {
   const validation = validateReshareNote(note ?? "");
   if (validation.status === "error") return validation;
+  if (imageUrl !== null && (typeof imageUrl !== "string" || !isReshareImageUrl(imageUrl, userId))) {
+    return { status: "error", message: "Choose an image uploaded for your reshare." } as const;
+  }
   return db.transaction(async (tx) => {
     const [post] = await tx.select({ startupId: posts.startupId, slug: startups.slug })
       .from(posts).innerJoin(startups, eq(startups.id, posts.startupId))
@@ -33,8 +38,10 @@ export async function savePostReshare(postId: string, userId: string, reshare: b
     }
     const condition = and(eq(postReshares.postId, postId), eq(postReshares.userId, userId));
     const changed = reshare
-      ? await tx.insert(postReshares).values({ postId, userId, note: validation.note }).onConflictDoNothing().returning({ note: postReshares.note })
-      : await tx.delete(postReshares).where(condition).returning({ note: postReshares.note });
-    return { status: "success", ...post, changed: changed.length > 0, hasNote: changed[0]?.note != null } as const;
+      ? await tx.insert(postReshares).values({ postId, userId, note: validation.note, imageUrl }).onConflictDoNothing().returning({ note: postReshares.note, imageUrl: postReshares.imageUrl })
+      : await tx.delete(postReshares).where(condition).returning({ note: postReshares.note, imageUrl: postReshares.imageUrl });
+    const recipientCount = reshare && changed.length > 0 && validation.note
+      ? await notifyMentions({ body: validation.note, actorId: userId, postId, markdown: false }, tx) : 0;
+    return { status: "success", ...post, changed: changed.length > 0, hasNote: changed[0]?.note != null, hasImage: changed[0]?.imageUrl != null, recipientCount } as const;
   });
 }

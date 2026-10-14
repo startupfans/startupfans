@@ -71,9 +71,17 @@ export function isMediaFilename(filename: string) {
 }
 
 export function isReplyImageUrl(value: string, userId: string) {
+  return isUserImageUrl(value, userId, "replies");
+}
+
+export function isReshareImageUrl(value: string, userId: string) {
+  return isUserImageUrl(value, userId, "reshares");
+}
+
+function isUserImageUrl(value: string, userId: string, folder: "replies" | "reshares") {
   try {
     const url = new URL(value);
-    const prefix = `/users/${userId}/replies/`;
+    const prefix = `/users/${userId}/${folder}/`;
     const filename = url.pathname.slice(prefix.length);
     return url.protocol === "https:" && /^[a-z0-9-]+\.public\.blob\.vercel-storage\.com$/i.test(url.hostname)
       && url.port === "" && url.username === "" && url.password === ""

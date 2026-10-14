@@ -2,6 +2,7 @@ import { SubmitButton } from "@/app/components/submit-button";
 import { Handle } from "@/app/components/handle";
 import { ProfileImage } from "@/app/components/profile-image";
 import Link from "next/link";
+import Image from "next/image";
 import { FlagIcon, LinkIcon, postIconButtonClass } from "@/app/components/icons";
 import { Markdown } from "@/app/components/markdown";
 import { PostMedia } from "@/app/components/post-media";
@@ -119,6 +120,10 @@ export async function ReshareItem({ item }: { item: Extract<TimelineItem, { kind
     </header>
     {item.note && <p className="mt-3 whitespace-pre-wrap break-words text-base leading-relaxed">{segments.map((segment, index) => segment.handle === null ? segment.text
       : <Link key={index} href={`/u/${segment.handle}`} className="font-bold underline decoration-transparent decoration-4 underline-offset-4 hover:decoration-sun">{segment.text}</Link>)}</p>}
+    {item.imageUrl && <div className="mt-3 min-w-0 max-w-full overflow-hidden rounded-2xl border-[3px] border-ink bg-white shadow-sticker">
+      <Image src={item.imageUrl} alt="Reshare image" width={1600} height={1600} referrerPolicy="no-referrer"
+        sizes="(min-width: 768px) 44rem, 100vw" loading="lazy" className="block h-auto w-full" />
+    </div>}
     <div className="mt-4 min-w-0">
       <PostCard post={item.post} showStartup instanceId={`reshare-${item.id}`} />
     </div>

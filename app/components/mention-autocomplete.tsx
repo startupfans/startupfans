@@ -1,15 +1,26 @@
 "use client";
 
 import { ProfileImage } from "@/app/components/profile-image";
-import { useEffect, useId, useLayoutEffect, useRef, useState, type RefObject, type TextareaHTMLAttributes } from "react";
+import { useEffect, useId, useLayoutEffect, useRef, useState, type ChangeEvent, type DOMAttributes, type FocusEvent, type InputHTMLAttributes, type KeyboardEvent, type ReactNode, type RefObject, type SyntheticEvent, type TextareaHTMLAttributes } from "react";
 import type { MentionSuggestion } from "@/lib/mentions";
 
-type MentionTextareaProps = Omit<TextareaHTMLAttributes<HTMLTextAreaElement>, "value" | "onChange" | "ref"> & {
+type MentionValueProps = {
   value: string;
   onValueChange: (value: string) => void;
   startup: string;
+};
+
+type MentionTextareaProps = Omit<TextareaHTMLAttributes<HTMLTextAreaElement>, "value" | "onChange" | "ref"> & MentionValueProps & {
+  singleLine?: false;
   textareaRef?: RefObject<HTMLTextAreaElement | null>;
 };
+
+type MentionInputProps = Omit<InputHTMLAttributes<HTMLInputElement>, "value" | "onChange" | "ref" | "type"> & MentionValueProps & {
+  singleLine: true;
+  inputRef?: RefObject<HTMLInputElement | null>;
+};
+
+type MentionAutocompleteProps = MentionTextareaProps | MentionInputProps;
 
 function isSuggestion(value: unknown): value is MentionSuggestion {
   if (typeof value !== "object" || value === null) return false;
@@ -26,10 +37,11 @@ function mentionQuery(value: string, caret: number) {
   return /(?:^|[^\w])@([a-z0-9_]{1,24})$/i.exec(value.slice(0, caret));
 }
 
-export function MentionAutocomplete({ value, onValueChange, startup, textareaRef, onKeyDown, onSelect, onFocus, onBlur, ...props }: MentionTextareaProps) {
+export function MentionAutocomplete({ value, onValueChange, startup, ...props }: MentionAutocompleteProps) {
   const ownRef = useRef<HTMLTextAreaElement>(null);
+  const ownInputRef = useRef<HTMLInputElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
-  const inputRef = textareaRef ?? ownRef;
+  const inputRef = props.singleLine ? props.inputRef ?? ownInputRef : props.textareaRef ?? ownRef;
   const listId = useId();
   const [caret, setCaret] = useState(0);
   const [focused, setFocused] = useState(false);
@@ -54,7 +66,7 @@ export function MentionAutocomplete({ value, onValueChange, startup, textareaRef
         const container = containerRef.current;
         if (!input || !container) return;
         const inputTop = input.getBoundingClientRect().top - container.getBoundingClientRect().top;
-        if (window.innerWidth < 640) { setPopoverTop(inputTop + input.offsetHeight); return; }
+        if (props.singleLine || window.innerWidth < 640) { setPopoverTop(inputTop + input.offsetHeight); return; }
         const style = getComputedStyle(input);
         const mirror = document.createElement("div");
         for (const property of ["box-sizing", "font-family", "font-size", "font-weight", "font-style", "line-height", "letter-spacing", "padding", "border-width"]) {
@@ -77,7 +89,7 @@ export function MentionAutocomplete({ value, onValueChange, startup, textareaRef
     input?.addEventListener("scroll", measure);
     window.addEventListener("resize", measure);
     return () => { cancelAnimationFrame(frame); input?.removeEventListener("scroll", measure); window.removeEventListener("resize", measure); };
-  }, [open, inputRef, value, caret]);
+  }, [open, inputRef, value, caret, props.singleLine]);
 
   useEffect(() => {
     if (open) document.getElementById(`${listId}-${active}`)?.scrollIntoView({ block: "nearest" });
@@ -102,9 +114,10 @@ export function MentionAutocomplete({ value, onValueChange, startup, textareaRef
     return () => { clearTimeout(timer); controller.abort(); };
   }, [key, query, startup, dismissed, value]);
 
-  function updateCaret(input: HTMLTextAreaElement) {
-    setCaret(input.selectionStart);
-    if (!mentionQuery(input.value, input.selectionStart)) setResult(null);
+  function updateCaret(input: HTMLTextAreaElement | HTMLInputElement) {
+    const position = input.selectionStart ?? 0;
+    setCaret(position);
+    if (!mentionQuery(input.value, position)) setResult(null);
   }
 
   function select(suggestion: MentionSuggestion) {
@@ -119,37 +132,57 @@ export function MentionAutocomplete({ value, onValueChange, startup, textareaRef
     });
   }
 
-  return (
-    <div ref={containerRef} className="relative min-w-0 w-full flex-1">
-      <textarea {...props} ref={inputRef} value={value} aria-autocomplete="list" aria-haspopup="listbox"
-        aria-controls={open ? listId : undefined}
-        aria-activedescendant={open ? `${listId}-${Math.min(active, suggestions.length - 1)}` : undefined}
-        onChange={(event) => {
-          onValueChange(event.target.value);
-          updateCaret(event.target);
-          setActive(0);
-          setDismissed(null);
-        }}
-        onSelect={(event) => { updateCaret(event.currentTarget); onSelect?.(event); }}
-        onFocus={(event) => { setFocused(true); updateCaret(event.currentTarget); onFocus?.(event); }}
-        onBlur={(event) => { setFocused(false); onBlur?.(event); }}
-        onKeyDown={(event) => {
-          if (!event.nativeEvent.isComposing && !event.metaKey && !event.ctrlKey) {
-            if (event.key === "Escape" && open) { event.preventDefault(); setDismissed(key); return; }
-            if (open) {
-              if (event.key === "ArrowDown" || event.key === "ArrowUp") {
-                event.preventDefault();
-                setActive((current) => (current + (event.key === "ArrowDown" ? 1 : -1) + suggestions.length) % suggestions.length);
-                return;
-              }
-              if (event.key === "Enter" || event.key === "Tab") {
-                const suggestion = suggestions[Math.min(active, suggestions.length - 1)];
-                if (suggestion) { event.preventDefault(); select(suggestion); return; }
-              }
+  function handlers<Element extends HTMLInputElement | HTMLTextAreaElement>(events: Pick<DOMAttributes<Element>, "onKeyDown" | "onSelect" | "onFocus" | "onBlur">) {
+    return {
+      onChange: (event: ChangeEvent<Element>) => {
+        onValueChange(event.target.value);
+        updateCaret(event.target);
+        setActive(0);
+        setDismissed(null);
+      },
+      onSelect: (event: SyntheticEvent<Element>) => { updateCaret(event.currentTarget); events.onSelect?.(event); },
+      onFocus: (event: FocusEvent<Element>) => { setFocused(true); updateCaret(event.currentTarget); events.onFocus?.(event); },
+      onBlur: (event: FocusEvent<Element>) => { setFocused(false); events.onBlur?.(event); },
+      onKeyDown: (event: KeyboardEvent<Element>) => {
+        if (!event.nativeEvent.isComposing && !event.metaKey && !event.ctrlKey) {
+          if (event.key === "Escape" && open) { event.preventDefault(); setDismissed(key); return; }
+          if (open) {
+            if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+              event.preventDefault();
+              setActive((current) => (current + (event.key === "ArrowDown" ? 1 : -1) + suggestions.length) % suggestions.length);
+              return;
+            }
+            if (event.key === "Enter" || event.key === "Tab") {
+              const suggestion = suggestions[Math.min(active, suggestions.length - 1)];
+              if (suggestion) { event.preventDefault(); select(suggestion); return; }
             }
           }
-          onKeyDown?.(event);
-        }} />
+        }
+        events.onKeyDown?.(event);
+      },
+    };
+  }
+
+  const autocompleteAttributes = {
+    "aria-autocomplete": "list",
+    "aria-haspopup": "listbox",
+    "aria-controls": open ? listId : undefined,
+    "aria-activedescendant": open ? `${listId}-${Math.min(active, suggestions.length - 1)}` : undefined,
+  } as const;
+  let field: ReactNode;
+  if (props.singleLine) {
+    const { singleLine, inputRef: externalRef, ...nativeProps } = props;
+    field = <input {...nativeProps} {...autocompleteAttributes} {...handlers(nativeProps)} type="text"
+      ref={externalRef ?? ownInputRef} value={value} aria-multiline={!singleLine} />;
+  } else {
+    const { singleLine, textareaRef: externalRef, ...nativeProps } = props;
+    field = <textarea {...nativeProps} {...autocompleteAttributes} {...handlers(nativeProps)}
+      ref={externalRef ?? ownRef} value={value} aria-multiline={!singleLine} />;
+  }
+
+  return (
+    <div ref={containerRef} className="relative min-w-0 w-full flex-1">
+      {field}
       {open && <ul id={listId} role="listbox" aria-label="People to mention"
         style={popoverTop === null ? undefined : { top: popoverTop }}
         className="absolute top-full left-0 z-30 mt-2 max-h-72 w-full min-w-0 overflow-y-auto rounded-2xl border-[3px] border-ink bg-white p-1 shadow-sticker-lg">

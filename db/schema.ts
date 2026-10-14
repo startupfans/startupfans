@@ -175,6 +175,7 @@ export const postReshares = pgTable("post_reshares", {
   postId: uuid("post_id").notNull().references(() => posts.id, { onDelete: "cascade" }),
   userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
   note: text("note"),
+  imageUrl: text("image_url"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 }, (table) => [
   primaryKey({ columns: [table.postId, table.userId] }),

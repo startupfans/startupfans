@@ -98,7 +98,7 @@ export type PublicPost = Omit<Awaited<ReturnType<typeof getPublicStartupPosts>>[
 export type TimelineItem =
   | { kind: "post"; id: string; timestamp: string; post: PublicPost }
   | { kind: "reshare"; id: string; timestamp: string; post: PublicPost;
-      resharer: { name: string | null; handle: string; avatarUrl: string | null }; note: string | null; createdAt: Date };
+      resharer: { name: string | null; handle: string; avatarUrl: string | null }; note: string | null; imageUrl: string | null; createdAt: Date };
 
 const resharers = alias(users, "resharers");
 const reshareId = sql<string>`(${postReshares.postId}::text || ':' || ${postReshares.userId}::text) collate "C"`;
@@ -148,6 +148,7 @@ export async function listFeed({ userId, following = false, cursor, authorId }: 
     cursorTimestamp: sql<string>`to_char(${postReshares.createdAt} at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"')`,
     createdAt: postReshares.createdAt,
     note: postReshares.note,
+    imageUrl: postReshares.imageUrl,
     resharer: { name: resharers.name, handle: resharers.handle, avatarUrl: resharers.avatarUrl },
   }).from(postReshares)
     .innerJoin(posts, eq(posts.id, postReshares.postId))

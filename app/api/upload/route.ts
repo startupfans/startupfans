@@ -51,15 +51,16 @@ export async function POST(request: Request) {
         const user = await getCurrentUser();
         if (!user) throw new Error("Sign in before uploading.");
         if (pathname.startsWith("users/")) {
-          const prefix = pathname.startsWith(`users/${user.id}/replies/`)
-            ? `users/${user.id}/replies/` : `users/${user.id}/avatar/`;
+          const folder = (["replies", "reshares", "avatar"] as const).find((folder) => pathname.startsWith(`users/${user.id}/${folder}/`));
+          if (!folder) throw new Error("Upload an image to your own avatar, replies or reshares folder.");
+          const prefix = `users/${user.id}/${folder}/`;
           const filename = pathname.slice(prefix.length);
           if (!pathname.startsWith(prefix) || !isMediaFilename(filename) || getMediaFormat(filename)?.type !== "image") {
-            throw new Error("Upload an image to your own avatar or replies folder.");
+            throw new Error("Upload an image to your own avatar, replies or reshares folder.");
           }
           const format = getMediaFormat(filename);
           if (!format) throw new Error("Choose a supported image.");
-          const role = prefix.endsWith("/replies/") ? "reply" : "avatar";
+          const role = folder === "avatar" ? "avatar" : "reply";
           return {
             allowedContentTypes: [format.contentType],
             maximumSizeInBytes: getImageUploadMaximum(role, format.contentType),

@@ -5,7 +5,10 @@ import { useRouter } from "next/navigation";
 import { createContext, startTransition, useActionState, useContext, useId, useState, type ReactNode } from "react";
 import { ReshareIcon, postIconButtonClass } from "@/app/components/icons";
 import { SubmitButton } from "@/app/components/submit-button";
-import { updateReshare, type ReshareState } from "./reshare-actions";
+import { MentionAutocomplete } from "@/app/components/mention-autocomplete";
+import { ImageAttachmentButton, ImageAttachmentPicker, useImageAttachment } from "@/app/components/reply-image";
+import { getFileMediaFormat } from "@/lib/media";
+import { getReshareImageUserId, updateReshare, type ReshareState } from "./reshare-actions";
 import { updateFollow, type FollowState } from "./actions";
 
 const initialState: ReshareState = { status: "idle" };
@@ -19,10 +22,15 @@ export function ResharePanel({ postId, postUrl, signedIn, count, reshared, child
 }) {
   const [open, setOpen] = useState(false);
   const [note, setNote] = useState("");
+  const [dragging, setDragging] = useState(false);
+  const image = useImageAttachment(getReshareImageUserId, "reshares");
   const panelId = useId();
   const [state, action, pending] = useActionState(async (previous: ReshareState, data: FormData) => {
+    if (data.get("intent") !== "remove" && image.uploading) {
+      return { status: "error", message: "Wait for your image to finish uploading." } as const;
+    }
     const result = await updateReshare(postId, previous, data);
-    if (result.status === "success") { setOpen(false); setNote(""); }
+    if (result.status === "success") { setOpen(false); setNote(""); image.removeAttachment(); }
     return result;
   }, initialState);
   function toggle() {
@@ -31,20 +39,43 @@ export function ResharePanel({ postId, postUrl, signedIn, count, reshared, child
       const data = new FormData();
       data.set("intent", "remove");
       startTransition(() => action(data));
-    } else setOpen((current) => !current);
+    } else {
+      if (open) image.removeAttachment();
+      setOpen((current) => !current);
+    }
   }
   return <ReshareContext.Provider value={{ signedIn, postUrl, count, reshared, pending, open, panelId, toggle }}>
     {children}
-    {open && !reshared && <form id={panelId} action={action} aria-busy={pending}
-      className="mt-4 min-w-0 space-y-3 rounded-xl border-2 border-ink bg-cream p-3 shadow-sticker">
+    {open && !reshared && <form id={panelId} action={action} aria-busy={pending || image.uploading}
+      onSubmit={(event) => { if (image.uploading) event.preventDefault(); }}
+      onDragOver={(event) => {
+        if (!event.dataTransfer.types.includes("Files")) return;
+        event.preventDefault();
+        if (!pending) setDragging(true);
+      }}
+      onDragLeave={(event) => { if (!event.currentTarget.contains(event.relatedTarget instanceof Node ? event.relatedTarget : null)) setDragging(false); }}
+      onDrop={(event) => {
+        if (!event.dataTransfer.types.includes("Files")) return;
+        event.preventDefault(); setDragging(false);
+        const file = event.dataTransfer.files[0];
+        if (file) void image.attachFile(file, pending);
+      }}
+      onPaste={(event) => {
+        const file = Array.from(event.clipboardData.files).find((file) => getFileMediaFormat(file)?.type === "image");
+        if (!file) return;
+        event.preventDefault(); void image.attachFile(file, pending);
+      }}
+      className={`mt-4 min-w-0 space-y-3 rounded-xl border-2 border-ink ${dragging ? "bg-sky" : "bg-cream"} p-3 shadow-sticker`}>
       <input type="hidden" name="intent" value="reshare" />
       <label htmlFor={`${panelId}-note`} className="block text-sm font-bold">Add a note (optional)</label>
-      <input autoFocus id={`${panelId}-note`} name="note" type="text" maxLength={280} value={note} disabled={pending}
-        aria-describedby={`${panelId}-count`} onChange={(event) => setNote(event.target.value)}
+      <MentionAutocomplete singleLine startup={postUrl.split("/")[2]} autoFocus id={`${panelId}-note`} name="note" maxLength={280} value={note} disabled={pending}
+        aria-describedby={`${panelId}-count`} onValueChange={setNote}
         className="min-h-11 w-full min-w-0 rounded-lg border-2 border-ink bg-white px-3 py-2" />
+      <ImageAttachmentPicker image={image} pending={pending} previewAlt="Reshare image preview" showButton={false} />
       <div className="flex min-w-0 flex-wrap items-center gap-3">
-        <SubmitButton pending={pending} pendingLabel="Resharing…" className="min-h-11 rounded-xl border-2 border-ink bg-sun px-4 py-2 font-bold">Reshare</SubmitButton>
-        <button type="button" disabled={pending} onClick={() => { setOpen(false); setNote(""); }} className="min-h-11 px-2 py-2 font-semibold underline">Cancel</button>
+        <ImageAttachmentButton image={image} pending={pending} />
+        <SubmitButton pending={pending} disabled={image.uploading} pendingLabel="Resharing…" className="min-h-11 rounded-xl border-2 border-ink bg-sun px-4 py-2 font-bold">Reshare</SubmitButton>
+        <button type="button" disabled={pending} onClick={() => { setOpen(false); setNote(""); image.removeAttachment(); }} className="min-h-11 px-2 py-2 font-semibold underline">Cancel</button>
         <span id={`${panelId}-count`} aria-live="polite" className="ml-auto text-sm tabular-nums">{note.length}/280</span>
       </div>
     </form>}

@@ -10,13 +10,14 @@ import { captureServerEvent } from "@/lib/posthog-server";
 
 type NotificationTransaction = Parameters<Parameters<typeof db.transaction>[0]>[0];
 
-export async function notifyMentions({ body, actorId, postId, commentId = null }: {
+export async function notifyMentions({ body, actorId, postId, commentId = null, markdown = commentId === null }: {
   body: string;
   actorId: string;
   postId: string;
   commentId?: string | null;
+  markdown?: boolean;
 }, tx: NotificationTransaction) {
-  const handles = [...new Set(parseMentions(body, commentId === null).map((token) => token.handle))];
+  const handles = [...new Set(parseMentions(body, markdown).map((token) => token.handle))];
   if (!handles.length) return 0;
   const recipients = await tx.select({ id: users.id }).from(users)
     .where(and(inArray(users.handle, handles), ne(users.id, actorId)));

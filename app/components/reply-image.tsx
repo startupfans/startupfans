@@ -7,7 +7,7 @@ import { CloseIcon, ImageIcon, postIconButtonClass } from "@/app/components/icon
 import { getFileMediaFormat, getMediaAccept } from "@/lib/media";
 import { downscaleImage } from "./image-downscale";
 
-type ReplyImage = { url: string };
+type AttachmentImage = { url: string };
 
 async function checkUploadAvailability() {
   const response = await fetch("/api/upload", { cache: "no-store" });
@@ -21,10 +21,14 @@ async function checkUploadAvailability() {
 }
 
 export function useReplyImage(userId: string | null) {
-  const [attachment, setAttachment] = useState<ReplyImage | null>(null);
+  return useImageAttachment(userId, "replies");
+}
+
+export function useImageAttachment(userId: string | null | (() => Promise<string | null>), folder: "replies" | "reshares") {
+  const [attachment, setAttachment] = useState<AttachmentImage | null>(null);
   const [uploading, setUploading] = useState(false);
   const [converting, setConverting] = useState(false);
-  const [preview, setPreview] = useState<ReplyImage | null>(null);
+  const [preview, setPreview] = useState<AttachmentImage | null>(null);
   const [progress, setProgress] = useState(0);
   const [uploadError, setUploadError] = useState("");
   const fileInput = useRef<HTMLInputElement>(null);
@@ -72,6 +76,9 @@ export function useReplyImage(userId: string | null) {
     setConverting(needsConversion);
     setProgress(0);
     try {
+      const uploadUserId = typeof userId === "function" ? await userId() : userId;
+      if (controller.signal.aborted) return;
+      if (!uploadUserId) throw new Error("Sign in before uploading.");
       const uploadFile = await downscaleImage(file, "reply", controller.signal);
       if (controller.signal.aborted) return;
       const outputFormat = getFileMediaFormat(uploadFile);
@@ -82,7 +89,7 @@ export function useReplyImage(userId: string | null) {
       setPreview({ url: URL.createObjectURL(uploadFile) });
       await checkUploadAvailability();
       if (controller.signal.aborted) return;
-      const blob = await upload(`users/${userId}/replies/${crypto.randomUUID()}.${extension}`, uploadFile, {
+      const blob = await upload(`users/${uploadUserId}/${folder}/${crypto.randomUUID()}.${extension}`, uploadFile, {
         access: "public",
         handleUploadUrl: "/api/upload",
         contentType,
@@ -116,13 +123,24 @@ export function useReplyImage(userId: string | null) {
 }
 
 export function ReplyImagePicker({ image, pending }: { image: ReturnType<typeof useReplyImage>; pending: boolean }) {
-  const { attachment, setFileInput, attachFile, visibleAttachment, removeAttachment, uploading, progress, converting, openFilePicker, uploadError } = image;
+  return <ImageAttachmentPicker image={image} pending={pending} previewAlt="Reply image preview" />;
+}
+
+export function ImageAttachmentButton({ image, pending }: { image: ReturnType<typeof useImageAttachment>; pending: boolean }) {
+  return <button type="button" disabled={pending} onClick={image.openFilePicker} aria-label="Add image" title="Add image (up to 10 MB)"
+    className={postIconButtonClass}><ImageIcon /></button>;
+}
+
+export function ImageAttachmentPicker({ image, pending, previewAlt, showButton = true }: {
+  image: ReturnType<typeof useImageAttachment>; pending: boolean; previewAlt: string; showButton?: boolean;
+}) {
+  const { attachment, setFileInput, attachFile, visibleAttachment, removeAttachment, uploading, progress, converting, uploadError } = image;
   return <div className="mt-3 min-w-0">
     <input type="hidden" name="imageUrl" value={attachment?.url ?? ""} />
     <input ref={setFileInput} type="file" accept={getMediaAccept("image")} hidden disabled={pending}
       onChange={(event) => { const file = event.target.files?.[0]; if (file) void attachFile(file, pending); }} />
     {visibleAttachment && <div className="relative mb-3 h-28 w-40 max-w-full overflow-hidden rounded-xl border-2 border-ink bg-white">
-      <Image src={visibleAttachment.url} alt="Reply image preview" width={160} height={112} unoptimized className="h-full w-full object-cover" />
+      <Image src={visibleAttachment.url} alt={previewAlt} width={160} height={112} unoptimized className="h-full w-full object-cover" />
       <button type="button" disabled={pending} onClick={removeAttachment} aria-label="Remove attachment" title="Remove attachment"
         className={`${postIconButtonClass} absolute top-1 right-1 bg-white`}><CloseIcon /></button>
       {uploading && <div role="progressbar" aria-label="Attachment upload progress" aria-valuenow={progress}
@@ -131,8 +149,7 @@ export function ReplyImagePicker({ image, pending }: { image: ReturnType<typeof 
       </div>}
     </div>}
     {uploading && <p role="status" className="mb-3 text-sm text-ink/60">{converting ? "Converting photo" : `Uploading attachment ${progress}%`}</p>}
-    <button type="button" disabled={pending} onClick={openFilePicker} aria-label="Add image" title="Add image (up to 10 MB)"
-      className={postIconButtonClass}><ImageIcon /></button>
+    {showButton && <ImageAttachmentButton image={image} pending={pending} />}
     {uploadError && <p role="alert" className="mt-2 break-words text-sm">{uploadError}</p>}
   </div>;
 }
