@@ -2,14 +2,9 @@ import Image from "next/image";
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { formatStartupCount, type getStartupBySlug } from "@/lib/startups";
-import { GitHubIcon, GlobeIcon, InstagramIcon, LinkedInIcon, PinIcon, TikTokIcon, XIcon, YouTubeIcon } from "@/app/components/icons";
+import { GlobeIcon, PinIcon } from "@/app/components/icons";
+import { SocialLinks } from "@/app/components/social-links";
 import { Star } from "@/app/components/sticker";
-import { getSocialUrl, socialNetworks, type SocialNetwork } from "@/lib/socials";
-
-const socialIcons = {
-  x: XIcon, linkedin: LinkedInIcon, github: GitHubIcon,
-  instagram: InstagramIcon, youtube: YouTubeIcon, tiktok: TikTokIcon,
-} satisfies Record<SocialNetwork, () => ReactNode>;
 
 function websiteDomain(website: string) {
   try { return new URL(website).hostname.replace(/^www\./, ""); }
@@ -25,10 +20,6 @@ export function ProfileHeader({ startup, fanCount, followPanel, isOwner, childre
 }) {
   const stageLabel = startup.stage === "series-a" ? "Series A" : startup.stage
     ? startup.stage.charAt(0).toUpperCase() + startup.stage.slice(1) : null;
-  const socials = socialNetworks.flatMap(({ network, field, label }) => {
-    const href = getSocialUrl(network, startup[field]);
-    return href ? [{ network, href, label: label.replace(/ (handle|URL)$/, "") }] : [];
-  });
 
   return (
     <section className="relative mt-10 overflow-hidden rounded-3xl border-[3px] border-ink bg-white shadow-sticker-lg" aria-labelledby="startup-name">
@@ -58,15 +49,7 @@ export function ProfileHeader({ startup, fanCount, followPanel, isOwner, childre
               {stageLabel && <span className="rounded-full border-2 border-ink bg-sun px-3 py-1 text-ink">{stageLabel}</span>}
               <span className="rounded-full border-2 border-ink bg-cream px-3 py-1 text-ink">{startup.memberCount.toLocaleString("en-GB")} {startup.memberCount === 1 ? "person" : "people"}</span>
             </div>
-            {socials.length > 0 && <nav aria-label="Social profiles" className="mt-4 flex flex-wrap gap-3">
-              {socials.map(({ network, href, label }) => {
-                const SocialIcon = socialIcons[network];
-                return <a key={network} href={href} target="_blank" rel="noopener noreferrer" aria-label={`${startup.name} on ${label}`} title={label}
-                  className="inline-flex h-11 w-11 items-center justify-center rounded-full border-2 border-ink bg-cream transition-transform hover:-translate-y-0.5 hover:shadow-sticker focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ink">
-                  <SocialIcon />
-                </a>;
-              })}
-            </nav>}
+            <SocialLinks name={startup.name} values={startup} />
             <nav aria-label="Fan stats" className="mt-4 flex flex-wrap items-center gap-x-3 font-mono text-sm font-bold">
               <Link href={`/s/${startup.slug}/fans`} className="inline-flex min-h-11 items-center underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ink">
                 {formatStartupCount(fanCount, "fan")}

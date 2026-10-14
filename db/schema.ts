@@ -27,6 +27,12 @@ export const users = pgTable("users", {
   handle: text("handle").notNull(),
   name: text("name"),
   avatarUrl: text("avatar_url"),
+  xHandle: text("x_handle"),
+  linkedinUrl: text("linkedin_url"),
+  githubUrl: text("github_url"),
+  instagramHandle: text("instagram_handle"),
+  youtubeUrl: text("youtube_url"),
+  tiktokHandle: text("tiktok_handle"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 }, (table) => [
   uniqueIndex("users_handle_unique").on(sql`lower(${table.handle})`),

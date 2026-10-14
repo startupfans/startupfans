@@ -109,8 +109,17 @@ export async function getMemberStartups(userId: string) {
     .orderBy(desc(startupMembers.createdAt), desc(startups.id));
 }
 
-export async function updateProfile(userId: string, name: string | null, avatarUrl: string | null) {
-  await db.update(users).set({ name, avatarUrl }).where(eq(users.id, userId));
+export async function updateProfile(userId: string, profile: {
+  name: string | null;
+  avatarUrl: string | null;
+  xHandle: string | null;
+  linkedinUrl: string | null;
+  githubUrl: string | null;
+  instagramHandle: string | null;
+  youtubeUrl: string | null;
+  tiktokHandle: string | null;
+}) {
+  await db.update(users).set(profile).where(eq(users.id, userId));
 }
 
 export function textField(formData: FormData, key: string) {

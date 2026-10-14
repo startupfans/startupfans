@@ -3,6 +3,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Handle } from "@/app/components/handle";
+import { SocialLinks } from "@/app/components/social-links";
 import { PageHeader, SiteFooter } from "@/app/components/sticker";
 import { AppHeader, AppShell } from "@/app/components/app-shell";
 import { PostCard } from "@/app/s/[slug]/post-card";
@@ -40,6 +41,7 @@ export async function UserPage({ params }: UserPageProps) {
           </>
         } />
         <p className="text-sm text-ink/70">Joined <time dateTime={profile.createdAt.toISOString()}>{joined}</time></p>
+        <SocialLinks name={name} values={profile} />
         <div className="mt-8 grid min-w-0 gap-8 md:grid-cols-2">
           <section aria-labelledby="startups-heading" className="min-w-0 rounded-3xl border-[3px] border-ink bg-lime p-5 shadow-sticker">
             <h2 id="startups-heading" className="font-display text-2xl font-extrabold">Startups</h2>

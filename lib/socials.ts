@@ -4,6 +4,7 @@ export const socialNetworks = [
     field: "xHandle",
     label: "X handle",
     placeholder: "@yourstartup",
+    personalPlaceholder: "@you",
     hint: "Use an X handle or profile URL.",
   },
   {
@@ -11,6 +12,7 @@ export const socialNetworks = [
     field: "linkedinUrl",
     label: "LinkedIn URL",
     placeholder: "linkedin.com/company/yourstartup",
+    personalPlaceholder: "linkedin.com/in/you",
     hint: "Use a LinkedIn company or profile URL.",
   },
   {
@@ -18,6 +20,7 @@ export const socialNetworks = [
     field: "githubUrl",
     label: "GitHub URL",
     placeholder: "github.com/yourstartup/repo",
+    personalPlaceholder: "github.com/you",
     hint: "Use a GitHub profile, org, or repo URL.",
   },
   {
@@ -25,6 +28,7 @@ export const socialNetworks = [
     field: "instagramHandle",
     label: "Instagram handle",
     placeholder: "@yourstartup",
+    personalPlaceholder: "@you",
     hint: "Use an Instagram handle or profile URL.",
   },
   {
@@ -32,6 +36,7 @@ export const socialNetworks = [
     field: "youtubeUrl",
     label: "YouTube URL",
     placeholder: "youtube.com/@yourstartup",
+    personalPlaceholder: "youtube.com/@you",
     hint: "Use a YouTube channel URL.",
   },
   {
@@ -39,6 +44,7 @@ export const socialNetworks = [
     field: "tiktokHandle",
     label: "TikTok handle",
     placeholder: "@yourstartup",
+    personalPlaceholder: "@you",
     hint: "Use a TikTok handle or profile URL.",
   },
 ] as const;

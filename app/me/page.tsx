@@ -1,21 +1,35 @@
 import Image from "next/image";
 import Link from "next/link";
+import type { ReactNode } from "react";
 import { Handle } from "@/app/components/handle";
+import { IconField } from "@/app/components/icon-field";
+import { GitHubIcon, InstagramIcon, LinkedInIcon, TikTokIcon, XIcon, YouTubeIcon } from "@/app/components/icons";
 import { PageHeader, SiteFooter } from "@/app/components/sticker";
 import { AppHeader, AppShell } from "@/app/components/app-shell";
 import { SignOutButton } from "@/app/login/dev-inbox";
 import { requireUser, signOut } from "@/lib/auth";
 import { isAdmin } from "@/lib/admin";
 import { getFollowedStartups, getMemberStartups } from "@/lib/members";
+import { socialNetworks, type SocialNetwork } from "@/lib/socials";
 import { listAllStartups } from "@/lib/startups";
 import { updateProfileAction } from "./actions";
 import { AvatarUpload } from "./avatar-upload";
 import { AllStartups, YourStartups } from "./startup-cards";
 
 const inputClass = "mt-2 min-h-11 w-full min-w-0 rounded-xl border-2 border-ink bg-white px-4 py-3 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ink";
+const socialIcons = {
+  x: XIcon, linkedin: LinkedInIcon, github: GitHubIcon,
+  instagram: InstagramIcon, youtube: YouTubeIcon, tiktok: TikTokIcon,
+} satisfies Record<SocialNetwork, () => ReactNode>;
 const messages = new Map([
   ["name-too-long", "Use up to 60 characters for your name."],
   ["invalid-avatar", "Upload your own avatar or use a full https:// image address."],
+  ["invalid-x", "Use an X handle or profile URL."],
+  ["invalid-linkedin", "Use a LinkedIn profile URL."],
+  ["invalid-github", "Use a GitHub profile, org, or repo URL."],
+  ["invalid-instagram", "Use an Instagram handle or profile URL."],
+  ["invalid-youtube", "Use a YouTube channel URL."],
+  ["invalid-tiktok", "Use a TikTok handle or profile URL."],
   ["saved", "Profile saved."],
   ["startup-deleted", "Startup deleted."],
 ]);
@@ -55,9 +69,23 @@ async function MePage({ searchParams }: { searchParams: Promise<{ message?: stri
               <input id="name" name="name" defaultValue={user.name ?? ""} maxLength={60} autoComplete="name" className={inputClass} />
             </label>
             <AvatarUpload userId={user.id} initialUrl={user.avatarUrl ?? ""} initial={name.charAt(0).toUpperCase()}
-              uploadsEnabled={Boolean(process.env.BLOB_READ_WRITE_TOKEN)} />
+              uploadsEnabled={Boolean(process.env.BLOB_READ_WRITE_TOKEN)}>
+              <fieldset className="min-w-0 space-y-5">
+                <legend className="mb-3 font-display text-xl font-extrabold">Social profiles</legend>
+                {socialNetworks.map(({ network, field, label, personalPlaceholder }) => {
+                  const SocialIcon = socialIcons[network];
+                  return (
+                    <label key={field} htmlFor={field} className="block font-bold">{label}
+                      <IconField icon={<SocialIcon />} id={field} name={field} defaultValue={user[field] ?? ""}
+                        maxLength={500} placeholder={personalPlaceholder} autoCapitalize="none" autoCorrect="off"
+                        spellCheck={false} />
+                    </label>
+                  );
+                })}
+              </fieldset>
+            </AvatarUpload>
           </form>
-          <p className="mt-4 text-sm text-ink/70">Your name, handle and avatar are public. Without a name, we show your handle.</p>
+          <p className="mt-4 text-sm text-ink/70">Your name, handle, avatar and social links are public. Without a name, we show your handle.</p>
           <SignOutButton action={signOut} />
         </section>
         <section className="mt-10" aria-labelledby="following-heading">

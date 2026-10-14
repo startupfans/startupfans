@@ -6,6 +6,7 @@ import { requireUser } from "@/lib/auth";
 import { isOptionalHttpsUrl, textField, updateProfile } from "@/lib/members";
 import { getMediaFormat, isMediaFilename } from "@/lib/media";
 import { captureServerEvent } from "@/lib/posthog-server";
+import { normalizeSocial, socialNetworks, type SocialField } from "@/lib/socials";
 
 function isAvatarUrl(value: string, userId: string) {
   if (!isOptionalHttpsUrl(value)) return false;
@@ -20,6 +21,15 @@ function isAvatarUrl(value: string, userId: string) {
     && isMediaFilename(filename) && getMediaFormat(filename)?.type === "image";
 }
 
+const socialMessages = {
+  xHandle: "invalid-x",
+  linkedinUrl: "invalid-linkedin",
+  githubUrl: "invalid-github",
+  instagramHandle: "invalid-instagram",
+  youtubeUrl: "invalid-youtube",
+  tiktokHandle: "invalid-tiktok",
+} satisfies Record<SocialField, string>;
+
 export async function updateProfileAction(formData: FormData) {
   const user = await requireUser("/me");
   const name = textField(formData, "name");
@@ -30,16 +40,31 @@ export async function updateProfileAction(formData: FormData) {
   if (!isAvatarUrl(avatarUrl, user.id)) {
     redirect("/me?message=invalid-avatar");
   }
-  await updateProfile(user.id, name || null, avatarUrl || null);
+  const socials: Record<SocialField, string | null> = {
+    xHandle: null, linkedinUrl: null, githubUrl: null,
+    instagramHandle: null, youtubeUrl: null, tiktokHandle: null,
+  };
+  for (const { network, field } of socialNetworks) {
+    const result = normalizeSocial(network, textField(formData, field));
+    if (result.status === "invalid") redirect(`/me?message=${socialMessages[field]}`);
+    socials[field] = result.value;
+  }
+  await updateProfile(user.id, {
+    name: name || null,
+    avatarUrl: avatarUrl || null,
+    ...socials,
+  });
   await captureServerEvent({
     distinctId: user.id,
     event: "profile_updated",
     properties: {
       has_avatar: Boolean(avatarUrl),
       has_name: Boolean(name),
+      has_socials: socialNetworks.some(({ field }) => Boolean(socials[field])),
     },
   });
   revalidatePath("/me");
+  revalidatePath(`/u/${user.handle}`);
   revalidatePath("/s/[slug]", "page");
   revalidatePath("/s/[slug]/settings", "page");
   revalidatePath("/s/[slug]/p/[postId]", "page");

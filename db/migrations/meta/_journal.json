@@ -113,6 +113,13 @@
       "when": 1791912772056,
       "tag": "0015_post_reactions",
       "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "7",
+      "when": 1791940533272,
+      "tag": "0016_user_socials",
+      "breakpoints": true
     }
   ]
 }
