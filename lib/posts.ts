@@ -5,13 +5,15 @@ import { cache } from "react";
 import { alias } from "drizzle-orm/pg-core";
 import { db } from "@/db";
 import { follows, postComments, postReshares, posts, startupMembers, startups, users } from "@/db/schema";
-import { parseMentions, resolveMentionHandles, resolveMentions } from "@/lib/mentions";
+import { parseMentions, resolveMentions } from "@/lib/mentions";
 import { isMediaFilename } from "@/lib/media";
 import { getCurrentUser } from "@/lib/auth";
 import { postReactionFields } from "@/lib/reactions";
 import { postReshareFields } from "@/lib/reshares";
+import { getRepliesPreviews, type RepliesPreview } from "@/lib/comments";
+import { isAdmin } from "@/lib/admin";
 
-function publicPostFields(viewerId: string | null) {
+function publicPostFields(viewerId: string | null, admin = false) {
   return {
     ...postReactionFields(viewerId),
     ...postReshareFields(viewerId),
@@ -22,6 +24,11 @@ function publicPostFields(viewerId: string | null) {
     id: posts.id,
     startupId: posts.startupId,
     replyCount: sql<number>`(select count(*)::integer from ${postComments} where ${postComments.postId} = ${posts.id} and ${postComments.deletedAt} is null)`,
+    canReply: sql<boolean>`${admin} or exists (select 1 from ${startupMembers} m
+      where m.startup_id = ${posts.startupId} and m.user_id = ${viewerId})
+      or exists (select 1 from ${follows} f where f.startup_id = ${posts.startupId} and f.user_id = ${viewerId})`,
+    canModerate: sql<boolean>`${admin} or exists (select 1 from ${startupMembers} m
+      where m.startup_id = ${posts.startupId} and m.user_id = ${viewerId} and m.role = 'owner')`,
     authorId: posts.authorId,
     body: posts.bodyMd,
     publishedAt: posts.publishedAt,
@@ -36,6 +43,19 @@ function publicPostFields(viewerId: string | null) {
     startupSlug: startups.slug,
     startupLogoUrl: startups.logoUrl,
   };
+}
+
+async function hydrateReplies<T extends { id: string; body: string; replyCount: number; canReply: boolean; canModerate: boolean }>(rows: T[], viewerId: string | null, mentionHandles: readonly string[] = []) {
+  const uniquePosts = [...new Map(rows.map((post) => [post.id, post])).values()];
+  const handles = [...mentionHandles, ...uniquePosts.flatMap((post) => parseMentions(post.body).map((token) => token.handle))];
+  const previews = await getRepliesPreviews(uniquePosts.map((post) => post.id), viewerId, 10, handles);
+  return rows.map((post) => {
+    const comments = previews.get(post.id) ?? [];
+    return { ...post, repliesPreview: {
+      comments, total: post.replyCount, hasMore: post.replyCount > comments.length,
+      viewerId, canReply: post.canReply, canModerate: post.canModerate,
+    } satisfies RepliesPreview };
+  });
 }
 
 type PostTransaction = Parameters<Parameters<typeof db.transaction>[0]>[0];
@@ -63,16 +83,16 @@ export async function createPostForStartup({ startupId, authorId, body, media, s
 }
 
 export async function getPublicStartupPosts(startupId: string) {
-  const rows = await db.select(publicPostFields((await getCurrentUser())?.id ?? null)).from(posts)
+  const user = await getCurrentUser();
+  const rows = await db.select(publicPostFields(user?.id ?? null, isAdmin(user))).from(posts)
     .innerJoin(users, eq(users.id, posts.authorId))
     .innerJoin(startups, eq(startups.id, posts.startupId))
     .where(and(eq(posts.startupId, startupId), eq(posts.visibility, "public")))
     .orderBy(desc(posts.publishedAt), desc(posts.id));
-  await resolveMentions(rows.map((post) => post.body));
-  return rows;
+  return hydrateReplies(rows, user?.id ?? null);
 }
 
-export type PublicPost = Awaited<ReturnType<typeof getPublicStartupPosts>>[number];
+export type PublicPost = Omit<Awaited<ReturnType<typeof getPublicStartupPosts>>[number], "repliesPreview"> & { repliesPreview?: RepliesPreview };
 
 export type TimelineItem =
   | { kind: "post"; id: string; timestamp: string; post: PublicPost }
@@ -103,10 +123,11 @@ export async function listFeed({ userId, following = false, cursor, authorId }: 
   authorId?: string;
 } = {}): Promise<{ items: TimelineItem[]; nextCursor: string | null }> {
   if (following && !userId) return { items: [], nextCursor: null };
-  const viewerId = (await getCurrentUser())?.id ?? null;
+  const user = await getCurrentUser();
+  const viewerId = user?.id ?? null;
   const before = parseFeedCursor(cursor);
   const postQuery = db.select({
-    ...publicPostFields(viewerId),
+    ...publicPostFields(viewerId, isAdmin(user)),
     cursorTimestamp: sql<string>`to_char(${posts.publishedAt} at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"')`,
   }).from(posts)
     .innerJoin(users, eq(users.id, posts.authorId))
@@ -121,7 +142,7 @@ export async function listFeed({ userId, following = false, cursor, authorId }: 
     ))
     .orderBy(desc(posts.publishedAt), desc(postTimelineId)).limit(21);
   const reshareQuery = following ? Promise.resolve([]) : db.select({
-    post: publicPostFields(viewerId),
+    post: publicPostFields(viewerId, isAdmin(user)),
     id: reshareId,
     cursorTimestamp: sql<string>`to_char(${postReshares.createdAt} at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"')`,
     createdAt: postReshares.createdAt,
@@ -147,14 +168,18 @@ export async function listFeed({ userId, following = false, cursor, authorId }: 
   const compare = (a: string, b: string) => a < b ? 1 : a > b ? -1 : 0;
   merged.sort((a, b) => compare(a.timestamp, b.timestamp) || compare(a.kind, b.kind) || compare(a.id, b.id));
   const page = merged.slice(0, 20);
-  const handles = page.flatMap((item) => [
-    ...parseMentions(item.post.body).map((token) => token.handle),
-    ...(item.kind === "reshare" && item.note ? parseMentions(item.note, false).map((token) => token.handle) : []),
-  ]);
-  await resolveMentionHandles([...new Set(handles)]);
+  const noteHandles = page.flatMap((item) => item.kind === "reshare" && item.note
+    ? parseMentions(item.note, false).map((token) => token.handle) : []);
+  const hydrated = await hydrateReplies(page.map((item) => item.post), viewerId, noteHandles);
+  const postsById = new Map(hydrated.map((post) => [post.id, post]));
+  const items = page.map((item) => {
+    const post = postsById.get(item.post.id);
+    if (!post) throw new Error("Timeline post preview missing.");
+    return { ...item, post };
+  });
   const last = page.at(-1);
   return {
-    items: page,
+    items,
     nextCursor: merged.length > 20 && last
       ? Buffer.from(`${last.timestamp}|${last.kind}|${last.id}`).toString("base64url") : null,
   };
@@ -192,11 +217,11 @@ export function isStartupMediaUrl(value: string, slug: string) {
 }
 
 export async function getPublicUserPosts(userId: string) {
-  const rows = await db.select(publicPostFields((await getCurrentUser())?.id ?? null)).from(posts)
+  const user = await getCurrentUser();
+  const rows = await db.select(publicPostFields(user?.id ?? null, isAdmin(user))).from(posts)
     .innerJoin(users, eq(users.id, posts.authorId))
     .innerJoin(startups, eq(startups.id, posts.startupId))
     .where(and(eq(posts.authorId, userId), eq(posts.visibility, "public")))
     .orderBy(desc(posts.publishedAt), desc(posts.id)).limit(20);
-  await resolveMentions(rows.map((post) => post.body));
-  return rows;
+  return hydrateReplies(rows, user?.id ?? null);
 }

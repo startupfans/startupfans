@@ -1,11 +1,11 @@
 import "server-only";
 
-import { and, asc, desc, eq, inArray, isNull, or, sql } from "drizzle-orm";
+import { and, asc, desc, eq, inArray, isNull, lte, or, sql } from "drizzle-orm";
 import { db } from "@/db";
-import { follows, postComments, posts, startupMembers, startups, users } from "@/db/schema";
+import { commentReactions, follows, postComments, posts, startupMembers, startups, users } from "@/db/schema";
 import { mentionSegments, parseMentions, resolveMentionHandles } from "@/lib/mentions";
 import { isAdmin } from "@/lib/admin";
-import { commentReactionFields } from "@/lib/reactions";
+import { commentReactionFields, type PostReactionCounts, type PostReactionKind } from "@/lib/reactions";
 import { isReplyImageUrl } from "@/lib/media";
 import { allowRateLimit } from "@/lib/ratelimit";
 import { captureMentionNotifications, notifyMentions } from "@/lib/notifications";
@@ -47,9 +47,12 @@ function commentQuery(postId: string, viewerId: string | null = null, threadIds?
     .orderBy(asc(postComments.createdAt), asc(postComments.id));
 }
 
-async function resolveCommentMentions(comments: Awaited<ReturnType<typeof commentQuery>>) {
+async function resolveCommentMentions<T extends { body: string }>(comments: T[], mentionHandles: readonly string[] = []) {
   const parsed = comments.map((comment) => ({ comment, tokens: parseMentions(comment.body, false) }));
-  const handles = [...new Set(parsed.flatMap(({ tokens }) => tokens.map((token) => token.handle)))];
+  const handles = [...new Set([
+    ...parsed.flatMap(({ tokens }) => tokens.map((token) => token.handle)),
+    ...mentionHandles,
+  ])];
   const mentions = await resolveMentionHandles(handles);
   return parsed.map(({ comment, tokens }) => ({ ...comment, mentions: mentionSegments(comment.body, mentions, tokens) }));
 }
@@ -69,6 +72,75 @@ export type RepliesPreview = {
   canReply: boolean;
   canModerate: boolean;
 };
+
+export async function getRepliesPreviews(postIds: string[], viewerId: string | null, limit = 10, mentionHandles: readonly string[] = []) {
+  const previews = new Map<string, ReplyComment[]>();
+  if (!postIds.length) return previews;
+  const previewLimit = Number.isFinite(limit) ? Math.max(1, Math.min(20, Math.trunc(limit))) : 10;
+  const fields = {
+    id: postComments.id, postId: postComments.postId, parentId: postComments.parentId,
+    userId: postComments.userId, body: postComments.body, imageUrl: postComments.imageUrl,
+    createdAt: postComments.createdAt, avatarUrl: users.avatarUrl,
+    displayName: sql<string>`coalesce(nullif(trim(${users.name}), ''), split_part(${users.email}, '@', 1))`.as("display_name"),
+  };
+  const rootsQuery = db.select({
+    ...fields,
+    deletedAt: postComments.deletedAt,
+    rank: sql<number>`row_number() over (partition by ${postComments.postId} order by ${postComments.createdAt} desc, ${postComments.id} desc)`.as("thread_rank"),
+  }).from(postComments).innerJoin(users, eq(users.id, postComments.userId))
+    .innerJoin(posts, eq(posts.id, postComments.postId))
+    .where(and(inArray(postComments.postId, postIds), eq(posts.visibility, "public"), isNull(postComments.parentId),
+      or(isNull(postComments.deletedAt), sql`exists (
+        select 1 from post_comments child where child.parent_id = ${postComments.id}
+        and child.post_id = ${postComments.postId} and child.deleted_at is null
+      )`))).as("ranked_threads");
+  const roots = await db.select().from(rootsQuery).where(lte(rootsQuery.rank, previewLimit))
+    .orderBy(asc(rootsQuery.createdAt), asc(rootsQuery.id));
+  const nestedQuery = db.select({
+    ...fields,
+    rank: sql<number>`row_number() over (partition by ${postComments.parentId} order by ${postComments.createdAt}, ${postComments.id})`.as("reply_rank"),
+  }).from(postComments).innerJoin(users, eq(users.id, postComments.userId))
+    .innerJoin(posts, eq(posts.id, postComments.postId))
+    .where(and(inArray(postComments.parentId, roots.map((root) => root.id)),
+      inArray(postComments.postId, postIds), eq(posts.visibility, "public"), isNull(postComments.deletedAt))).as("ranked_replies");
+  const nested = roots.length ? await db.select().from(nestedQuery).where(lte(nestedQuery.rank, 10))
+    .orderBy(asc(nestedQuery.createdAt), asc(nestedQuery.id)) : [];
+  const children = new Map<string, typeof nested>();
+  for (const reply of nested) {
+    if (reply.parentId !== null) {
+      const siblings = children.get(reply.parentId) ?? [];
+      siblings.push(reply);
+      children.set(reply.parentId, siblings);
+    }
+  }
+  const comments = roots.flatMap((root) => [
+    ...(root.deletedAt === null ? [root] : []), ...(children.get(root.id) ?? []),
+  ]);
+  const reactions = comments.length ? await db.select({
+    commentId: commentReactions.commentId,
+    reactionCounts: sql<PostReactionCounts>`json_build_object(
+      'heart', count(*) filter (where ${commentReactions.kind} = 'heart')::int,
+      'tomato', count(*) filter (where ${commentReactions.kind} = 'tomato')::int
+    )`,
+    viewerReaction: sql<PostReactionKind | null>`max(${commentReactions.kind}) filter (where ${commentReactions.userId} = ${viewerId})`,
+  }).from(commentReactions).where(inArray(commentReactions.commentId, comments.map((comment) => comment.id)))
+    .groupBy(commentReactions.commentId) : [];
+  const reactionById = new Map(reactions.map((reaction) => [reaction.commentId, reaction]));
+  const resolved = await resolveCommentMentions(comments, mentionHandles);
+  for (const comment of resolved) {
+    const reaction = reactionById.get(comment.id);
+    const preview = previews.get(comment.postId) ?? [];
+    preview.push({
+      id: comment.id, parentId: comment.parentId, userId: comment.userId, body: comment.body,
+      imageUrl: comment.imageUrl, createdAt: comment.createdAt.toISOString(), avatarUrl: comment.avatarUrl,
+      displayName: comment.displayName, mentions: comment.mentions,
+      reactionCounts: reaction?.reactionCounts ?? { heart: 0, tomato: 0 },
+      viewerReaction: reaction?.viewerReaction ?? null,
+    });
+    previews.set(comment.postId, preview);
+  }
+  return previews;
+}
 
 export async function getRepliesPreview(postId: string, viewerId: string | null, limit: number) {
   const [post] = await db.select({ startupId: posts.startupId }).from(posts)

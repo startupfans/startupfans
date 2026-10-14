@@ -1,11 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useId, useRef, useState, type ReactNode } from "react";
+import { memo, useCallback, useId, useRef, useState, type ReactNode } from "react";
 import { ReplyIcon, postIconButtonClass } from "@/app/components/icons";
 import type { RepliesPreview, ReplyComment } from "@/lib/comments";
 import { CommentList, ReplyComposer } from "./p/[postId]/comments";
 import type { PostReactionState } from "@/lib/reactions";
+
+const PreviewCommentList = memo(CommentList);
 
 function isReactionCounts(value: unknown): value is PostReactionState["counts"] {
   return typeof value === "object" && value !== null
@@ -43,12 +45,13 @@ function isPreview(value: unknown): value is RepliesPreview {
 export function RepliesPanel({ slug, postId, snapshot, onPostPage, children }: {
   slug: string;
   postId: string;
-  snapshot: { replyCount: number };
+  snapshot: { replyCount: number; preview: RepliesPreview | null };
   onPostPage: boolean;
   children: ReactNode;
 }) {
   const [open, setOpen] = useState(false);
-  const [preview, setPreview] = useState<RepliesPreview | null>(null);
+  const [preview, setPreview] = useState(snapshot.preview);
+  const [source, setSource] = useState(snapshot);
   const [count, setCount] = useState(snapshot.replyCount);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -57,17 +60,30 @@ export function RepliesPanel({ slug, postId, snapshot, onPostPage, children }: {
   const headingId = `${panelId}-heading`;
   const postUrl = `/s/${slug}/p/${postId}`;
 
+  if (source !== snapshot) {
+    setSource(snapshot);
+    setPreview(snapshot.preview);
+    setCount(snapshot.replyCount);
+  }
+
   const refresh = useCallback(async (signal?: AbortSignal) => {
     const id = ++requestId.current;
     setLoading(true);
     try {
-      const response = await fetch(`/api/posts/${postId}/replies?limit=3`, { cache: "no-store", signal });
+      const response = await fetch(`/api/posts/${postId}/replies?limit=10`, { cache: "no-store", signal });
       if (!response.ok) throw new Error("Replies unavailable");
       const data: unknown = await response.json();
       if (!isPreview(data)) throw new Error("Invalid replies");
       if (id === requestId.current && !signal?.aborted) {
         setError("");
-        setPreview(data);
+        const nestedCounts = new Map<string, number>();
+        const comments = data.comments.filter((comment) => {
+          if (comment.parentId === null) return true;
+          const shown = nestedCounts.get(comment.parentId) ?? 0;
+          nestedCounts.set(comment.parentId, shown + 1);
+          return shown < 10;
+        });
+        setPreview({ ...data, comments, hasMore: data.total > comments.length });
         setCount(data.total);
       }
     } catch {
@@ -77,34 +93,24 @@ export function RepliesPanel({ slug, postId, snapshot, onPostPage, children }: {
     }
   }, [postId]);
 
-  useEffect(() => {
-    if (!open || onPostPage) return;
-    const controller = new AbortController();
-    // Server actions refresh the card props, including viewer-specific reaction changes.
-    void Promise.resolve().then(() => {
-      if (!controller.signal.aborted) return refresh(controller.signal);
-    });
-    return () => controller.abort();
-  }, [open, onPostPage, refresh, snapshot]);
-
-  function replied() {
+  const replied = useCallback(() => {
     setCount((current) => current + 1);
     void refresh();
-  }
+  }, [refresh]);
 
-  function deleted() {
+  const deleted = useCallback(() => {
     setCount((current) => Math.max(0, current - 1));
     void refresh();
-  }
+  }, [refresh]);
 
-  function reacted(commentId: string, result: PostReactionState) {
+  const reacted = useCallback((commentId: string, result: PostReactionState) => {
     setPreview((current) => current && {
       ...current,
       comments: current.comments.map((comment) => comment.id === commentId
         ? { ...comment, viewerReaction: result.kind, reactionCounts: result.counts }
         : comment),
     });
-  }
+  }, []);
 
   const shownCount = onPostPage || !open ? snapshot.replyCount : count;
   const label = shownCount ? `${shownCount} ${shownCount === 1 ? "reply" : "replies"}` : "Reply";
@@ -127,15 +133,14 @@ export function RepliesPanel({ slug, postId, snapshot, onPostPage, children }: {
       className="mt-5 min-w-0 border-t-2 border-ink/20 pt-4">
       {open && <>
         <h2 id={headingId} className="font-display text-xl font-extrabold">Replies <span className="text-ink/60">({count})</span></h2>
-        {loading && !preview && <p role="status" className="mt-4 text-sm text-ink/60">Loading replies…</p>}
         {error && <div role="alert" className="mt-4 text-sm">
           <p>{error}</p>
           <button type="button" onClick={() => { setError(""); void refresh(); }} className="min-h-11 py-2 font-semibold underline">Try again</button>
         </div>}
         {preview && <>
-          <CommentList comments={preview.comments} slug={slug} postId={postId} viewerId={preview.viewerId}
+          <PreviewCommentList comments={preview.comments} slug={slug} postId={postId} viewerId={preview.viewerId}
             canReply={preview.canReply} canModerate={preview.canModerate} onReplied={replied} onDeleted={deleted} onReacted={reacted} />
-          {preview.hasMore && <Link href={`${postUrl}#replies`} className="mt-4 inline-flex min-h-11 items-center py-2 font-semibold underline underline-offset-4">
+          {count > preview.comments.length && <Link href={`${postUrl}#replies`} className="mt-4 inline-flex min-h-11 items-center py-2 font-semibold underline underline-offset-4">
             View all {count} replies
           </Link>}
           <ReplyComposer slug={slug} postId={postId} canReply={preview.canReply} viewerId={preview.viewerId}
