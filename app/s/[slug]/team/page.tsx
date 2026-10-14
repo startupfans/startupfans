@@ -1,11 +1,14 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { ProfileImage } from "@/app/components/profile-image";
 import { notFound } from "next/navigation";
 import { PageHeader, SiteFooter } from "@/app/components/sticker";
 import { AppHeader, AppShell } from "@/app/components/app-shell";
 import { isAdmin } from "@/lib/admin";
 import { getCurrentUser } from "@/lib/auth";
+import { countPendingTeamJoinRequests, getTeamJoinAllowance } from "@/lib/team-requests";
 import { getStartupBySlug, getTeam } from "@/lib/startups";
+import { JoinRequestCard } from "./join-request";
 import { MemberCard } from "./member-card";
 
 type TeamPageProps = { params: Promise<{ slug: string }> };
@@ -26,8 +29,16 @@ async function TeamPage({ params }: TeamPageProps) {
   const { slug } = await params;
   const startup = await getStartupBySlug(slug);
   if (!startup) notFound();
-  const [user, members] = await Promise.all([getCurrentUser(), getTeam(startup.id)]);
+  const userPromise = getCurrentUser();
+  const [user, members, pendingRequests, decision] = await Promise.all([
+    userPromise,
+    getTeam(startup.id),
+    countPendingTeamJoinRequests(startup.id),
+    userPromise.then((current) => current ? getTeamJoinAllowance(current.id, startup.id) : null),
+  ]);
   const isOwner = members.some((member) => member.id === user?.id && member.role === "owner");
+  const showReview = (isOwner || isAdmin(user)) && pendingRequests > 0;
+  const showRequest = !decision || decision.block !== "member";
 
   return (
     <div className="min-h-screen min-w-0">
@@ -51,6 +62,17 @@ async function TeamPage({ params }: TeamPageProps) {
             )}
           </div>
         } />
+        {(showReview || showRequest) && (
+          <div className="mt-10 space-y-6">
+            {showReview && (
+              <p className="rounded-xl border-2 border-ink bg-sky px-4 py-3 shadow-sticker">
+                {pendingRequests.toLocaleString("en-GB")} {pendingRequests === 1 ? "person has" : "people have"} asked to join.{" "}
+                <Link href={`/s/${slug}/settings#join-requests`} className="font-bold underline">Review them in settings.</Link>
+              </p>
+            )}
+            {showRequest && <JoinRequestCard slug={slug} decision={decision} />}
+          </div>
+        )}
         <section aria-label="Team members" className="mt-10 grid min-w-0 grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
           {members.map((member) => <MemberCard key={member.id} member={member} />)}
         </section>

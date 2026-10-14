@@ -110,6 +110,21 @@ export const startupMembers = pgTable(
   (table) => [unique("startup_members_startup_id_user_id_unique").on(table.startupId, table.userId)],
 );
 
+export const teamJoinRequests = pgTable("team_join_requests", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  startupId: uuid("startup_id").notNull().references(() => startups.id, { onDelete: "cascade" }),
+  userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  status: text("status", { enum: ["pending", "accepted", "declined"] }).notNull().default("pending"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  resolvedAt: timestamp("resolved_at", { withTimezone: true }),
+  resolvedBy: uuid("resolved_by").references(() => users.id, { onDelete: "set null" }),
+}, (table) => [
+  check("team_join_requests_status_check", sql`${table.status} in ('pending', 'accepted', 'declined')`),
+  uniqueIndex("team_join_requests_pending_unique").on(table.startupId, table.userId).where(sql`${table.status} = 'pending'`),
+  index("team_join_requests_user_id_created_at_idx").on(table.userId, table.createdAt),
+  index("team_join_requests_startup_id_status_idx").on(table.startupId, table.status),
+]);
+
 export const startupInvites = pgTable("startup_invites", {
   tokenHash: text("token_hash").primaryKey(),
   invitedEmail: text("invited_email"),
