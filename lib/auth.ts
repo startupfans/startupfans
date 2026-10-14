@@ -52,7 +52,7 @@ export async function requireUser(next = "/me") {
   return user;
 }
 
-export async function signOut() {
+export async function signOut(redirectTo: "/login" | "/" = "/login") {
   "use server";
 
   const cookieStore = await cookies();
@@ -61,5 +61,5 @@ export async function signOut() {
     await db.delete(sessions).where(eq(sessions.id, sessionId));
   }
   cookieStore.delete(SESSION_COOKIE_NAME);
-  redirect("/login");
+  redirect(redirectTo === "/" ? "/" : "/login");
 }
