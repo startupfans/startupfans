@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { PlusIcon } from "./icons";
 import { SubNav, type SubNavItem } from "./sub-nav";
 
 export function PageHeader({ title, identity, metadata, actions, tabs }: {
@@ -12,7 +13,7 @@ export function PageHeader({ title, identity, metadata, actions, tabs }: {
 }) {
   const inlineTabs = tabs && tabs.items.length >= 2 && tabs.items.length <= 3;
   return (
-    <header className="mt-6! mb-6 flex flex-wrap items-end justify-between gap-4 [&+*]:mt-0">
+    <header className="mt-6 mb-6 flex flex-wrap items-end justify-between gap-4 [&+*]:mt-0">
       <div className="flex min-w-0 max-w-full items-center gap-3">
         {identity}
         <div className="flex min-w-0 max-w-full flex-wrap items-center gap-x-2 gap-y-1">
@@ -33,25 +34,26 @@ export function PageHeader({ title, identity, metadata, actions, tabs }: {
 
 export async function TopNav({ signedIn, next }: { signedIn: boolean; next: string }) {
   return (
-    <nav className="flex flex-nowrap items-center justify-between gap-x-2 lg:gap-x-4" aria-label="Main navigation">
+    <nav className="flex flex-nowrap items-center justify-between gap-x-0 sm:gap-x-2 lg:gap-x-4" aria-label="Main navigation">
       <Link href="/" aria-label="startupfans home" className="inline-flex min-h-11 min-w-11 shrink-0 items-center justify-start">
         <Image src="/logo/startupfans-mark-on-light.svg" alt="startupfans" width={196} height={196} className="h-9 w-9 sm:hidden" />
         <Image src="/logo/startupfans-logo-on-light.svg" alt="startupfans" width={910} height={150} className="hidden h-auto w-32 sm:block lg:w-44" />
       </Link>
-      <div className="ml-auto flex min-w-0 flex-nowrap items-center gap-x-1 pr-1 whitespace-nowrap text-xs font-bold underline-offset-4 max-[390px]:overflow-x-auto sm:gap-x-2 sm:text-sm lg:gap-x-4 lg:text-base [&_a]:min-h-11 [&_a]:min-w-11 [&_a]:shrink-0 [&_a]:items-center [&_a]:justify-center [&_a]:py-2">
+      <div className="ml-auto flex min-w-0 flex-nowrap items-center gap-x-1 pr-1 whitespace-nowrap text-xs font-bold underline-offset-4 max-[360px]:text-[11px] max-sm:pr-1.5 sm:gap-x-3 sm:text-sm lg:gap-x-4 lg:text-base [&_a]:min-h-11 [&_a]:min-w-11 [&_a]:shrink-0 [&_a]:items-center [&_a]:justify-center [&_a]:py-2">
         <Link href="/feed" className="inline-flex underline">Feed</Link>
-        <Link href="/leaderboard" aria-label="Leaderboard" className="inline-flex underline">
+        <Link href="/leaderboard" aria-label="Leaderboard" className="inline-flex underline max-sm:justify-end!">
           <span className="sm:hidden">Board</span>
           <span className="hidden sm:inline">Leaderboard</span>
         </Link>
         {signedIn && (
-          <Link href="/start" aria-label="Start a startup" className="inline-flex rounded-full border-2 border-ink bg-pink px-2 no-underline shadow-sticker transition hover:-translate-y-0.5 active:translate-y-0 active:shadow-none lg:px-3">
-            <span className="lg:hidden">Start</span>
+          <Link href="/start" aria-label="Start a startup" className="group mr-[5px] inline-flex rounded-full border-2 border-ink bg-pink px-2 no-underline shadow-sticker transition sm:hover:-translate-y-0.5 sm:active:translate-y-0 sm:active:shadow-none max-sm:border-0 max-sm:bg-transparent max-sm:px-0 max-sm:py-0! max-sm:shadow-none lg:px-3">
+            <span className="inline-flex h-9 w-9 items-center justify-center rounded-full border-2 border-ink bg-pink shadow-sticker transition group-hover:-translate-y-0.5 group-active:translate-y-0 group-active:shadow-none sm:hidden"><PlusIcon /></span>
+            <span className="hidden sm:inline lg:hidden">Start</span>
             <span className="hidden lg:inline">Start a startup</span>
           </Link>
         )}
-        <Link className="inline-flex underline" href={signedIn ? "/me" : `/login?next=${encodeURIComponent(next)}`}>
-          {signedIn ? "Your account" : "Sign in"}
+        <Link className={`inline-flex underline max-sm:justify-start! max-sm:mr-1.5 max-[360px]:mr-0.5 ${signedIn ? "" : "max-sm:ml-1"}`} href={signedIn ? "/me" : `/login?next=${encodeURIComponent(next)}`}>
+          {signedIn ? <><span className="sm:hidden">Account</span><span className="hidden sm:inline">Your account</span></> : "Sign in"}
         </Link>
       </div>
     </nav>

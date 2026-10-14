@@ -61,7 +61,7 @@ export async function LoginPage({
     <div className="min-h-screen min-w-0">
       <AppHeader signedIn={false} next={next} />
       <main className="mx-auto min-w-0 max-w-xl break-words px-5 pb-10 sm:px-8 sm:pb-16">
-        <section className="mt-10 rounded-3xl border-[3px] border-ink bg-cream p-6 shadow-sticker-lg sm:p-10">
+        <section className="rounded-3xl border-[3px] border-ink bg-cream p-6 shadow-sticker-lg sm:p-10">
           <span className="inline-block -rotate-3 rounded-full border-2 border-ink bg-lime px-4 py-1 font-mono text-xs font-bold uppercase shadow-sticker">
             Your fan club pass
           </span>

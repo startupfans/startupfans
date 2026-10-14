@@ -27,7 +27,7 @@ async function JoinPage({ params, searchParams }: {
     <div className="min-h-screen min-w-0">
       <AppHeader signedIn next={`/join/${encodeURIComponent(token)}`} />
       <main className="mx-auto min-w-0 max-w-xl break-words px-5 pb-10 sm:px-8 sm:pb-16">
-        <section className="mt-10 rounded-3xl border-[3px] border-ink bg-sky p-6 shadow-sticker-lg sm:p-10">
+        <section className="rounded-3xl border-[3px] border-ink bg-sky p-6 shadow-sticker-lg sm:p-10">
           {invite && invite.invitedEmail === null && member ? (
             <>
               <h1 className="font-display text-4xl font-extrabold">You&apos;re already on the team</h1>
