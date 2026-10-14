@@ -1,7 +1,8 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
-import { getCurrentUser, isValidSessionId } from "@/lib/auth";
+import { after } from "next/server";
+import { cookies } from "next/headers";
+import { SESSION_COOKIE_NAME, isValidSessionId } from "@/lib/auth";
 import { captureServerEvent } from "@/lib/posthog-server";
 import { savePostReaction, type PostReactionKind, type PostReactionState } from "@/lib/reactions";
 
@@ -10,17 +11,13 @@ export async function setPostReaction(postId: string, kind: PostReactionKind | n
     || (kind !== null && kind !== "heart" && kind !== "tomato")) {
     throw new Error("This reaction couldn't be saved.");
   }
-  const user = await getCurrentUser();
-  if (!user) throw new Error("Sign in to react to a post.");
-  const result = await savePostReaction(postId, user.id, kind);
+  const sessionId = (await cookies()).get(SESSION_COOKIE_NAME)?.value;
+  if (!sessionId || !isValidSessionId(sessionId)) throw new Error("Sign in to react to a post.");
+  const result = await savePostReaction(postId, sessionId, kind);
   if (result.status === "error") throw new Error(result.message);
-  revalidatePath(`/s/${result.slug}/p/${postId}`);
-  revalidatePath(`/s/${result.slug}`);
-  revalidatePath("/feed");
-  revalidatePath(`/u/${user.handle}`);
   if (result.changed) {
-    await captureServerEvent({ distinctId: user.id, event: kind === null ? "post_unreacted" : "post_reacted",
-      properties: { post_id: postId, startup_id: result.startupId, kind: kind ?? result.previousKind } });
+    after(() => captureServerEvent({ distinctId: result.userId, event: kind === null ? "post_unreacted" : "post_reacted",
+      properties: { post_id: postId, startup_id: result.startupId, kind: kind ?? result.previousKind } }));
   }
   return { kind: result.kind, counts: result.counts };
 }

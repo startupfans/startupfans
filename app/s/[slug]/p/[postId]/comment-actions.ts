@@ -1,7 +1,9 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { isValidSessionId, getCurrentUser } from "@/lib/auth";
+import { after } from "next/server";
+import { cookies } from "next/headers";
+import { isValidSessionId, getCurrentUser, SESSION_COOKIE_NAME } from "@/lib/auth";
 import { createComment, deleteComment } from "@/lib/comments";
 import { saveCommentReaction, type PostReactionKind, type PostReactionState } from "@/lib/reactions";
 import { captureServerEvent } from "@/lib/posthog-server";
@@ -74,16 +76,13 @@ export async function setCommentReaction(commentId: string, kind: PostReactionKi
     || (kind !== null && kind !== "heart" && kind !== "tomato")) {
     throw new Error("This reply couldn't be found.");
   }
-  const user = await getCurrentUser();
-  if (!user) throw new Error("Sign in to react to a reply.");
-  const result = await saveCommentReaction(commentId, user.id, kind);
+  const sessionId = (await cookies()).get(SESSION_COOKIE_NAME)?.value;
+  if (!sessionId || !isValidSessionId(sessionId)) throw new Error("Sign in to react to a reply.");
+  const result = await saveCommentReaction(commentId, sessionId, kind);
   if (result.status === "error") throw new Error(result.message);
-  revalidatePath(`/s/${result.slug}/p/${result.postId}`);
-  revalidatePath(`/s/${result.slug}`);
-  revalidatePath("/feed");
   if (result.changed) {
-    await captureServerEvent({ distinctId: user.id, event: kind === null ? "comment_unreacted" : "comment_reacted",
-      properties: { post_id: result.postId, startup_id: result.startupId, comment_id: commentId, kind: kind ?? result.previousKind } });
+    after(() => captureServerEvent({ distinctId: result.userId, event: kind === null ? "comment_unreacted" : "comment_reacted",
+      properties: { post_id: result.postId, startup_id: result.startupId, comment_id: commentId, kind: kind ?? result.previousKind } }));
   }
   return { kind: result.kind, counts: result.counts };
 }

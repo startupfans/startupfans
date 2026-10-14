@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useId, useOptimistic, useRef, useState, useTransition, type CSSProperties } from "react";
+import { useEffect, useId, useRef, useState, type CSSProperties } from "react";
 import { HeartIcon, postIconButtonBaseClass } from "@/app/components/icons";
 import type { PostReactionKind, PostReactionState } from "@/lib/reactions";
 
@@ -16,6 +16,13 @@ function sameState(left: PostReactionState, right: PostReactionState) {
   return left.kind === right.kind && kinds.every((kind) => left.counts[kind] === right.counts[kind]);
 }
 
+function withKind(state: PostReactionState, kind: PostReactionKind | null): PostReactionState {
+  const counts = { ...state.counts };
+  if (state.kind) counts[state.kind] = Math.max(0, counts[state.kind] - 1);
+  if (kind) counts[kind] += 1;
+  return { kind, counts };
+}
+
 export function StickerReactions({ subject, postUrl, signedIn, snapshot, saveReaction, onReacted }: {
   subject: "post" | "reply";
   saveReaction: (kind: PostReactionKind | null) => Promise<PostReactionState>;
@@ -25,14 +32,16 @@ export function StickerReactions({ subject, postUrl, signedIn, snapshot, saveRea
   snapshot: PostReactionState;
 }) {
   const [committed, setCommitted] = useState(snapshot);
+  const [desiredKind, setDesiredKind] = useState(snapshot.kind);
+  const [pending, setPending] = useState(false);
   const [previousSnapshot, setPreviousSnapshot] = useState(snapshot);
   if (!sameState(previousSnapshot, snapshot)) {
     setPreviousSnapshot(snapshot);
-    setCommitted(snapshot);
+    if (!pending) setCommitted(snapshot);
   }
-  const [optimistic, setOptimistic] = useOptimistic(committed, (_current: PostReactionState, next: PostReactionState) => next);
-  const [pending, startTransition] = useTransition();
+  const optimistic = pending ? withKind(committed, desiredKind) : committed;
   const inFlight = useRef(false);
+  const desired = useRef(snapshot.kind);
   const [error, setError] = useState("");
   const errorId = useId();
   const [burst, setBurst] = useState<{ id: number; kind: PostReactionKind } | null>(null);
@@ -54,30 +63,39 @@ export function StickerReactions({ subject, postUrl, signedIn, snapshot, saveRea
   }, [burst]);
 
   function react(kind: PostReactionKind) {
-    if (inFlight.current) return;
-    inFlight.current = true;
-    const nextKind = optimistic.kind === kind ? null : kind;
-    const counts = { ...optimistic.counts };
-    if (optimistic.kind) counts[optimistic.kind] = Math.max(0, counts[optimistic.kind] - 1);
-    if (nextKind) counts[nextKind] += 1;
+    const currentKind = inFlight.current ? desired.current : committed.kind;
+    const nextKind = currentKind === kind ? null : kind;
+    desired.current = nextKind;
+    setDesiredKind(nextKind);
     setError("");
-    if (nextKind && (subject === "post" || nextKind === "heart") && !window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+    if (nextKind === "heart" && !window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
       setBurst((current) => ({ id: (current?.id ?? 0) + 1, kind: nextKind }));
     } else { setBurst(null); setGlyphs([]); }
-    startTransition(async () => {
-      setOptimistic({ kind: nextKind, counts });
+    if (inFlight.current) return;
+    inFlight.current = true;
+    setPending(true);
+    async function saveLatest() {
+      let confirmed = committed;
       try {
-        const result = await saveReaction(nextKind);
-        setCommitted(result);
-        onReacted?.(result);
+        do {
+          const result = await saveReaction(desired.current);
+          confirmed = result;
+          setCommitted(result);
+        } while (desired.current !== confirmed.kind);
       } catch {
+        desired.current = confirmed.kind;
+        setDesiredKind(confirmed.kind);
+        setCommitted(confirmed);
         setError("We couldn't update your reaction. Try again in a little while.");
         setBurst(null);
         setGlyphs([]);
       } finally {
         inFlight.current = false;
+        setPending(false);
+        onReacted?.(confirmed);
       }
-    });
+    }
+    void saveLatest();
   }
 
   return <div className="mr-auto min-w-0" role="group" aria-label={subject === "post" ? "Post reactions" : "Reply reactions"} aria-busy={pending}>
@@ -95,7 +113,7 @@ export function StickerReactions({ subject, postUrl, signedIn, snapshot, saveRea
           </span>}
         </>;
         return <div key={kind} className="relative">
-          {signedIn ? <button type="button" onClick={() => react(kind)} disabled={pending} className={className}
+          {signedIn ? <button type="button" onClick={() => react(kind)} className={className}
             aria-pressed={active} aria-label={`${label}, ${count} reactions`} title={label} aria-describedby={error ? errorId : undefined}>
             {content}
           </button> : <Link href={`/login?${new URLSearchParams({ next: postUrl })}`} className={className}
