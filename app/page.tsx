@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Image from "next/image";
 import { LandingGate } from "./components/landing-gate";
+import { PlatformStats } from "./components/platform-stats";
 import { SessionLink } from "./components/session-link";
 
 export const dynamic = "force-static";
@@ -87,6 +88,7 @@ export default function Home() {
       <main className="overflow-x-clip">
         <Nav />
         <Hero />
+        <PlatformStats variant="landing" />
         <Ticker />
         <AudienceSection
           id="startups"
