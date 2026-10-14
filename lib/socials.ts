@@ -6,6 +6,7 @@ export const socialNetworks = [
     placeholder: "@yourstartup",
     personalPlaceholder: "@you",
     hint: "Use an X handle or profile URL.",
+    personalHint: "Use an X handle or profile URL.",
   },
   {
     network: "linkedin",
@@ -14,6 +15,7 @@ export const socialNetworks = [
     placeholder: "linkedin.com/company/yourstartup",
     personalPlaceholder: "linkedin.com/in/you",
     hint: "Use a LinkedIn company or profile URL.",
+    personalHint: "Use a LinkedIn profile URL.",
   },
   {
     network: "github",
@@ -22,6 +24,7 @@ export const socialNetworks = [
     placeholder: "github.com/yourstartup/repo",
     personalPlaceholder: "github.com/you",
     hint: "Use a GitHub profile, org, or repo URL.",
+    personalHint: "Use a GitHub profile, org, or repo URL.",
   },
   {
     network: "instagram",
@@ -30,6 +33,7 @@ export const socialNetworks = [
     placeholder: "@yourstartup",
     personalPlaceholder: "@you",
     hint: "Use an Instagram handle or profile URL.",
+    personalHint: "Use an Instagram handle or profile URL.",
   },
   {
     network: "youtube",
@@ -38,6 +42,7 @@ export const socialNetworks = [
     placeholder: "youtube.com/@yourstartup",
     personalPlaceholder: "youtube.com/@you",
     hint: "Use a YouTube channel URL.",
+    personalHint: "Use a YouTube channel URL.",
   },
   {
     network: "tiktok",
@@ -46,6 +51,7 @@ export const socialNetworks = [
     placeholder: "@yourstartup",
     personalPlaceholder: "@you",
     hint: "Use a TikTok handle or profile URL.",
+    personalHint: "Use a TikTok handle or profile URL.",
   },
 ] as const;
 
