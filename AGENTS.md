@@ -172,7 +172,7 @@ Day 3
 
 ### GTM drafts (`gtm/`)
 
-Full social and outreach drafts live in [`gtm/`](gtm/README.md) (Grok bot pack + edits). Use those files for X, Reddit, outreach, newsletters, launch directories, team kit and investor DMs. For Reddit, use **`gtm/reddit-v2.md` only** (older reddit drafts were discarded).
+Full social and outreach drafts live in [`gtm/`](gtm/README.md) (Grok bot pack + edits). Use those files for X, Reddit, outreach, newsletters, launch directories, team kit and investor DMs. London demo night Luma copy + LinkedIn draft: [`gtm/london-demo-night.md`](gtm/london-demo-night.md) (https://luma.com/rfnr0lgt). For Reddit, use **`gtm/reddit-v2.md` only** (older reddit drafts were discarded).
 
 ## Success metrics (priority order)
 
