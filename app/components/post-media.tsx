@@ -1,5 +1,6 @@
 import Image from "next/image";
 import { getMediaFormat } from "@/lib/media";
+import { PostVideo } from "./post-video";
 
 export function PostMedia({ mediaUrl, mediaType, mediaPosterUrl, priority = false }: {
   mediaUrl: string | null;
@@ -18,12 +19,8 @@ export function PostMedia({ mediaUrl, mediaType, mediaPosterUrl, priority = fals
           className="block h-auto max-h-80 w-auto max-w-full"
           style={{ width: "auto", height: "auto" }} />
       ) : (
-        <video poster={mediaPosterUrl ?? undefined} controls playsInline preload="metadata"
-          className="block h-auto max-h-80 w-auto max-w-full"
-          aria-label="Post video attachment">
-          {contentType === "video/quicktime" && <source src={mediaUrl} type="video/quicktime" />}
-          <source src={mediaUrl} />
-        </video>
+        <PostVideo key={`${mediaUrl}:${mediaPosterUrl}`} mediaUrl={mediaUrl}
+          mediaPosterUrl={mediaPosterUrl} quickTime={contentType === "video/quicktime"} />
       )}
     </div>
   );
