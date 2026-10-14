@@ -8,6 +8,12 @@ const nextConfig: NextConfig = {
       port: "",
       pathname: "/startups/**",
       search: "",
+    }, {
+      protocol: "https",
+      hostname: "*.public.blob.vercel-storage.com",
+      port: "",
+      pathname: "/users/*/replies/**",
+      search: "",
     }],
   },
 };

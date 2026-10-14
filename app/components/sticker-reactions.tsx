@@ -6,11 +6,10 @@ import { HeartIcon, postIconButtonBaseClass } from "@/app/components/icons";
 import type { PostReactionKind, PostReactionState } from "@/lib/reactions";
 
 const reactions = {
-  like: { glyph: "👍", label: "Like", fill: "bg-sun" },
   heart: { glyph: "❤️", label: "Heart", fill: "bg-pink" },
   tomato: { glyph: "🍅", label: "Tomato", fill: "bg-tangerine" },
 } satisfies Record<PostReactionKind, { glyph: string; label: string; fill: string }>;
-const kinds: PostReactionKind[] = ["like", "heart", "tomato"];
+const kinds: PostReactionKind[] = ["heart", "tomato"];
 type BurstGlyph = { style: CSSProperties & { "--heart-x": string; "--heart-y": string; "--heart-rotation": string } };
 
 function sameState(left: PostReactionState, right: PostReactionState) {

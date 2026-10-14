@@ -163,7 +163,7 @@ export function ReplyImagePicker({ image, pending }: { image: ReturnType<typeof 
 export function ReplyMedia({ imageUrl }: { imageUrl: string | null }) {
   if (!imageUrl) return null;
   return <div className="mt-3 min-w-0 max-w-full overflow-hidden rounded-2xl border-[3px] border-ink bg-white shadow-sticker">
-    <Image src={imageUrl} alt="Reply attachment" width={1600} height={1600} unoptimized referrerPolicy="no-referrer"
+    <Image src={imageUrl} alt="Reply attachment" width={1600} height={1600} referrerPolicy="no-referrer"
       sizes="(min-width: 768px) 40rem, 100vw" className="block h-auto w-full" />
   </div>;
 }

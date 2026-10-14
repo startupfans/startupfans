@@ -9,7 +9,6 @@ import type { PostReactionState } from "@/lib/reactions";
 
 function isReactionCounts(value: unknown): value is PostReactionState["counts"] {
   return typeof value === "object" && value !== null
-    && "like" in value && typeof value.like === "number" && Number.isInteger(value.like) && value.like >= 0
     && "heart" in value && typeof value.heart === "number" && Number.isInteger(value.heart) && value.heart >= 0
     && "tomato" in value && typeof value.tomato === "number" && Number.isInteger(value.tomato) && value.tomato >= 0;
 }
@@ -24,7 +23,7 @@ function isComment(value: unknown): value is ReplyComment {
     && "avatarUrl" in value && (value.avatarUrl === null || typeof value.avatarUrl === "string")
     && "displayName" in value && typeof value.displayName === "string"
     && "imageUrl" in value && (value.imageUrl === null || typeof value.imageUrl === "string")
-    && "viewerReaction" in value && (value.viewerReaction === null || value.viewerReaction === "like" || value.viewerReaction === "heart" || value.viewerReaction === "tomato")
+    && "viewerReaction" in value && (value.viewerReaction === null || value.viewerReaction === "heart" || value.viewerReaction === "tomato")
     && "reactionCounts" in value && isReactionCounts(value.reactionCounts)
     && "mentions" in value && Array.isArray(value.mentions) && value.mentions.every((segment: unknown) =>
       typeof segment === "object" && segment !== null && "text" in segment && typeof segment.text === "string"

@@ -71,7 +71,7 @@ export async function removeComment(slug: string, postId: string, commentId: str
 
 export async function setCommentReaction(commentId: string, kind: PostReactionKind | null): Promise<PostReactionState> {
   if (typeof commentId !== "string" || !isValidSessionId(commentId)
-    || (kind !== null && kind !== "like" && kind !== "heart" && kind !== "tomato")) {
+    || (kind !== null && kind !== "heart" && kind !== "tomato")) {
     throw new Error("This reply couldn't be found.");
   }
   const user = await getCurrentUser();

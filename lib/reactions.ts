@@ -11,7 +11,6 @@ export type PostReactionState = { kind: PostReactionKind | null; counts: PostRea
 
 function reactionCounts() {
   return sql<PostReactionCounts>`json_build_object(
-    'like', count(*) filter (where ${postReactions.kind} = 'like')::int,
     'heart', count(*) filter (where ${postReactions.kind} = 'heart')::int,
     'tomato', count(*) filter (where ${postReactions.kind} = 'tomato')::int
   )`;
@@ -54,7 +53,6 @@ export async function savePostReaction(postId: string, userId: string, kind: Pos
 
 function commentReactionCounts() {
   return sql<PostReactionCounts>`json_build_object(
-    'like', count(*) filter (where ${commentReactions.kind} = 'like')::int,
     'heart', count(*) filter (where ${commentReactions.kind} = 'heart')::int,
     'tomato', count(*) filter (where ${commentReactions.kind} = 'tomato')::int
   )`;

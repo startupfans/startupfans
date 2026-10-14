@@ -168,11 +168,11 @@ export const commentLikes = pgTable("comment_likes", {
 export const postReactions = pgTable("post_reactions", {
   postId: uuid("post_id").notNull().references(() => posts.id, { onDelete: "cascade" }),
   userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
-  kind: text("kind", { enum: ["like", "heart", "tomato"] }).notNull(),
+  kind: text("kind", { enum: ["heart", "tomato"] }).notNull(),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 }, (table) => [
   primaryKey({ columns: [table.postId, table.userId] }),
-  check("post_reactions_kind_check", sql`${table.kind} in ('like', 'heart', 'tomato')`),
+  check("post_reactions_kind_check", sql`${table.kind} in ('heart', 'tomato')`),
   index("post_reactions_post_id_kind_idx").on(table.postId, table.kind),
 ]);
 
@@ -189,11 +189,11 @@ export const slackConnections = pgTable("slack_connections", {
 export const commentReactions = pgTable("comment_reactions", {
   commentId: uuid("comment_id").notNull().references(() => postComments.id, { onDelete: "cascade" }),
   userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
-  kind: text("kind", { enum: ["like", "heart", "tomato"] }).notNull(),
+  kind: text("kind", { enum: ["heart", "tomato"] }).notNull(),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 }, (table) => [
   primaryKey({ columns: [table.commentId, table.userId] }),
-  check("comment_reactions_kind_check", sql`${table.kind} in ('like', 'heart', 'tomato')`),
+  check("comment_reactions_kind_check", sql`${table.kind} in ('heart', 'tomato')`),
   index("comment_reactions_comment_id_kind_idx").on(table.commentId, table.kind),
 ]);
 

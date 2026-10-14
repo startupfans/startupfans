@@ -7,7 +7,7 @@ import { savePostReaction, type PostReactionKind, type PostReactionState } from 
 
 export async function setPostReaction(postId: string, kind: PostReactionKind | null): Promise<PostReactionState> {
   if (typeof postId !== "string" || !isValidSessionId(postId)
-    || (kind !== null && kind !== "like" && kind !== "heart" && kind !== "tomato")) {
+    || (kind !== null && kind !== "heart" && kind !== "tomato")) {
     throw new Error("This reaction couldn't be saved.");
   }
   const user = await getCurrentUser();
