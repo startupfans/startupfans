@@ -198,6 +198,21 @@ export const slackConnections = pgTable("slack_connections", {
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
+export const notifications = pgTable("notifications", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  kind: text("kind", { enum: ["mention"] }).notNull(),
+  actorId: uuid("actor_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  postId: uuid("post_id").notNull().references(() => posts.id, { onDelete: "cascade" }),
+  commentId: uuid("comment_id").references(() => postComments.id, { onDelete: "cascade" }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  readAt: timestamp("read_at", { withTimezone: true }),
+}, (table) => [
+  check("notifications_kind_check", sql`${table.kind} in ('mention')`),
+  unique("notifications_recipient_source_unique").on(table.userId, table.kind, table.postId, table.commentId).nullsNotDistinct(),
+  index("notifications_user_id_read_at_created_at_idx").on(table.userId, table.readAt, table.createdAt),
+]);
+
 export const commentReactions = pgTable("comment_reactions", {
   commentId: uuid("comment_id").notNull().references(() => postComments.id, { onDelete: "cascade" }),
   userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),

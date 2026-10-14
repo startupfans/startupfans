@@ -8,6 +8,7 @@ import { db } from "@/db";
 import { slackConnections, slackPosts, startupMembers, startups, users } from "@/db/schema";
 import { decryptSlackToken, getSlackTokenKey } from "@/lib/crypto";
 import { createPostForStartup } from "@/lib/posts";
+import { captureMentionNotifications, notifyMentions } from "@/lib/notifications";
 
 export const SLACK_STATE_COOKIE = "sf_slack_state";
 export const SLACK_SCOPES = ["reactions:read", "channels:history", "groups:history", "users:read", "users:read.email", "files:read", "chat:write"];
@@ -193,14 +194,18 @@ export async function publishSlackReaction(event: SlackReaction) {
     const [member] = email ? await tx.select({ userId: users.id }).from(users)
       .innerJoin(startupMembers, eq(startupMembers.userId, users.id))
       .where(and(sql`lower(${users.email}) = ${email}`, eq(startupMembers.startupId, connection.startupId))).limit(1) : [];
+    const actorId = member?.userId ?? connection.installedBy;
     const post = await createPostForStartup({
-      startupId: connection.startupId, authorId: member?.userId ?? connection.installedBy,
+      startupId: connection.startupId, authorId: actorId,
       body: body || "Shared an image from Slack.", media, source: "slack",
     }, tx);
     await tx.insert(slackPosts).values({ slackTeamId: event.teamId, channelId: event.channelId, messageTs: event.messageTs, postId: post.id });
-    return post;
+    const recipientCount = await notifyMentions({ body, actorId, postId: post.id }, tx);
+    return { ...post, actorId, recipientCount };
   });
   if (!created) return;
+  await captureMentionNotifications({ actorId: created.actorId, postId: created.id,
+    startupId: row.connection.startupId, recipientCount: created.recipientCount });
   revalidatePath(`/s/${row.slug}`);
   revalidatePath("/feed");
   await slackApi("chat.postMessage", {

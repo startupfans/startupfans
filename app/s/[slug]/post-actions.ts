@@ -12,6 +12,7 @@ import { getMediaFormat } from "@/lib/media";
 import { submitPostReport } from "@/lib/reports";
 import { captureServerEvent } from "@/lib/posthog-server";
 import { emitPostHogLog } from "@/lib/posthog-logs";
+import { captureMentionNotifications, notifyMentions } from "@/lib/notifications";
 
 export type PostActionState =
   | { status: "idle" }
@@ -44,9 +45,9 @@ export async function createPost(
   const user = await getCurrentUser();
   if (!user) return { status: "error", message: "Sign in again to post your update." };
 
-  let postId: string;
+  let post: { id: string; startupId: string; recipientCount: number } | null;
   try {
-    const post = await db.transaction(async (tx) => {
+    post = await db.transaction(async (tx) => {
       const [member] = await tx.select({ startupId: startups.id }).from(startupMembers)
         .innerJoin(startups, eq(startups.id, startupMembers.startupId))
         .where(and(eq(startups.slug, slug), eq(startupMembers.userId, user.id)))
@@ -61,14 +62,16 @@ export async function createPost(
         mediaUrl: mediaUrl || null,
         mediaType: attachmentType,
       }).returning({ id: posts.id });
-      return created;
+      const recipientCount = await notifyMentions({ body: body.trim(), actorId: user.id, postId: created.id }, tx);
+      return { ...created, startupId: member.startupId, recipientCount };
     });
     if (!post) return { status: "error", message: "Only team members can post here." };
-    postId = post.id;
   } catch (error) {
     console.error("[startupfans] Could not create post.", error);
     return { status: "error", message: "We couldn't publish your update. Try again." };
   }
+  const postId = post.id;
+  await captureMentionNotifications({ actorId: user.id, postId, startupId: post.startupId, recipientCount: post.recipientCount });
   await captureServerEvent({
     distinctId: user.id,
     event: "post_created",

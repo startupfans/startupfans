@@ -1,4 +1,4 @@
-import { Flag, Globe, Heart, Image as LucideImage, Link2, Loader2, MapPin, MessageCircle, Plus, Repeat2, Send, Trash2, Video, X } from "lucide-react";
+import { Bell, Flag, Globe, Heart, Image as LucideImage, Link2, Loader2, MapPin, MessageCircle, Plus, Repeat2, Send, Trash2, Video, X } from "lucide-react";
 import { siGithub, siInstagram, siLinkedin, siTiktok, siX, siYoutube } from "simple-icons";
 
 const uiIconProps = {
@@ -29,6 +29,10 @@ export function SendIcon() {
 
 export function PlusIcon() {
   return <Plus {...uiIconProps} />;
+}
+
+export function BellIcon() {
+  return <Bell {...uiIconProps} />;
 }
 
 export function SpinnerIcon() {

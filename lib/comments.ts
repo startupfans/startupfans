@@ -8,6 +8,7 @@ import { isAdmin } from "@/lib/admin";
 import { commentReactionFields } from "@/lib/reactions";
 import { isReplyImageUrl } from "@/lib/media";
 import { allowRateLimit } from "@/lib/ratelimit";
+import { captureMentionNotifications, notifyMentions } from "@/lib/notifications";
 
 type CommentUser = { id: string; email: string };
 type CommentTransaction = Parameters<Parameters<typeof db.transaction>[0]>[0];
@@ -103,7 +104,9 @@ export async function createComment(slug: string, postId: string, user: CommentU
   if (imageUrl !== null && !isReplyImageUrl(imageUrl, user.id)) {
     return { status: "error", message: "Choose an uploaded image for your reply." };
   }
-  return db.transaction(async (tx) => {
+  const result = await db.transaction(async (tx): Promise<Extract<CommentResult, { status: "error" }> | {
+    status: "success"; startupId: string; recipientCount: number;
+  }> => {
     const post = await getCommentPost(tx, slug, postId);
     if (!post) return { status: "error", message: "This post couldn't be found." };
     const access = await getCommentAccess(post.startupId, user, tx);
@@ -123,9 +126,14 @@ export async function createComment(slug: string, postId: string, user: CommentU
       }
     }
     if (!await allowRateLimit(`comment-user:${user.id}`, 30, tx)) return { status: "error", message: "Slow down a little." };
-    await tx.insert(postComments).values({ postId, parentId, userId: user.id, body: body.trim(), imageUrl });
-    return { status: "success", startupId: post.startupId };
+    const [comment] = await tx.insert(postComments).values({ postId, parentId, userId: user.id, body: body.trim(), imageUrl })
+      .returning({ id: postComments.id });
+    const recipientCount = await notifyMentions({ body: body.trim(), actorId: user.id, postId, commentId: comment.id }, tx);
+    return { status: "success", startupId: post.startupId, recipientCount };
   });
+  if (result.status === "error") return result;
+  await captureMentionNotifications({ actorId: user.id, postId, startupId: result.startupId, recipientCount: result.recipientCount });
+  return { status: "success", startupId: result.startupId };
 }
 
 export async function deleteComment(slug: string, postId: string, commentId: string, user: CommentUser): Promise<CommentResult> {
