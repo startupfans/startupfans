@@ -52,6 +52,20 @@ Set `APP_URL` to the site's public origin, `RESEND_API_KEY` for delivery, and
 sign-in link with a `[startupfans email: dev fallback]` prefix; open it locally
 to sign in. Auth requests require `DATABASE_URL` from the team's shared `.env`.
 
+## MCP
+
+Grok Bot, and any other OAuth client, can manage startups for a signed-in member at
+`https://www.startupfans.co/api/mcp`.
+
+Tell the bot to add a custom MCP server named startupfans at that URL using
+streamable HTTP. It opens a sign-in and an allow screen. The connection can read
+the feed, notifications and startups, and it can post, reply, follow and delete
+updates that member could already change.
+
+Clients can register public https redirects, `http://localhost` and `http://127.0.0.1`
+loopback redirects, and the Cursor app callback. Apply `pnpm db:migrate` so `0026_mcp_oauth.sql`
+exists before the routes are used.
+
 ## Slack
 
 1. Create a Slack app at [Your apps](https://api.slack.com/apps) using

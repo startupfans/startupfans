@@ -38,10 +38,10 @@ export async function LoginPage({
 }: {
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }) {
-  if (await getCurrentUser()) redirect("/me");
-
   const query = await searchParams;
   const next = getSafeNextPath(query.next);
+  const destination = next === "/login" || next.startsWith("/login?") ? "/me" : next;
+  if (await getCurrentUser()) redirect(destination);
   const invite = typeof query.invite === "string" && isInviteToken(query.invite) ? query.invite : "";
   const sent = typeof query.sent === "string" ? query.sent : null;
   const devLink = sent && process.env.NODE_ENV !== "production"

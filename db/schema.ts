@@ -19,7 +19,7 @@ export const plan = pgEnum("plan", ["free", "pro"]);
 export const role = pgEnum("role", ["owner", "editor"]);
 export const visibility = pgEnum("visibility", ["public", "fans"]);
 export const mediaType = pgEnum("media_type", ["image", "video"]);
-export const postSource = pgEnum("post_source", ["web", "slack"]);
+export const postSource = pgEnum("post_source", ["web", "slack", "mcp"]);
 
 export const users = pgTable("users", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -336,3 +336,51 @@ export const loginAttempts = pgTable(
     index("login_attempts_window_start_idx").on(table.windowStart),
   ],
 );
+
+export const oauthClients = pgTable("oauth_clients", {
+  id: text("id").primaryKey(),
+  name: text("name").notNull(),
+  redirectUris: text("redirect_uris").array().notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [
+  check("oauth_clients_id_check", sql`${table.id} ~ '^sfo_[A-Za-z0-9_-]{43}$'`),
+  check("oauth_clients_name_check", sql`char_length(${table.name}) between 1 and 80`),
+]);
+
+export const oauthCodes = pgTable("oauth_codes", {
+  tokenHash: text("token_hash").primaryKey(),
+  clientId: text("client_id").notNull().references(() => oauthClients.id, { onDelete: "cascade" }),
+  userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  redirectUri: text("redirect_uri").notNull(),
+  codeChallenge: text("code_challenge").notNull(),
+  scope: text("scope").notNull(),
+  resource: text("resource").notNull(),
+  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+  usedAt: timestamp("used_at", { withTimezone: true }),
+}, (table) => [
+  check("oauth_codes_hash_check", sql`${table.tokenHash} ~ '^[0-9a-f]{64}$'`),
+  check("oauth_codes_scope_check", sql`${table.scope} in ('read', 'write', 'read write')`),
+  index("oauth_codes_expires_at_idx").on(table.expiresAt),
+]);
+
+export const oauthTokens = pgTable("oauth_tokens", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  familyId: uuid("family_id").notNull(),
+  userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  clientId: text("client_id").notNull().references(() => oauthClients.id, { onDelete: "cascade" }),
+  accessTokenHash: text("access_token_hash").notNull(),
+  refreshTokenHash: text("refresh_token_hash").notNull(),
+  scope: text("scope").notNull(),
+  resource: text("resource").notNull(),
+  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+  refreshExpiresAt: timestamp("refresh_expires_at", { withTimezone: true }).notNull(),
+  revokedAt: timestamp("revoked_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [
+  unique("oauth_tokens_access_token_hash_unique").on(table.accessTokenHash),
+  unique("oauth_tokens_refresh_token_hash_unique").on(table.refreshTokenHash),
+  check("oauth_tokens_hash_check", sql`${table.accessTokenHash} ~ '^[0-9a-f]{64}$' and ${table.refreshTokenHash} ~ '^[0-9a-f]{64}$'`),
+  check("oauth_tokens_scope_check", sql`${table.scope} in ('read', 'write', 'read write')`),
+  index("oauth_tokens_user_id_idx").on(table.userId),
+  index("oauth_tokens_family_id_idx").on(table.familyId),
+]);

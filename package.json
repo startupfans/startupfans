@@ -15,6 +15,7 @@
   },
   "dependencies": {
     "@ffmpeg-installer/ffmpeg": "^1.1.0",
+    "@modelcontextprotocol/server": "2.3.1",
     "@opentelemetry/api-logs": "^0.223.0",
     "@opentelemetry/exporter-logs-otlp-http": "^0.223.0",
     "@opentelemetry/resources": "^2.12.0",
@@ -31,7 +32,8 @@
     "react-dom": "^19.3.0",
     "react-markdown": "^10.1.0",
     "server-only": "^0.0.1",
-    "simple-icons": "13.21.0"
+    "simple-icons": "13.21.0",
+    "zod": "^4.6.6"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.3.3",

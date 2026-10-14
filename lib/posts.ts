@@ -66,7 +66,7 @@ export async function createPostForStartup({ startupId, authorId, body, media, s
   authorId: string;
   body: string;
   media: { url: string; type: "image" | "video" } | null;
-  source: "web" | "slack";
+  source: "web" | "slack" | "mcp";
 }, transaction?: PostTransaction) {
   if (!body.trim() || body.length > 5000) throw new Error("Post body must have 1 to 5,000 characters.");
   const create = async (tx: PostTransaction) => {
