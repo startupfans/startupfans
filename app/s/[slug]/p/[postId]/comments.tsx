@@ -3,6 +3,7 @@
 import { useActionState, useEffect, useId, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import type { PublicComment, ReplyComment } from "@/lib/comments";
 import { LikeButton, type LikeState } from "./like-button";
 import { relativeDate } from "@/lib/relative-date";
@@ -10,9 +11,11 @@ import { MentionAutocomplete } from "@/app/components/mention-autocomplete";
 import { SubmitButton } from "@/app/components/submit-button";
 import { ConfirmSubmit } from "@/app/components/confirm-dialog";
 import { postIconButtonClass, TrashIcon } from "@/app/components/icons";
+import { updateFollow, type FollowState } from "../../actions";
 import { removeComment, replyToPost, type CommentActionState } from "./comment-actions";
 
 const initialState: CommentActionState = { status: "idle" };
+const initialFollowState: FollowState = { status: "idle" };
 
 export function CommentComposer({ slug, postId, parentId = null, onReplied }: {
   slug: string;
@@ -173,17 +176,46 @@ export function CommentList({ comments, slug, postId, viewerId, canReply, canMod
   );
 }
 
-export function ReplyComposer({ slug, postId, canReply, signedIn, onReplied }: {
+export function ReplyComposer({ slug, postId, canReply, signedIn, onReplied, onBecameFan }: {
   slug: string;
   postId: string;
   canReply: boolean;
   signedIn: boolean;
   onReplied?: () => void;
+  onBecameFan?: () => void;
 }) {
-  return canReply ? <CommentComposer slug={slug} postId={postId} onReplied={onReplied} /> : (
-    <Link href={signedIn ? `/s/${slug}` : `/login?${new URLSearchParams({ next: `/s/${slug}/p/${postId}#replies` })}`}
-      className="mt-6 inline-flex min-h-11 items-center rounded-xl border-2 border-ink bg-sun px-4 py-2 font-semibold shadow-sticker">
-      {signedIn ? "Become a fan to reply" : "Sign in to reply"}
-    </Link>
+  const router = useRouter();
+  const [unlocked, setUnlocked] = useState(false);
+  const [followState, followAction, followPending] = useActionState(async (previous: FollowState, formData: FormData) => {
+    const result = await updateFollow(slug, previous, formData);
+    if (result.status === "success") {
+      setUnlocked(true);
+      onBecameFan?.();
+      router.refresh();
+    }
+    return result;
+  }, initialFollowState);
+
+  if (canReply || unlocked) {
+    return <CommentComposer slug={slug} postId={postId} onReplied={onReplied} />;
+  }
+
+  if (!signedIn) {
+    return (
+      <Link href={`/login?${new URLSearchParams({ next: `/s/${slug}/p/${postId}#replies` })}`}
+        className="mt-6 inline-flex min-h-11 items-center rounded-xl border-2 border-ink bg-sun px-4 py-2 font-semibold shadow-sticker">
+        Sign in to reply
+      </Link>
+    );
+  }
+
+  return (
+    <form action={followAction} className="mt-6" aria-busy={followPending}>
+      <SubmitButton name="intent" value="follow" pending={followPending} pendingLabel="Joining…"
+        className="inline-flex min-h-11 items-center rounded-xl border-2 border-ink bg-sun px-4 py-2 font-semibold shadow-sticker">
+        Become a fan to reply
+      </SubmitButton>
+      {followState.status === "error" && <p role="alert" className="mt-3 text-sm">{followState.message}</p>}
+    </form>
   );
 }

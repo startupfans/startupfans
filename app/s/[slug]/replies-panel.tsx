@@ -128,7 +128,8 @@ export function RepliesPanel({ slug, postId, snapshot, onPostPage, children }: {
           {preview.hasMore && <Link href={`${postUrl}#replies`} className="mt-4 inline-flex min-h-11 items-center py-2 font-semibold underline underline-offset-4">
             View all {count} replies
           </Link>}
-          <ReplyComposer slug={slug} postId={postId} canReply={preview.canReply} signedIn={preview.viewerId !== null} onReplied={replied} />
+          <ReplyComposer slug={slug} postId={postId} canReply={preview.canReply} signedIn={preview.viewerId !== null}
+            onReplied={replied} onBecameFan={() => { void refresh(); }} />
         </>}
       </>}
     </section>}

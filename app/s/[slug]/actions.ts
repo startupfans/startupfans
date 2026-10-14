@@ -44,6 +44,7 @@ export async function updateFollow(
     distinctId: user.id,
     event: intent === "follow" ? "startup_followed" : "startup_unfollowed",
   });
-  revalidatePath(`/s/${slug}`);
+  revalidatePath(`/s/${slug}`, "layout");
+  revalidatePath("/feed");
   return { status: "success" };
 }
