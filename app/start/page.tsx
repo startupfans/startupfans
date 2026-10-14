@@ -2,7 +2,8 @@ import { AppHeader } from "@/app/components/app-shell";
 import { Sticker } from "@/app/components/sticker";
 import { StartupForm } from "@/app/s/[slug]/follow-button";
 import { requireUser } from "@/lib/auth";
-import { BioField, ImageUpload } from "@/app/s/[slug]/settings/image-upload";
+import { BioField } from "@/app/s/[slug]/settings/image-upload";
+import { WebsiteBrandFields } from "@/app/start/website-brand-fields";
 
 const inputClass = "mt-2 min-h-11 w-full min-w-0 rounded-xl border-2 border-ink bg-white px-4 py-3 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ink";
 
@@ -32,10 +33,7 @@ async function StartPage() {
               <textarea id="description" name="description" maxLength={2000} rows={5} className={`${inputClass} resize-y`} />
             </label>
             <BioField />
-            <ImageUpload name="logoUrl" label="Logo" creatorId={user.id} />
-            <label htmlFor="website" className="block font-bold">Website <span className="font-normal">(optional)</span>
-              <input id="website" name="website" type="text" inputMode="url" maxLength={500} placeholder="yourstartup.com" autoComplete="url" className={inputClass} />
-            </label>
+            <WebsiteBrandFields creatorId={user.id} />
             <label htmlFor="stage" className="block font-bold">Stage <span className="font-normal">(optional)</span>
               <select id="stage" name="stage" defaultValue="" className={inputClass}>
                 <option value="">Choose a stage</option>

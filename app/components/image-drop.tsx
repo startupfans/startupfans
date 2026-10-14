@@ -214,10 +214,18 @@ export function ImageDrop({ name, label, shape, initialUrl, initial, buildUpload
         }}>
         <div className={`flex min-w-0 flex-col items-start gap-3 ${shape === "wide" ? "" : "sm:flex-row sm:items-center"}`}>
           <div className={`relative overflow-hidden border-[3px] border-ink bg-sun ${previewClasses[shape]}`}>
-            {visibleUrl ? <Image src={visibleUrl} alt={`${label} preview`} fill unoptimized referrerPolicy="no-referrer"
-              sizes={shape === "wide" ? "600px" : shape === "square" ? "96px" : "64px"}
-              className={shape === "square" ? "object-contain p-2" : "object-cover"} />
-              : <span aria-hidden="true" className="flex h-full items-center justify-center font-display text-2xl font-extrabold">{initial}</span>}
+            {visibleUrl ? (
+              visibleUrl.includes(".blob.vercel-storage.com") || visibleUrl.startsWith("blob:") ? (
+                <Image src={visibleUrl} alt={`${label} preview`} fill unoptimized referrerPolicy="no-referrer"
+                  sizes={shape === "wide" ? "600px" : shape === "square" ? "96px" : "64px"}
+                  className={shape === "square" ? "object-contain p-2" : "object-cover"} />
+              ) : (
+                // Pasted or brand-lookup https URLs are not always in next/image remotePatterns.
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={visibleUrl} alt={`${label} preview`} referrerPolicy="no-referrer"
+                  className={`h-full w-full ${shape === "square" ? "object-contain p-2" : "object-cover"}`} />
+              )
+            ) : <span aria-hidden="true" className="flex h-full items-center justify-center font-display text-2xl font-extrabold">{initial}</span>}
           </div>
           <p className="min-w-0 text-sm">Drop an image, paste, or choose a file</p>
         </div>
