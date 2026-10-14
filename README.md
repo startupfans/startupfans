@@ -27,7 +27,7 @@ Vercel project. Builds do not need a database connection.
 After editing `db/schema.ts`, run `pnpm db:generate` and then
 `pnpm db:migrate`. Use `pnpm db:studio` to inspect the database.
 
-## Seed and waitlist
+## Seed
 
 The manual seed command uses Node 24, loads `.env` if present, and uses the same
 `DATABASE_URL` as the app. Apply migrations first.
@@ -42,13 +42,6 @@ is its creator and first-post author. Existing users and owners are preserved.
 `SEED_OWNER_EMAILS` is required; use the team's actual emails.
 
 The seed exits non-zero on failure and can be rerun after fixing the cause.
-
-Set `GETWAITLIST_API_KEY` and visit `/admin/waitlist` as a site admin to sync
-GetWaitlist signups automatically on page load when the last successful sync
-is older than 60 seconds. Manual sync is also available; missing configuration
-or sync failures keep the stored list available. Run the seed before letting
-people in. Admissions send welcome emails after the transaction commits, and
-resends preserve existing fan numbers.
 
 ## Auth
 

@@ -14,10 +14,7 @@ export async function AdminPage() {
     <div className="min-h-screen min-w-0">
       <AppHeader signedIn next="/admin" />
       <AppShell className="max-w-4xl">
-        <PageHeader title="Post reports" tabs={{ label: "Admin navigation", items: [
-          { href: "/admin", label: "Post reports", current: true },
-          { href: "/admin/waitlist", label: "Waitlist" },
-        ] }} />
+        <PageHeader title="Post reports" />
         <section className="mt-8 space-y-6" aria-label="Open reports">
           {reports.length === 0 && <p>No open reports.</p>}
           {reports.map((report) => (

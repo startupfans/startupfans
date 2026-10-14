@@ -20,7 +20,7 @@ This repo is the public website for StartupFans (live at startupfans.co, hosted 
 - 3 days to launch a new product and make as much money as possible.
 - Scoring priorities, in order:
   1. Launch: a real, live product within 3 days
-  2. Traction: a clear signal that people want it. Revenue is the gold standard; a waitlist with a card on file beats a plain waitlist
+  2. Traction: a clear signal that people want it. Revenue is the gold standard; active startups and fans show demand
   3. Attention: something people share and talk about
 
 ## The idea
@@ -103,7 +103,7 @@ Later revenue options:
 ## MVP scope (3 days)
 
 Must have
-- Landing page with waitlist and founding spot payment
+- Landing page with open sign-up and founding spot payment
 - Company pages (name, logo, description, website)
 - Team members can join a company
 - Posts: text plus image
@@ -141,7 +141,7 @@ Out of scope for the 3 days
 - startup_follows: follower_startup_id, startup_id, member_no, created_at; shared per-startup fan-number counter with follows, no self-follow
 - comment_likes: comment_id, user_id (composite primary key), created_at; cascading comment and user references
 - post_reactions: post_id, user_id (composite primary key), kind (like, heart or tomato), created_at; cascading post and user references and an index on post_id/kind
-- waitlist_entries: company_name, website, contact_name, role, email, team_size, stage, main_reason, first_post_idea, wants_founding_spot, created_at
+- waitlist_entries: legacy table, kept for its data, no code uses it. Its Drizzle schema and migrations remain unchanged.
 - payments: company_id, stripe_session_id, amount, status, created_at
 
 ## 3-day plan
@@ -149,7 +149,7 @@ Out of scope for the 3 days
 Day 1
 - Build company pages, posts, feed, follow, Stripe founding spot
 - Lightdash is the first startup on the platform and posts the offsite
-- Post the LinkedIn announcement, open the waitlist
+- Post the LinkedIn announcement, open sign-up
 - DM 50 startups
 
 Day 2
@@ -178,7 +178,7 @@ Full social and outreach drafts live in [`gtm/`](gtm/README.md) (Grok bot pack +
 
 1. Paid founding spots
 2. Startups actively posting
-3. Waitlist signups
+3. Account signups
 4. Followers / feed views
 5. Launch post engagement
 
@@ -238,7 +238,7 @@ why you'd want your startup on it:
 - fundraising: investors see your momentum between update emails
 - team: everyone gets credit for their work, beyond the founders
 
-we're letting the first startups in this week. if you want your company on it, the waitlist is here: [link]
+sign-up is open. if you want your company on it, join here: [link]
 
 first exclusive drop is our offsite. subscribe to unlock 🔒
 ```
@@ -252,14 +252,14 @@ we're building onlyfans for startups.
 
 StartupFans is a feed where anyone on your team can post what they're working on, what they shipped, or the photos from your offsite. one place for prospects, candidates and investors to see what you're really like.
 
-first startups get in this week. waitlist: [link]
+sign-up is open: [link]
 ```
 
 Irakli's live launch post (fan-side framing: open up the kitchen, fans get it first): linkedin.com/feed/update/urn:li:activity:7515469992105213952
 
 ## LinkedIn announcement (whiteboard / launch)
 
-Origin story angle: joke idea on the offsite whiteboard that became the product. Put the waitlist or site link in the first comment.
+Origin story angle: joke idea on the offsite whiteboard that became the product. Put the site link in the first comment.
 
 ```text
 at the Lightdash offsite in Lisbon, we're doing a launch-a-thon.
@@ -284,18 +284,11 @@ seriously, no nudes pls
 
 ## Posting tips
 
-- Put the waitlist link in the first comment; LinkedIn is commonly reported to show posts with external links to fewer people
+- Put the site link in the first comment; LinkedIn is commonly reported to show posts with external links to fewer people
 - Optional hook: "comment FANS and I'll send you an invite" (gets comments and a DM list)
 - Team reposts with a photo of everyone building beat a logo
 
-## Waitlist form fields (target)
-
-- Company name and website
-- Your name, role and email
-- Team size and stage
-- Main reason for joining (marketing, sales, hiring, fundraising, team)
-- What you'd post first
-- Optional: "Want a founding spot? £99/year, first 50 startups" with Stripe link
+The waitlist is closed; sign-up is open to everyone.
 
 ## Open questions
 
@@ -317,9 +310,8 @@ Built:
 - Handle mentions: posts and replies link existing `@handle` tokens to public `/u/<handle>` profiles, excluding code and existing links. Server queries resolve handles in batches per render. Both composers offer keyboard and pointer autocomplete ranked by team, fans and the writer's circle, through a signed-in, rate-limited endpoint that returns no emails. Public profiles show join month, optional social icon links, startups, fan clubs and the latest 20 public posts.
 - Slack publishing: owners connect a workspace in settings; a 📣 reaction publishes a human message and its first supported image, with email-matched team attribution, encrypted tokens, deduplication and a thread confirmation.
 - Landing page (`app/page.tsx`): static, startup-first hero ("Get your startup in front of fans.") with open sign-up CTAs to `/login`, honest "launching today · free to join" badge, fan path to sign-in, startups section before fans, and a second sign-up CTA at the bottom. Positioning: early startups post what they're shipping; free for everyone. Client `SessionLink` checks `/api/session` once on mount to offer signed-in visitors `/start` and their feed, reserving space for both labels. Client `LandingGate` shares one private, uncached `/api/session` check with `SessionLink`: a centred cream sticker spinner covers the static landing until signed-in visitors are replaced to `/feed`, or signed-out visitors see a 200 ms fade. Pending content reveals and its overlay hides through CSS after 1.5 seconds, even when hydration never runs; JavaScript can reveal it sooner and skips the fade once CSS has revealed the content. Reduced motion reveals it instantly and `noscript` keeps the full landing visible.
-- Open sign-up: anyone with a valid email can request a magic link; clicking it creates the account and session. No waitlist admission gate. After sign-in, `/start` creates a startup immediately.
+- Open sign-up: anyone with a valid email can request a magic link; clicking it creates the account and session. After sign-in, `/start` creates a startup immediately.
 - Manual seed: `pnpm seed` upserts startupfans with owners from `SEED_OWNER_EMAILS` and its first post.
-- Legacy waitlist admin (`/admin/waitlist`): still syncs GetWaitlist and can admit historical entries, but the public site no longer uses the waitlist funnel. `app/waitlist-form.tsx` remains in the repo unused.
 - Startup creation (`app/start/`): signed-in users create a public page and become its owner, with an optional stage. Website sits above logo; on blur, a signed-in rate-limited `/api/brand-lookup` scrapes apple-touch-icon / og:image / icon tags through SSRF-safe fetch (`lib/safe-fetch.ts`, `lib/brand-lookup.ts`), then falls back to Google's favicon proxy. A sticker offers an opt-in website + logo prefill; accepting copies the logo into Vercel Blob when a valid page address and Blob token are present (`/api/brand-lookup/import`), otherwise stores the remote HTTPS URL.
 - Public startup pages (`app/s/[slug]/`): profile, team members, current fan count and a markdown feed, plus member settings links. The people pill counts startup_members rows and updates as members join or leave; creation and settings have no manual team-size field.
 - Company profiles: a 3:1 cover and overlapping logo, a short bio, location and social icon links. Owners upload logo and cover images, edit social profiles and keep a longer description in settings; creators upload a logo and add a bio at `/start`, with optional domain brand prefill for website and logo. Logo and cover uploads share `ImageDrop` with avatars: picker, drag and drop, focused paste, previews, progress, removal, HEIC/HEIF conversion and an HTTPS URL disclosure. Blob previews use `next/image`; other HTTPS previews use a plain `img`. Logos use a 96px square preview and covers use 3:1; page-address changes cancel and clear scoped uploads.
@@ -360,7 +352,7 @@ Site copy only promises what exists. No pricing on the site (for fans or startup
 - `lib/users.ts`: request-cached public profile lookup with memberships, fan clubs and the latest 20 public posts, shared by profile rendering and metadata.
 - `app/u/[handle]/`: public profiles with name and handle metadata, optional social icon links and a short description; unknown handles return 404 metadata and a 404 page.
 - `app/api/mentions/`: signed-in, rate-limited autocomplete returning public names, handles, avatars and ranking reasons. Composers retain suggestions during subsequent fetches and intercept Escape only while the list is open.
-- Forms: `app/components/submit-button.tsx` shares pending labels, a reduced-motion-aware spinner, reserved label width for text buttons, busy form attributes (cleared on unmount) and duplicate-submit protection for server actions and client pending flags. Icon mode keeps round 40px buttons with the spinner replacing the icon and accessible idle/pending labels. Covers sign-in, sign-out, profile save, startup creation, follow/unfollow, startup settings save, Slack disconnect, member removal, invite email/link creation and revocation, post creation/deletion/reporting, team invite acceptance, admin report resolution and post/startup deletion, waitlist batch/individual admission, resend and sync. Destructive post/startup deletion, member removal, invite revocation, Slack disconnection and first-N waitlist admission use the native sticker modal in `app/components/confirm-dialog.tsx` (`ConfirmDialog` and server-form-friendly `ConfirmSubmit`), with Cancel focus, Escape/backdrop dismissal, focus return and pending confirmation buttons.
+- Forms: `app/components/submit-button.tsx` shares pending labels, a reduced-motion-aware spinner, reserved label width for text buttons, busy form attributes (cleared on unmount) and duplicate-submit protection for server actions and client pending flags. Icon mode keeps round 40px buttons with the spinner replacing the icon and accessible idle/pending labels. Covers sign-in, sign-out, profile save, startup creation, follow/unfollow, startup settings save, Slack disconnect, member removal, invite email/link creation and revocation, post creation/deletion/reporting, team invite acceptance, admin report resolution and post/startup deletion. Destructive post/startup deletion, member removal, invite revocation and Slack disconnection use the native sticker modal in `app/components/confirm-dialog.tsx` (`ConfirmDialog` and server-form-friendly `ConfirmSubmit`), with Cancel focus, Escape/backdrop dismissal, focus return and pending confirmation buttons.
 - `app/components/icons.tsx`: named UI icon wrappers use Lucide Image, Video, Send, Flag, Trash2, Link2, X, Globe and MapPin at 20px with a 2.25px absolute stroke. Round sticker button classes and hand-drawn social brand glyphs stay shared here; `Star` in `sticker.tsx` remains brand art.
 - `lib/slack.ts` and `lib/crypto.ts`: Slack Web API, signed OAuth state, event signature verification, markdown conversion, image copying and encrypted bot tokens. `slack_connections` binds one workspace to one startup; `slack_posts` records published messages atomically with post creation.
 - `app/api/slack/`: owner-only install and OAuth callbacks, plus signed events acknowledged with `after()` before publishing. `slack-app-manifest.json` configures the app and its scopes.
@@ -370,8 +362,7 @@ Site copy only promises what exists. No pricing on the site (for fans or startup
 - `lib/signup.ts`: open `canSignUp(email)` (any non-empty trimmed email) and `existingUser(email)` lookup, with case-insensitive emails. The mobile auth request API should call `canSignUp` after its branch merges; it is not present on this branch.
 - `lib/ratelimit.ts`, `lib/reports.ts`, `lib/admin.ts`: atomic hashed sign-in counters, private post report submission and resolution, and site admin authorization/deletion. Reports retain their resolved timestamp so signed-in users cannot report a post twice.
 - `app/admin/`: admin-only open report queue with post excerpts, reasons, counts, resolution and confirmed deletion. `ADMIN_EMAILS` grants access through comma-separated email addresses or `@domain` entries (case-insensitive, whitespace tolerant, exact domains only); other visitors receive a 404.
-- `app/admin/waitlist/` and `lib/waitlist.ts`: legacy admin tooling for the old GetWaitlist funnel (sync via `GETWAITLIST_API_KEY`, admission batches and resends). Not used by public sign-up. Missing configuration or sync failures keep the stored list available. Dates are shown in UTC.
-- `lib/emails/`: pure sign-in, invite and welcome templates using a shared inline-styled, table-based sticker layout and matching plain text. `welcome.ts` sends "you're off the waitlist" to admitted waitlist entries with a fan number, a short pitch for fans and startups, and a seven-day sign-in link.
+- `lib/emails/`: pure sign-in and invite templates using a shared inline-styled, table-based sticker layout and matching plain text.
 - `app/dev/emails/`: development-only template index and HTML previews, with `?text=1` for plain text; all routes return 404 in production.
 - `lib/startups.ts`: startup creation with owner membership, profile lookup, team members, public posts and current fan counts. `normalizeWebsiteUrl` accepts bare domains, `http://` or `https://` on create and settings (no https-only requirement). `lib/follows.ts` serializes follow changes with a startup row lock and keeps the member-number counter increasing. `lib/slug.ts` holds shared slug suggestions and validation.
 - `lib/socials.ts`: validates social profile hosts and paths, normalizes handles or pasted profile URLs (bare host, `http://` or `https://`), and builds canonical https links for X, LinkedIn, GitHub (profile, org, or repo), Instagram, YouTube and TikTok. Startup settings use company-oriented placeholders; `/me` uses `personalPlaceholder` values.
@@ -379,7 +370,7 @@ Site copy only promises what exists. No pricing on the site (for fans or startup
 - `app/s/[slug]/profile-header.tsx`: server-rendered company cover, overlapping logo, bio, facts and social links, with follow controls alongside on wide screens. `settings/image-upload.tsx` shares image uploads and the live bio counter between settings and startup creation. Profile images use `startups/<slug>/profile/`; the upload route authorizes owners or signed-in creators using an unused slug, with creator-prefixed filenames, image-only content types and a 10 MB limit. `isStartupProfileImageUrl` validates stored profile images and HTTPS fallbacks.
 - `app/components/sticker.tsx`: shared `Star`, `Sticker`, `PageHeader`, `SectionHeading` and `TopNav` components, plus `SiteFooter` for app pages. The footer uses `PRICING_CONTACT_EMAIL` or `hello@startupfans.co` for takedowns.
 - Startup deletion lives only in the final settings section, `settings/danger-zone.tsx`, with the shared confirmation dialog. Owners and site admins can delete; the server action rechecks authorization under the startup lock, cascades to its content and redirects to `/me?message=startup-deleted`.
-- Navigation: signed-in app visitors get a compact pink "Start a startup" sticker linking to `/start` immediately before "Your account" ("Start" below `lg`). `TopNav` stays on one row with 44px targets and no horizontal scrolling from 390px up: below `sm` the home link uses a 36px square mark, Leaderboard reads "Board", and links use 12px text with 4px gaps; from `sm` the wordmark is 128px, growing to 176px at `lg`. Link text and gaps grow to 14px/8px at `sm` and 16px/16px at `lg`; every app page renders the server `AppHeader` in `app/components/app-shell.tsx`. `AppHeader` and `AppShell` share one `max-w-6xl` band and one `px-5 sm:px-8` gutter, defined once in that file. Feed, account, admin, startup, team, fans, following, post, public profile, leaderboard and settings columns are horizontally centred inside the band, retaining their width caps and leaving equal margins around narrower columns. `TopNav` fills this band without overhang or translation. The links row keeps `pr-1` (4px right padding) after its final link, leaving space for its sticker shadow; the home link aligns the visible mark to the shared left edge while retaining its 44px target. `AppHeader` owns 40px top padding (64px from `sm`), a 32px gap to optional `SubNav`, and a 40px gap before content, clearing the first content block's top margin. The app admin pill shows its labelled icon below `lg` and adds "Admin" from `lg`; its landing variant keeps its existing labels. Leaderboard remains visible in every session state. Below 390px only, the links can scroll horizontally as a last resort. The static landing nav and hero use `SessionLink` to show `/start` CTAs when signed in, reserving space for both states; signed-out visitors retain the waitlist nav link and hero form. The join card keeps its existing feed link. Admins get the shared sun-yellow `AdminLink` sticker pill linking to `/admin` in `TopNav` and the static landing nav. Landing `SessionLink` appends it after the private `/api/session` check without reserving space for non-admins; the endpoint returns only signed-in status, name and admin status. Server `SubNav` in `app/components/sub-nav.tsx` shares wrapping and 44px sticker tabs. Its inline variant removes standalone margins. Feed filters, both admin pages and startup team/fans/following/post navigation now sit in `PageHeader`; the startup profile and settings pages retain their existing `AppHeader` tabs. Active tabs are sun-yellow with `aria-current="page"`. Startup Settings appears only for owners and site admins, matching existing access; post pages have Page/Team and owner-or-admin Settings with none active. `/me` keeps its existing main navigation because account/feed links would duplicate it; leaderboard has no secondary tabs.
+- Navigation: signed-in app visitors get a compact pink "Start a startup" sticker linking to `/start` immediately before "Your account" ("Start" below `lg`). `TopNav` stays on one row with 44px targets and no horizontal scrolling from 390px up: below `sm` the home link uses a 36px square mark, Leaderboard reads "Board", and links use 12px text with 4px gaps; from `sm` the wordmark is 128px, growing to 176px at `lg`. Link text and gaps grow to 14px/8px at `sm` and 16px/16px at `lg`; every app page renders the server `AppHeader` in `app/components/app-shell.tsx`. `AppHeader` and `AppShell` share one `max-w-6xl` band and one `px-5 sm:px-8` gutter, defined once in that file. Feed, account, admin, startup, team, fans, following, post, public profile, leaderboard and settings columns are horizontally centred inside the band, retaining their width caps and leaving equal margins around narrower columns. `TopNav` fills this band without overhang or translation. The links row keeps `pr-1` (4px right padding) after its final link, leaving space for its sticker shadow; the home link aligns the visible mark to the shared left edge while retaining its 44px target. `AppHeader` owns 40px top padding (64px from `sm`), a 32px gap to optional `SubNav`, and a 40px gap before content, clearing the first content block's top margin. The app admin pill shows its labelled icon below `lg` and adds "Admin" from `lg`; its landing variant keeps its existing labels. Leaderboard remains visible in every session state. Below 390px only, the links can scroll horizontally as a last resort. The static landing nav and hero use `SessionLink` to show `/start` CTAs when signed in, reserving space for both states; signed-out visitors get open sign-up CTAs to `/login`. The join card keeps its existing feed link. Admins get the shared sun-yellow `AdminLink` sticker pill linking to `/admin` in `TopNav` and the static landing nav. Landing `SessionLink` appends it after the private `/api/session` check without reserving space for non-admins; the endpoint returns only signed-in status, name and admin status. Server `SubNav` in `app/components/sub-nav.tsx` shares wrapping and 44px sticker tabs. Its inline variant removes standalone margins. Feed filters and startup team/fans/following/post navigation now sit in `PageHeader`; the admin report queue has a plain `PageHeader` without tabs; the startup profile and settings pages retain their existing `AppHeader` tabs. Active tabs are sun-yellow with `aria-current="page"`. Startup Settings appears only for owners and site admins, matching existing access; post pages have Page/Team and owner-or-admin Settings with none active. `/me` keeps its existing main navigation because account/feed links would duplicate it; leaderboard has no secondary tabs.
 - `app/leaderboard/page.tsx` and `lib/leaderboard.ts`: public sticker-style rankings with logos, taglines, fan and weekly post counts, and empty states; each list uses one aggregate query and excludes zero counts. The page renders on demand with queries cached for 300 seconds.
 - `app/opengraph-image.tsx`: site-wide 1200 by 630 share preview (logo, `SITE_TAGLINE` headline, "Your startup" card mirroring the hero), prerendered at build time from local fonts in `assets/fonts/`. Inherited by every route without its own image.
 - `app/share-image.tsx`: `createShareImage`, the startup share renderer with a cached Bricolage Grotesque font fetch and a default font fallback. Kept separate from `app/opengraph-image.tsx` so dynamic routes don't load the homepage image's local font files.
@@ -405,7 +396,6 @@ Site copy only promises what exists. No pricing on the site (for fans or startup
 - `app/site.ts`: single source for site URL, name, tagline, description and brand hex colours (used by metadata routes and the OG image, which can't read CSS tokens).
 - SEO/metadata file conventions in `app/`: `opengraph-image.tsx` (1200x630, built at build time with `next/og`; X/Twitter reuses it automatically), `robots.ts`, `sitemap.ts`, `manifest.ts`, `icon.svg`, `apple-icon.png`. OG fonts are static woff files in `assets/fonts/` (from Fontsource; Satori needs ttf/otf/woff, not variable or woff2). PWA icons (`icon-192.png`, `icon-512.png`, `icon-maskable-512.png`) live in `public/` and were rendered from the mark with `sharp`. Satori ignores `radial-gradient` dot backgrounds, so the OG image uses flat cream.
 - File-based OG image URLs use `metadataBase` in production but `localhost` under `next dev`; check `og:image` against a `next build && next start` run.
-- `app/waitlist-form.tsx`: unused GetWaitlist client form kept for possible admin/history reuse; not rendered on the public site.
 - `public/logo/`: brand assets, served at `/logo/...`. `startupfans-logo` is the full logo (SF wing monogram + wordmark), `startupfans-mark` is the square SF monogram (avatars, favicons). Each comes as SVG (outlined paths, no font dependency) and transparent PNG (logo 1820px wide, mark 1024px). Default files have a white wing and "Fans" for dark backgrounds; `-on-light` swaps those to ink. Logo blue is `#b6d3de` on dark backgrounds and the deeper `#2f7493` in the `-on-light` files (4.8:1 on cream; the pale blue was 1.4:1); wordmark is Fira Sans Condensed Bold. The nav and footer render `startupfans-logo-on-light.svg` via `next/image`; `app/icon.svg` (favicon) is the mark on an ink rounded square.
 - `Untitled/`: stray empty git repo, unrelated; excluded from TS and ESLint.
 
@@ -427,12 +417,12 @@ Site copy only promises what exists. No pricing on the site (for fans or startup
 | `/join/[token]` | Startup names and closed-invite copy wrap; primary action fills the card | One capped invitation card | Centred invitation column stays capped at 36rem |
 | `/feed` | Main nav, then The latest with Everyone / Following on the next line of one page header; post content fits | At 834px, heading and filter tabs share a row above one readable feed column | Heading and tabs share a row; centred feed stays capped at 48rem |
 | `/leaderboard` | Plain Leaderboard header above ranking sections; cards and names fit | At 834px, rankings remain stacked | Two ranking columns below one page header in a 72rem shell |
-| `/admin` and `/admin/waitlist` | Heading then Post reports / Waitlist in one wrapping page header; actions fit | At 834px, heading and tabs share a row | Centred report column caps at 56rem; waitlist fills the band at 72rem |
+| `/admin` | Plain Post reports heading without tabs; actions fit | One heading above the report queue | Centred report column caps at 56rem |
 | `/s/[slug]/team`, `/fans`, `/following` | Team title includes the startup name; heading then Page / Team / owner-or-admin Settings tabs; cards fit | At 834px, titles and tabs share a row when they fit | One page header above each centred content column |
 | `/u/[handle]` | Name and handle beside the avatar in one plain header | At 834px, identity stays in one row | Centred profile stays capped at 48rem |
 | `/dev/emails` | Preview links wrap into rows with 44px targets | Preview index stays a single card | Index stays capped at 36rem; production 404 behavior is preserved |
 
-Earlier left-alignment gutter verification (superseded by the centred-column rule): headless Chromium against `pnpm exec next dev -p 3041` passed 63 route/session/width cases at 390, 834 and 1440px, including settings, waitlist and individual posts. Visible logo and content left edges matched exactly in every case (20px, 32px and 176px respectively); the startup updates column matched too. All cases had zero page/nav overflow, one nav row, 44px minimum nav targets and 4px nav-row right padding. Account permanence text appeared once, directly under the handle in the header; team h1 read `startupfans team`; startup/fan-club wrappers remained plain. Final parallel membership queries were rechecked in 12 fan/following cases, with Settings present for the admin and absent when signed out. Temporary sessions were deleted; build, typecheck and lint passed.
+Earlier left-alignment gutter verification (superseded by the centred-column rule): headless Chromium against `pnpm exec next dev -p 3041` passed 63 route/session/width cases at 390, 834 and 1440px, including settings and individual posts. Visible logo and content left edges matched exactly in every case (20px, 32px and 176px respectively); the startup updates column matched too. All cases had zero page/nav overflow, one nav row, 44px minimum nav targets and 4px nav-row right padding. Account permanence text appeared once, directly under the handle in the header; team h1 read `startupfans team`; startup/fan-club wrappers remained plain. Final parallel membership queries were rechecked in 12 fan/following cases, with Settings present for the admin and absent when signed out. Temporary sessions were deleted; build, typecheck and lint passed.
 
 Earlier page-header verification: headless Chromium against `pnpm exec next dev -p 3041` checked 51 route/session/width combinations at 390, 834 and 1440px, including the seven required screenshot routes at 390 and 1440px. Shared page headers measured 24px top/bottom margins and 24px to content, with 30px/36px titles, 44px tab targets and no horizontal overflow. Tabs sit below headings on phones and beside them where the column has room. The startup hero retains its existing layout. Temporary sessions were deleted. Follow-up verification checked nine account and post-page route/session/width combinations at the same three widths: both account section wrappers are plain, startup item cards remain framed, post tabs wrap below the heading on phones and sit inline on desktop, and Settings is absent when signed out. Build, typecheck and lint passed after the final changes.
 
